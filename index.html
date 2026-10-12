@@ -283,8 +283,14 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .sub span { width: 24px; height: 24px; border-radius: 50%; background: var(--panel-2); display: grid; place-items: center; font-family: var(--f-code); font-size: .78rem; }
 .sub.on { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
 .sub.on span { background: var(--accent); color: var(--accent-ink); }
+.drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.drill-head h3 { margin: 2px 0 0; }
+.drill-task { margin-bottom: 14px; max-width: 68ch; }
 .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
 @media (max-width: 560px) {
+  /* The status bar wraps to several lines on phones, so let it scroll away instead of covering the page */
+  .topbar { position: static; }
+  .topbar .wrap { gap: 8px 16px; }
   .panel { padding: 18px 16px; }
   .stack-lg { gap: 26px; }
 }
@@ -1342,9 +1348,185 @@ const LESSONS = [
 }
 ];
 
+/* ================= Guided drills =================
+   Two per lesson. Drill 1 fills in blanks (___); drill 2 asks for a little more.
+   Each drill only uses ideas taught in this lesson or earlier ones. */
+const DRILLS = {
+  log: [
+    { title: "Print a status word", task: "Fill in the blank so the console prints the word <code>Ready</code>.",
+      starter: "console.log(___);\n",
+      hints: ["Words are text, and text goes inside quotes.", "Replace the blank with <code>\"Ready\"</code>, capital R included."],
+      cases: [{ label: "Output", expect: "Ready", check: r => expectLogs(r.logs, ["Ready"]) }],
+      solution: 'console.log("Ready");' },
+    { title: "A number and a message", task: "Print the number <code>42</code> on the first line and the text <code>Boot complete</code> on the second. A number doesn't need quotes.",
+      starter: "console.log(___);\nconsole.log(___);\n",
+      hints: ["You need two console.log lines, one for each value.", "Line 1: <code>console.log(42);</code> Line 2: <code>console.log(\"Boot complete\");</code>"],
+      src: [{ test: s => /console\.log\(\s*42\s*\)/.test(s), msg: "Print 42 as a number: write it without quotes." }],
+      cases: [{ label: "Output", expect: "42\nBoot complete", check: r => expectLogs(r.logs, ["42", "Boot complete"]) }],
+      solution: 'console.log(42);\nconsole.log("Boot complete");' }
+  ],
+  vars: [
+    { title: "Store and print", task: "Create a variable called <code>fuel</code> holding the number <code>30</code>, then print it <b>using the variable</b>.",
+      starter: "let fuel = ___;\nconsole.log(___);\n",
+      hints: ["The first blank is the value to store. The second is the box's label.", "<code>let fuel = 30;</code> then <code>console.log(fuel);</code> with no quotes around fuel."],
+      src: [{ test: s => /console\.log\(\s*fuel\s*\)/.test(s), msg: "Print the variable itself: <code>console.log(fuel)</code>, not the number typed again." }],
+      cases: [{ label: "fuel", expect: "fuel = 30, prints 30", post: grab("fuel"), check: r => r.report.fuel !== 30 ? fail("fuel should hold the number 30 but holds " + q(show(r.report.fuel)) + ".", show(r.report.fuel)) : expectLogs(r.logs, ["30"]) }],
+      solution: "let fuel = 30;\nconsole.log(fuel);" },
+    { title: "Rename the ship", task: "<code>shipName</code> starts as <code>\"Comet\"</code>. On line 2, change it to <code>\"Nova\"</code>. The box already exists, so don't use <code>let</code> again.",
+      starter: 'let shipName = "Comet";\n___\nconsole.log(shipName);\n',
+      hints: ["Assigning a new value uses the name, = and the value.", "Line 2 is <code>shipName = \"Nova\";</code>"],
+      cases: [{ label: "shipName", expect: "Nova", post: grab("shipName"), check: r => r.report.shipName !== "Nova" ? fail("shipName ends up as " + q(show(r.report.shipName)) + ". It should be \"Nova\".", show(r.report.shipName)) : expectLogs(r.logs, ["Nova"]) }],
+      solution: 'let shipName = "Comet";\nshipName = "Nova";\nconsole.log(shipName);' }
+  ],
+  math: [
+    { title: "Multiply two readings", task: "<code>a</code> and <code>b</code> already exist and change between tests. Set <code>product</code> to <code>a</code> times <code>b</code>.",
+      starter: "// a and b already exist\nlet product = ___;\nconsole.log(product);\n",
+      hints: ["The multiply symbol in JavaScript is *.", "<code>let product = a * b;</code>"],
+      cases: [[6, 7], [3, 5], [10, 0]].map(([a, b]) => ({ label: "a = " + a + ", b = " + b, pre: "const a = " + a + ", b = " + b + ";", expect: String(a * b), post: grab("product"),
+        check: r => r.report.product !== a * b ? fail("product should be " + a * b + " but is " + q(show(r.report.product)) + (r.report.product === 42 ? ". Use the variables, not a typed number." : "."), show(r.report.product)) : expectLogs(r.logs, [String(a * b)]) })),
+      solution: "let product = a * b;\nconsole.log(product);" },
+    { title: "Leftover minutes", task: "<code>minutes</code> already exists. Set <code>leftover</code> to the minutes left over after taking out whole hours: the remainder when dividing by 60.",
+      starter: "// minutes already exists\nlet leftover = ___;\nconsole.log(leftover);\n",
+      hints: ["The remainder operator is %.", "<code>let leftover = minutes % 60;</code>"],
+      cases: [135, 59, 120].map(m => ({ label: "minutes = " + m, pre: "const minutes = " + m + ";", expect: String(m % 60), post: grab("leftover"),
+        check: r => r.report.leftover !== m % 60 ? fail(m + " minutes is " + Math.trunc(m / 60) + " hour(s) and " + m % 60 + " left over, but leftover is " + q(show(r.report.leftover)) + ".", show(r.report.leftover)) : expectLogs(r.logs, [String(m % 60)]) })),
+      solution: "let leftover = minutes % 60;\nconsole.log(leftover);" }
+  ],
+  bool: [
+    { title: "Speed check", task: "<code>speed</code> already exists. Set <code>tooFast</code> to <code>true</code> when speed is <b>greater than</b> 100, and <code>false</code> otherwise.",
+      starter: "// speed already exists\nconst tooFast = ___;\nconsole.log(tooFast);\n",
+      hints: ["A comparison already gives true or false. You don't need to write true or false yourself.", "<code>const tooFast = speed > 100;</code>"],
+      cases: [120, 100, 50].map(s => ({ label: "speed = " + s, pre: "const speed = " + s + ";", expect: String(s > 100), post: grab("tooFast"),
+        check: r => r.report.tooFast !== s > 100 ? fail("At speed " + s + ", tooFast should be " + (s > 100) + " but is " + q(show(r.report.tooFast)) + (s === 100 ? ". Exactly 100 is not greater than 100." : "."), show(r.report.tooFast)) : expectLogs(r.logs, [String(s > 100)]) })),
+      solution: "const tooFast = speed > 100;\nconsole.log(tooFast);" },
+    { title: "Wasted power", task: "<code>isDay</code> and <code>lightsOn</code> already exist. Set <code>wasteful</code> to true only when it is day <b>and</b> the lights are on.",
+      starter: "// isDay and lightsOn already exist\nconst wasteful = ___;\nconsole.log(wasteful);\n",
+      hints: ["Both conditions must be true. Which logical operator means AND?", "<code>const wasteful = isDay && lightsOn;</code>"],
+      cases: [[true, true], [true, false], [false, true], [false, false]].map(([d, l]) => ({ label: "isDay " + d + ", lightsOn " + l, pre: "const isDay = " + d + ", lightsOn = " + l + ";", expect: String(d && l), post: grab("wasteful"),
+        check: r => r.report.wasteful !== (d && l) ? fail("With isDay " + d + " and lightsOn " + l + ", wasteful should be " + (d && l) + " but is " + q(show(r.report.wasteful)) + "." + (d !== l ? " Are you using || instead of &&?" : ""), show(r.report.wasteful)) : expectLogs(r.logs, [String(d && l)]) })),
+      solution: "const wasteful = isDay && lightsOn;\nconsole.log(wasteful);" }
+  ],
+  if: [
+    { title: "Pass or fail", task: "<code>score</code> already exists. The code prints <code>PASS</code> for 50 or more. Fill in the keyword that makes it print <code>FAIL</code> in every other case.",
+      starter: '// score already exists\nif (score >= 50) {\n  console.log("PASS");\n} ___ {\n  console.log("FAIL");\n}\n',
+      hints: ["You need the word that means \"otherwise\".", "The blank is <code>else</code>."],
+      cases: [80, 50, 49].map(s => ({ label: "score = " + s, pre: "const score = " + s + ";", expect: s >= 50 ? "PASS" : "FAIL", check: r => expectLogs(r.logs, [s >= 50 ? "PASS" : "FAIL"]) })),
+      solution: 'if (score >= 50) {\n  console.log("PASS");\n} else {\n  console.log("FAIL");\n}' },
+    { title: "Empty tank alarm", task: "<code>fuel</code> already exists. Fill in the condition so <code>EMPTY</code> prints only when fuel is exactly 0. Otherwise nothing should print.",
+      starter: '// fuel already exists\nif (___) {\n  console.log("EMPTY");\n}\n',
+      hints: ["To ask \"is this exactly equal?\" use three equals signs.", "The condition is <code>fuel === 0</code>."],
+      cases: [0, 5, 12].map(f => ({ label: "fuel = " + f, pre: "const fuel = " + f + ";", expect: f === 0 ? "EMPTY" : "(nothing)",
+        check: r => f === 0 ? expectLogs(r.logs, ["EMPTY"]) : (r.logs.length ? fail("With fuel " + f + " nothing should print, but your code printed " + q(r.logs.join(", ")) + ". Did you use a single = instead of ===?", r.logs.join(", ")) : pass("(nothing)")) })),
+      solution: 'if (fuel === 0) {\n  console.log("EMPTY");\n}' }
+  ],
+  for: [
+    { title: "Count to four", task: "Fill in the blank so the loop prints 0, 1, 2, 3 and 4, one per line.",
+      starter: "for (let i = 0; i < ___; i++) {\n  console.log(i);\n}\n",
+      hints: ["The loop keeps going while the condition is true. Which number should i stop before?", "The loop runs while <code>i < 5</code>, so the blank is <code>5</code>."],
+      cases: [{ label: "Output", expect: "0 1 2 3 4", check: r => expectLogs(r.logs, ["0", "1", "2", "3", "4"]) }],
+      solution: "for (let i = 0; i < 5; i++) {\n  console.log(i);\n}" },
+    { title: "Drive four squares", task: "The exit is 4 squares ahead. Put the right command inside the loop so B0-T drives onto it.",
+      starter: "for (let i = 0; i < 4; i++) {\n  ___\n}\n",
+      hints: ["The command to move one square is a function on robot.", "Write <code>robot.move();</code> inside the braces."],
+      src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Keep the for loop so the move repeats." }],
+      cases: [{ label: "Practice floor", map: corridor(4), dir: 1, expect: "on the exit", check: r => robotCheck(r) }],
+      solution: "for (let i = 0; i < 4; i++) {\n  robot.move();\n}" }
+  ],
+  while: [
+    { title: "Countdown", task: "<code>countdown</code> starts at 3. Fill in the condition so the loop prints 3, 2 and 1, then stops.",
+      starter: "let countdown = 3;\nwhile (___) {\n  console.log(countdown);\n  countdown = countdown - 1;\n}\n",
+      hints: ["The loop should keep going while there's something left to count.", "The condition is <code>countdown > 0</code>."],
+      cases: [{ label: "Output", expect: "3 2 1", check: r => expectLogs(r.logs, ["3", "2", "1"]) }],
+      solution: "let countdown = 3;\nwhile (countdown > 0) {\n  console.log(countdown);\n  countdown = countdown - 1;\n}" },
+    { title: "Drive until the exit", task: "The corridor length changes between tests. Fill in the condition so B0-T keeps moving until it's on the exit.",
+      starter: "while (___) {\n  robot.move();\n}\n",
+      hints: ["B0-T has a sensor that answers \"am I on the exit?\". You want to keep going while the answer is NOT yes.", "The condition is <code>!robot.atGoal()</code>."],
+      cases: [3, 6].map(n => ({ label: "Corridor of " + n, map: corridor(n), dir: 1, expect: "on the exit", check: r => robotCheck(r, b => b.moves === 0 ? "It never moved. Did you forget the <code>!</code>?" : "") })),
+      solution: "while (!robot.atGoal()) {\n  robot.move();\n}" }
+  ],
+  func: [
+    { title: "Call it twice", task: "The function <code>beep</code> is already defined. Call it twice so <code>Beep!</code> prints two times.",
+      starter: 'function beep() {\n  console.log("Beep!");\n}\n___\n',
+      hints: ["Defining a function doesn't run it. A call is the name followed by brackets.", "Write <code>beep();</code> on two lines."],
+      cases: [{ label: "Output", expect: "Beep!\nBeep!", check: r => r.logs.length === 0 ? fail("Nothing printed. The function is defined but never called. Write <code>beep();</code>", "(nothing)") : expectLogs(r.logs, ["Beep!", "Beep!"]) }],
+      solution: 'function beep() {\n  console.log("Beep!");\n}\nbeep();\nbeep();' },
+    { title: "Welcome aboard", task: "Finish <code>greetPilot(name)</code> so it prints <code>Welcome aboard, </code> followed by the name it's given. It's called with \"Ada\" for you.",
+      starter: 'function greetPilot(name) {\n  console.log(___);\n}\ngreetPilot("Ada");\n',
+      hints: ["Join the fixed text and the parameter with +.", "<code>console.log(\"Welcome aboard, \" + name);</code>"],
+      src: [{ test: s => /console\.log\([^)]*\bname\b/.test(s), msg: "Use the parameter <code>name</code> so the function works for any pilot, not just Ada." }],
+      cases: [{ label: 'greetPilot("Ada")', expect: "Welcome aboard, Ada", check: r => expectLogs(r.logs, ["Welcome aboard, Ada"]) }],
+      solution: 'function greetPilot(name) {\n  console.log("Welcome aboard, " + name);\n}\ngreetPilot("Ada");' }
+  ],
+  return: [
+    { title: "Triple it", task: "Finish <code>triple(n)</code> so it <b>returns</b> n times 3.",
+      starter: "function triple(n) {\n  ___\n}\n",
+      hints: ["The keyword that sends a value back is return.", "<code>return n * 3;</code>"],
+      cases: [[2, 6], [0, 0], [10, 30]].map(([n, e]) => ({ label: "triple(" + n + ")", expect: String(e), post: callPost("triple", [n]), check: r => callCheck(r.report, "triple", "triple(" + n + ")", e) })),
+      solution: "function triple(n) {\n  return n * 3;\n}" },
+    { title: "Even or odd", task: "Finish <code>isEven(n)</code> so it returns <code>true</code> when n divides by 2 with nothing left over, and <code>false</code> otherwise.",
+      starter: "function isEven(n) {\n  return ___;\n}\n",
+      hints: ["Use % to get the remainder, then compare it with 0.", "<code>return n % 2 === 0;</code>"],
+      cases: [[4, true], [7, false], [0, true]].map(([n, e]) => ({ label: "isEven(" + n + ")", expect: String(e), post: callPost("isEven", [n]), check: r => callCheck(r.report, "isEven", "isEven(" + n + ")", e) })),
+      solution: "function isEven(n) {\n  return n % 2 === 0;\n}" }
+  ],
+  arrays: [
+    { title: "The second planet", task: "<code>planets</code> already exists and changes between tests. Print its <b>second</b> element.",
+      starter: "// planets already exists\nconsole.log(___);\n",
+      hints: ["Indexes start at 0, so the second element is not at 2.", "<code>console.log(planets[1]);</code>"],
+      cases: [["Mercury", "Venus", "Earth"], ["Kepler", "Tau"]].map(a => ({ label: show(a), pre: "const planets = " + JSON.stringify(a) + ";", expect: a[1],
+        check: r => r.logs[0] === a[2] ? fail("That printed the third element. Indexes start at 0, so the second is <code>planets[1]</code>.", r.logs[0]) : expectLogs(r.logs, [a[1]]) })),
+      solution: "console.log(planets[1]);" },
+    { title: "Join the queue", task: "<code>queue</code> already exists. Add <code>\"probe\"</code> to the end, then print how many items the queue has now.",
+      starter: '// queue already exists\nqueue.___("probe");\nconsole.log(___);\n',
+      hints: ["One array tool adds to the end; another property counts the items.", "<code>queue.push(\"probe\");</code> then <code>console.log(queue.length);</code>"],
+      cases: [["rover", "drone"], ["a", "b", "c", "d"]].map(a => ({ label: show(a), pre: "const queue = " + JSON.stringify(a) + ";", expect: String(a.length + 1), post: grab("queue"),
+        check: r => !same(r.report.queue, a.concat("probe")) ? fail("The queue should end with \"probe\", but it is " + q(show(r.report.queue)) + ".", show(r.report.queue)) : expectLogs(r.logs, [String(a.length + 1)]) })),
+      solution: 'queue.push("probe");\nconsole.log(queue.length);' }
+  ],
+  arrloop: [
+    { title: "List the parts", task: "<code>parts</code> already exists and changes between tests. Use a loop to print every part, one per line.",
+      starter: "// parts already exists\nfor (const part of parts) {\n  ___\n}\n",
+      hints: ["Each round, the variable part holds the next element.", "<code>console.log(part);</code> inside the loop."],
+      src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a loop so it works for any number of parts." }],
+      cases: [["bolt", "gear", "wire"], ["lens"]].map(a => ({ label: show(a), pre: "const parts = " + JSON.stringify(a) + ";", expect: a.join(" "), check: r => expectLogs(r.logs, a) })),
+      solution: "for (const part of parts) {\n  console.log(part);\n}" },
+    { title: "Add them all up", task: "Finish <code>sumAll(nums)</code> using the accumulator pattern: add each number to <code>total</code>.",
+      starter: "function sumAll(nums) {\n  let total = 0;\n  for (const n of nums) {\n    ___\n  }\n  return total;\n}\n",
+      hints: ["Each round, total should grow by the current number.", "<code>total = total + n;</code>"],
+      cases: [[[1, 2, 3], 6], [[], 0], [[50, -5], 45]].map(([a, e]) => ({ label: "sumAll(" + show(a) + ")", expect: String(e), post: callPost("sumAll", [a]), check: r => callCheck(r.report, "sumAll", "sumAll(" + show(a) + ")", e) })),
+      solution: "function sumAll(nums) {\n  let total = 0;\n  for (const n of nums) {\n    total = total + n;\n  }\n  return total;\n}" }
+  ],
+  objects: [
+    { title: "Read a property", task: "<code>lamp</code> already exists and has a <code>brightness</code> property. Print its brightness.",
+      starter: "// lamp already exists\nconsole.log(___);\n",
+      hints: ["Read a property with a dot between the object and the key.", "<code>console.log(lamp.brightness);</code>"],
+      cases: [{ id: 3, brightness: 70 }, { id: 9, brightness: 5 }].map(o => ({ label: show(o), pre: "const lamp = " + JSON.stringify(o) + ";", expect: String(o.brightness), check: r => expectLogs(r.logs, [String(o.brightness)]) })),
+      solution: "console.log(lamp.brightness);" },
+    { title: "Build a drone", task: "Fill in the object so <code>drone</code> has the name <code>\"Wisp\"</code> and speed <code>9</code>. Then increase its speed by 1 and print it.",
+      starter: "const drone = {\n  name: ___,\n  speed: ___\n};\ndrone.speed = ___;\nconsole.log(drone.speed);\n",
+      hints: ["The name is text, so it needs quotes. The speed is a number.", "<code>name: \"Wisp\"</code>, <code>speed: 9</code>, then <code>drone.speed = drone.speed + 1;</code>"],
+      cases: [{ label: "drone", expect: '{ name: "Wisp", speed: 10 }, prints 10', post: grab("drone"),
+        check: r => !same(r.report.drone, { name: "Wisp", speed: 10 }) ? fail("drone should end as " + q('{ name: "Wisp", speed: 10 }') + " but is " + q(show(r.report.drone)) + ".", show(r.report.drone)) : expectLogs(r.logs, ["10"]) }],
+      solution: 'const drone = {\n  name: "Wisp",\n  speed: 9\n};\ndrone.speed = drone.speed + 1;\nconsole.log(drone.speed);' }
+  ],
+  boss: [
+    { title: "One logic bug", task: "This code runs without an error but prints the wrong answer. Find the one bug so it prints <code>6</code>.",
+      starter: "let total = 0;\nconst nums = [1, 2, 3];\nfor (let i = 0; i <= nums.length; i++) {\n  total = total + nums[i];\n}\nconsole.log(total);\n",
+      hints: ["Run it and look at the output. NaN means undefined got into the maths.", "The loop goes one step past the end. Change <code><=</code> to <code><</code>."],
+      cases: [{ label: "Output", expect: "6", check: r => expectLogs(r.logs, ["6"]) }],
+      solution: "let total = 0;\nconst nums = [1, 2, 3];\nfor (let i = 0; i < nums.length; i++) {\n  total = total + nums[i];\n}\nconsole.log(total);" },
+    { title: "Two errors, one line", task: "Run this, read the error, fix it, and run again. Keep going until it prints <code>Shields at 80</code>.",
+      starter: 'const shield = 80;\nconsole.log("Shields at " + sheild;\n',
+      hints: ["The first error is a SyntaxError: a bracket is missing. Once that's fixed, a ReferenceError appears.", "Close the bracket, and fix the spelling: <code>console.log(\"Shields at \" + shield);</code>"],
+      cases: [{ label: "Output", expect: "Shields at 80", check: r => expectLogs(r.logs, ["Shields at 80"]) }],
+      solution: 'const shield = 80;\nconsole.log("Shields at " + shield);' }
+  ]
+};
+LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
+
 /* ================= Progress store ================= */
 const STORE_KEY = "js-quest-v1";
-let store = { done: {}, drafts: {}, sess: {} };
+let store = { done: {}, drafts: {}, sess: {}, drills: {} };
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(store, s); } catch (_) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (_) {} }
 const xp = () => Object.values(store.done).reduce((a, d) => a + 100 + 25 * d.stars, 0);
@@ -1378,7 +1560,7 @@ function renderMap() {
     (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
     '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
     '<div style="margin-top:auto;color:var(--code-muted)">// stars: 3 = no hints and at most 2 checks</div></div></section>';
-  h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Edit and run freely"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
+  h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Guided drills, then free play"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
   WORLDS.forEach((w, wi) => {
     h += '<section class="sector"><div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div><div class="nodes">';
     LESSONS.forEach((l, i) => {
@@ -1396,7 +1578,7 @@ function renderMap() {
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
   $("#reset").onclick = () => {
     $("#reset-area").innerHTML = '<span>Erase all stars, XP and saved code?</span><button class="btn small" id="reset-yes" style="border-color:var(--bad);color:var(--bad)">Erase progress</button><button class="btn small" id="reset-no">Keep it</button>';
-    $("#reset-yes").onclick = () => { store = { done: {}, drafts: {}, sess: {} }; save(); render(); };
+    $("#reset-yes").onclick = () => { store = { done: {}, drafts: {}, sess: {}, drills: {} }; save(); render(); };
     $("#reset-no").onclick = render;
   };
 }
@@ -1407,8 +1589,9 @@ function renderLesson() {
   const w = WORLDS[L.world];
   let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button><div><p class="eyebrow">Sector ' + (L.world + 1) + " · " + w.name + " · Lesson " + (view.i + 1) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div></div>";
   h += '<nav class="stages" aria-label="Lesson stages">' + STAGES.map((s, k) => {
-    const dis = k === 4 && !d;
-    return '<button class="stage-tab ' + (k === view.stage ? "active " : "") + (k === 3 && d ? "ok" : "") + '" data-k="' + k + '"' + (dis ? " disabled" : "") + (k === view.stage ? ' aria-current="step"' : "") + "><span>0" + (k + 1) + "</span><b>" + s + "</b></button>";
+    const dis = (k === 4 && !d) || (k === 3 && !drillsDone(L));
+    const ok = (k === 3 && d) || (k === 2 && (L.drills || []).length && drillsDone(L));
+    return '<button class="stage-tab ' + (k === view.stage ? "active " : "") + (ok ? "ok" : "") + '"' + (dis && k === 3 ? ' title="Pass the drills in Practise to unlock"' : "") + ' data-k="' + k + '"' + (dis ? " disabled" : "") + (k === view.stage ? ' aria-current="step"' : "") + "><span>0" + (k + 1) + "</span><b>" + s + "</b></button>";
   }).join("") + "</nav><div id=\"stage\"></div>";
   app.innerHTML = h;
   $("#back").onclick = () => go({ name: "map" });
@@ -1587,14 +1770,103 @@ function renderResult(host, r, ed) {
   host.innerHTML = h;
 }
 
+/* ---- Shared test engine (used by challenges and drills) ---- */
+// Runs code against every case of a spec ({ cases, src? }) and gathers the verdicts.
+async function evaluate(code, spec) {
+  const src = stripComments(code);
+  const runs = [];
+  for (const c of spec.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir }));
+  const results = runs.map((r, i) => r.error ? { ok: false, msg: null, got: r.error.name, err: r.error } : spec.cases[i].check(r, spec.cases[i], src));
+  const firstErr = runs.findIndex(r => r.error);
+  const showIdx = firstErr >= 0 ? firstErr : Math.max(0, results.findIndex(x => !x.ok));
+  let srcFail = null;
+  if (firstErr < 0 && results.every(x => x.ok) && spec.src) srcFail = spec.src.find(s => !s.test(src)) || null;
+  const passed = results.filter(x => x.ok).length;
+  return { src, runs, results, firstErr, showIdx, srcFail, passed, allOk: passed === results.length && !srcFail };
+}
+function failMessage(ev, spec) {
+  const { runs, results, firstErr, srcFail, passed } = ev;
+  if (firstErr >= 0) return "<b>Your code stopped with an error</b>" + (spec.cases.length > 1 ? " in test <code>" + esc(spec.cases[firstErr].label) + "</code>" : "") + ". The explanation is below the editor" + (runs[firstErr].error.line ? ", and line " + runs[firstErr].error.line + " is marked in red" : "") + ".";
+  if (srcFail) return "<b>All tests produced the right result, but there's one more requirement.</b> " + srcFail.msg;
+  const f = results.find(x => !x.ok);
+  return "<b>" + passed + " of " + results.length + " tests pass.</b> " + f.msg;
+}
+
+/* ---- Guided drills ---- */
+const drillDone = (L, k) => !!(store.drills[L.id] && store.drills[L.id][k]);
+// A lesson's challenge unlocks once every drill passes. Lessons repaired before drills existed stay unlocked.
+const drillsDone = L => !!store.done[L.id] || (L.drills || []).every((_, k) => drillDone(L, k));
+function mountDrill(host, L, k, onPass) {
+  const D = L.drills[k], key = L.id + ":d" + k, n = L.drills.length;
+  let hintsShown = 0;
+  host.innerHTML = '<div class="panel drill"><div class="drill-head"><div><p class="eyebrow">Drill ' + (k + 1) + " of " + n + "</p><h3>" + esc(D.title) + '</h3></div><span class="pill" data-st></span></div>' +
+    '<p class="drill-task">' + D.task + "</p>" +
+    (D.cases[0].map ? '<div class="scene" style="margin-bottom:14px"><div class="scene-head"><span>B0-T practice floor</span></div><div data-grid></div></div>' : "") +
+    '<div data-ed></div><div class="toolbar"><button class="btn primary" data-a="check">Check drill</button><button class="btn small" data-a="hint">Show a hint</button><button class="btn small" data-a="reset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
+    '<div class="hints" data-hints style="margin-top:12px"></div><div data-feed aria-live="polite" style="margin-top:12px"></div><div data-out style="margin-top:12px"></div></div>';
+  const q = s => $("[" + s + "]", host);
+  let grid = D.cases[0].map ? mountGrid(q("data-grid"), D.cases[0].map, D.cases[0].dir) : null;
+  const ed = createEditor(q("data-ed"), { value: store.drafts[key] ?? D.starter, id: "ed-" + L.id + "-d" + k, minLines: 4, onRun: () => check(), onChange: v => { store.drafts[key] = v; save(); } });
+  function status() { const ok = drillDone(L, k); const p = q("data-st"); p.className = "pill " + (ok ? "ok" : "go"); p.textContent = ok ? "Passed" : "To do"; }
+  function drawHints() {
+    q("data-hints").innerHTML = D.hints.slice(0, hintsShown).map((t, i) => '<div class="hint"><b>Hint ' + (i + 1) + ".</b> " + t + "</div>").join("");
+    const b = $('[data-a="hint"]', host);
+    b.textContent = hintsShown < D.hints.length ? (hintsShown ? "More specific hint" : "Show a hint") : "No more hints";
+    b.disabled = hintsShown >= D.hints.length;
+  }
+  async function check() {
+    const code = ed.get();
+    const blanks = (stripComments(code).match(/___/g) || []).length;
+    if (blanks) {
+      const lines = code.split("\n").map((l, i) => /___/.test(l) ? i + 1 : 0).filter(Boolean);
+      q("data-out").innerHTML = "";
+      q("data-feed").innerHTML = '<div class="errbox"><p><b>' + blanks + " blank" + (blanks > 1 ? "s" : "") + " left to fill in.</b> Replace each <code>___</code> with your own code (line " + lines.join(", ") + ").</p></div>";
+      ed.mark(lines[0]);
+      return;
+    }
+    q("data-feed").innerHTML = '<p class="muted small">Checking…</p>';
+    const ev = await evaluate(code, D);
+    renderResult(q("data-out"), ev.runs[ev.showIdx], ed);
+    if (D.cases.length > 1) q("data-out").insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Output from test: <code>' + esc(D.cases[ev.showIdx].label) + "</code></p>");
+    if (grid) { grid = mountGrid(q("data-grid"), D.cases[ev.showIdx].map, D.cases[ev.showIdx].dir); if (ev.runs[ev.showIdx].robot) grid.play(ev.runs[ev.showIdx].robot.trace); }
+    if (ev.allOk) {
+      const first = !drillDone(L, k);
+      (store.drills[L.id] = store.drills[L.id] || [])[k] = true; save();
+      q("data-feed").innerHTML = '<div class="okbox"><h4>Drill passed</h4><p>' + (D.cases.length > 1 ? "All " + D.cases.length + " tests pass. " : "") + (k < n - 1 ? "On to the next drill." : "Every drill is done, so the challenge is unlocked.") + "</p></div>";
+      status(); if (first) Sound.chime(); onPass();
+    } else {
+      q("data-feed").innerHTML = '<div class="errbox"><p>' + failMessage(ev, D) + "</p>" + (hintsShown < D.hints.length ? '<p class="small">Stuck? Press "Show a hint".</p>' : "") + "</div>";
+    }
+  }
+  $('[data-a="check"]', host).onclick = check;
+  $('[data-a="hint"]', host).onclick = () => { hintsShown++; drawHints(); };
+  $('[data-a="reset"]', host).onclick = () => { ed.set(D.starter); q("data-feed").innerHTML = ""; q("data-out").innerHTML = ""; grid && grid.reset(); };
+  status(); drawHints();
+}
+
 /* ---- Stage 3: Practise ---- */
 function stagePractise(host, L) {
   const P = L.practise, key = L.id + ":p";
-  const sandbox = '<div class="panel"><h3>Sandbox</h3><p class="muted small" style="margin-bottom:14px">Nothing here is graded. Change the code, break it on purpose, and see what happens.</p><div id="ped"></div><div class="toolbar"><button class="btn primary" id="prun">Run ▶</button><button class="btn" id="preset">Reset code</button><span class="hint-k">Ctrl + Enter runs</span></div><div id="pout" style="margin-top:16px"></div></div>';
+  const sandbox = '<div class="panel"><h3>Free sandbox</h3><p class="muted small" style="margin-bottom:14px">Nothing here is graded. Change the code, break it on purpose, and see what happens.</p><div id="ped"></div><div class="toolbar"><button class="btn primary" id="prun">Run ▶</button><button class="btn" id="preset">Reset code</button><span class="hint-k">Ctrl + Enter runs</span></div><div id="pout" style="margin-top:16px"></div></div>';
+  const nd = (L.drills || []).length;
   host.innerHTML = '<div class="stack-lg">' +
+    (nd ? '<div class="prose"><h3>Guided practice</h3><p>Complete ' + (nd === 1 ? "this drill" : "these " + nd + " short drills") + ' to unlock the challenge. Each one practises exactly what you just learned. Hints are free here.</p></div><div class="stack" id="drills"></div>' : "") +
     (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' : sandbox) +
     '<div class="cols"><div class="panel"><h3>Experiments to try</h3><ul class="ideas">' + P.ideas.map(i => "<li>" + i + "</li>").join("") + "</ul></div>" +
-    '<div class="panel predict"><h3>Predict the output</h3><p class="muted small" style="margin-bottom:10px">Before running anything, write what you think this prints, one value per line.</p>' + codeBlock(L.predict.code) + '<label class="label" for="pred" style="margin-top:14px">Your prediction</label><textarea id="pred" spellcheck="false"></textarea><div class="toolbar"><button class="btn signal" id="pcheck">Check prediction</button></div><div id="pres" style="margin-top:12px"></div></div></div></div>' + nextBtn("Take on the challenge", 3);
+    '<div class="panel predict"><h3>Predict the output</h3><p class="muted small" style="margin-bottom:10px">Before running anything, write what you think this prints, one value per line.</p>' + codeBlock(L.predict.code) + '<label class="label" for="pred" style="margin-top:14px">Your prediction</label><textarea id="pred" spellcheck="false"></textarea><div class="toolbar"><button class="btn signal" id="pcheck">Check prediction</button></div><div id="pres" style="margin-top:12px"></div></div></div></div>' +
+    '<div class="next-row" id="gate"></div>';
+  function gate() {
+    const open = drillsDone(L);
+    $("#gate", host).innerHTML = open ? '<button class="btn primary" data-goto="3">Take on the challenge →</button>' : '<span class="muted small" style="align-self:center">Pass every drill to unlock the challenge.</span><button class="btn primary" disabled>Take on the challenge →</button>';
+    const tabs = $$(".stage-tab", app);
+    if (tabs[3]) tabs[3].disabled = !open;
+    if (tabs[2]) tabs[2].classList.toggle("ok", nd > 0 && open);
+    wireGoto(host);
+  }
+  if (nd) {
+    const dh = $("#drills", host);
+    L.drills.forEach((_, k) => { const div = document.createElement("div"); dh.appendChild(div); mountDrill(div, L, k, gate); });
+  }
   const grid = P.map ? mountGrid($("#pgrid", host), P.map, 1) : null;
   const ed = createEditor($("#ped", host), { value: store.drafts[key] ?? P.starter, id: "ed-" + key.replace(":", "-"), minLines: 7, onRun: run, onChange: v => { store.drafts[key] = v; save(); } });
   async function run() {
@@ -1610,11 +1882,15 @@ function stagePractise(host, L) {
     const ok = norm($("#pred", host).value) === norm(L.predict.answer);
     $("#pres", host).innerHTML = '<div class="' + (ok ? "okbox" : "errbox") + '"><b>' + (ok ? "Correct." : "Not quite. The output is:") + "</b>" + (ok ? "" : '<pre class="console">' + esc(L.predict.answer) + "</pre>") + "<p>" + esc(L.predict.explain) + "</p></div>";
   };
-  wireGoto(host);
+  gate();
 }
 
 /* ---- Stage 4: Challenge ---- */
 function stageChallenge(host, L, idx) {
+  if (!drillsDone(L)) {
+    host.innerHTML = '<div class="panel"><h3>Challenge locked</h3><p>Finish the guided drills in Practise first. They cover exactly what this repair needs.</p>' + nextBtn("Go to the drills", 2) + "</div>";
+    wireGoto(host); return;
+  }
   const C = L.challenge, key = L.id + ":c", S = sess(L.id), done = store.done[L.id];
   const budget = HINT_BUDGET(idx);
   host.innerHTML = '<div class="stack-lg">' +
@@ -1665,22 +1941,15 @@ function stageChallenge(host, L, idx) {
     if (C.scene === "terminal") drawScene({ logs: r.logs });
   }
   async function check() {
-    const code = ed.get(), src = stripComments(code);
+    const code = ed.get();
     $("#cfeed", host).innerHTML = '<p class="muted small">Checking ' + C.cases.length + " test" + (C.cases.length > 1 ? "s" : "") + "…</p>";
     S.attempts++;
-    const runs = [];
-    for (const c of C.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir }));
-    const results = runs.map((r, i) => r.error ? { ok: false, msg: null, got: r.error.name, err: r.error } : C.cases[i].check(r, C.cases[i], src));
-    const firstErr = runs.findIndex(r => r.error);
-    const showIdx = firstErr >= 0 ? firstErr : Math.max(0, results.findIndex(x => !x.ok));
+    const ev = await evaluate(code, C);
+    const { runs, results, showIdx, passed, allOk } = ev;
     renderResult($("#cout", host), runs[showIdx], ed);
     if (C.cases.length > 1) $("#cout", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Showing output from test: <code>' + esc(C.cases[showIdx].label) + "</code></p>");
     if (grid) { grid = mountGrid(sceneHost, C.cases[showIdx].map, C.cases[showIdx].dir); if (runs[showIdx].robot) grid.play(runs[showIdx].robot.trace); }
-    let srcFail = null;
-    if (firstErr < 0 && results.every(x => x.ok) && C.src) srcFail = C.src.find(s => !s.test(src));
     drawCases(results);
-    const passed = results.filter(x => x.ok).length;
-    const allOk = passed === results.length && !srcFail;
     drawScene({ pass: allOk, logs: runs[0].logs, report: runs[0].report, passed });
     if (allOk) {
       const stars = S.revealed ? 1 : (S.hints === 0 && S.attempts <= 2) ? 3 : (S.hints <= 1 && S.attempts <= 4) ? 2 : 1;
@@ -1695,11 +1964,7 @@ function stageChallenge(host, L, idx) {
       $$('.stage-tab', app)[4].disabled = false; $$('.stage-tab', app)[3].classList.add("ok");
     } else {
       S.fails++; save();
-      let msg;
-      if (firstErr >= 0) msg = "<b>Your code stopped with an error</b>" + (C.cases.length > 1 ? " in test <code>" + esc(C.cases[firstErr].label) + "</code>" : "") + ". The explanation is below the editor" + (runs[firstErr].error.line ? ", and line " + runs[firstErr].error.line + " is marked in red" : "") + ".";
-      else if (srcFail) msg = "<b>All tests produced the right result, but there's one more requirement.</b> " + srcFail.msg;
-      else { const f = results.find(x => !x.ok); msg = "<b>" + passed + " of " + results.length + " tests pass.</b> " + f.msg; }
-      $("#cfeed", host).innerHTML = '<div class="errbox"><p>' + msg + "</p>" + (S.fails >= 3 && !S.revealed ? '<p class="small">Stuck? You can reveal a worked solution in the hints panel.</p>' : "") + "</div>";
+      $("#cfeed", host).innerHTML = '<div class="errbox"><p>' + failMessage(ev, C) + "</p>" + (S.fails >= 3 && !S.revealed ? '<p class="small">Stuck? You can reveal a worked solution in the hints panel.</p>' : "") + "</div>";
       drawHints();
     }
   }
