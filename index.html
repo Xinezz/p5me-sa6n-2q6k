@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>JavaScript Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a station maintenance console. Sticky status bar, a sector map wired like a circuit, and each lesson as a five-stage workbench. */
+:root {
+  --bg: #E7ECF0;
+  --panel: #F7F9FA;
+  --panel-2: #DCE3E9;
+  --ink: #15202B;
+  --muted: #53637A;
+  --line: #C2CCD6;
+  --accent: #B4580E;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #F4E0CB;
+  --signal: #0E6A74;
+  --signal-soft: #D2E9EB;
+  --ok: #1C7A4B;
+  --ok-soft: #D5ECDE;
+  --bad: #AF372F;
+  --bad-soft: #F5D9D5;
+  --code-bg: #131E29;
+  --code-ink: #DCE6EE;
+  --code-muted: #6C8195;
+  --code-line: #1E2D3B;
+  --code-hi: #24384A;
+  --t-k: #F2A65A; --t-s: #A3D98F; --t-n: #F5CB74; --t-c: #6C8195; --t-f: #7CC7E8; --t-o: #E39BC4; --t-p: #A8B6C3; --t-op: #F08A7E;
+  --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", ui-monospace, Consolas, "Courier New", monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E151C; --panel: #151F29; --panel-2: #1C2834; --ink: #E1E8EE; --muted: #92A2B3; --line: #293745;
+    --accent: #F09F4E; --accent-ink: #1A1006; --accent-soft: #3A2814; --signal: #5CC2CB; --signal-soft: #15333A;
+    --ok: #5BC98B; --ok-soft: #14301F; --bad: #F07B6F; --bad-soft: #3A1D1A;
+    --code-bg: #0A1016; --code-line: #15202A; --code-hi: #1D2E3D;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E151C; --panel: #151F29; --panel-2: #1C2834; --ink: #E1E8EE; --muted: #92A2B3; --line: #293745;
+  --accent: #F09F4E; --accent-ink: #1A1006; --accent-soft: #3A2814; --signal: #5CC2CB; --signal-soft: #15333A;
+  --ok: #5BC98B; --ok-soft: #14301F; --bad: #F07B6F; --bad-soft: #3A1D1A;
+  --code-bg: #0A1016; --code-line: #15202A; --code-hi: #1D2E3D;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+h1, h2, h3, h4 { font-family: var(--f-display); line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+p { margin: 0; }
+code { font-family: var(--f-code); font-size: .88em; background: var(--panel-2); padding: .08em .35em; border-radius: 4px; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: .5em 1em; border-radius: var(--r); font-weight: 700; display: inline-flex; align-items: center; gap: .45em; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.signal { background: var(--signal); border-color: var(--signal); color: var(--panel); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.small { padding: .3em .7em; font-size: .9em; }
+.eyebrow { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; color: var(--muted); font-weight: 600; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; }
+
+/* Top bar */
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--panel); border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; align-items: center; gap: 16px; padding-block: 10px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; background: none; border: 0; color: var(--ink); padding: 0; }
+.logo-mark { width: 34px; height: 34px; border-radius: 6px; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: var(--f-code); font-weight: 600; font-size: 14px; }
+.logo b { font-family: var(--f-display); font-size: 1.2rem; letter-spacing: .02em; }
+.status { margin-left: auto; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; font-size: .9rem; }
+.rank { font-family: var(--f-display); font-weight: 600; }
+.xpbar { width: 140px; height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+.xpbar i { display: block; height: 100%; background: var(--accent); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+main { padding-block: 24px 64px; }
+
+/* Map */
+.hero { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: stretch; margin-bottom: 28px; }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); margin: 6px 0 12px; }
+.hero p.lede { max-width: 60ch; color: var(--muted); font-size: 1.05rem; margin-bottom: 18px; }
+.hero-card { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 18px; font-family: var(--f-code); font-size: .85rem; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hero-card .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--code-line); padding-bottom: 6px; }
+.hero-card .row span:first-child { color: var(--code-muted); }
+.loop-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 32px; }
+.loop-strip div { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; min-width: 0; }
+.loop-strip b { display: block; font-family: var(--f-display); font-size: .95rem; }
+.loop-strip small { color: var(--muted); font-size: .82rem; line-height: 1.35; display: block; }
+.sector { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 20px; padding-block: 20px; border-top: 1px solid var(--line); }
+.sector h3 { font-size: 1.3rem; margin: 4px 0 6px; }
+.sector p { color: var(--muted); font-size: .92rem; }
+.nodes { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; position: relative; }
+.node { position: relative; width: 210px; max-width: 100%; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; color: var(--ink); display: flex; flex-direction: column; gap: 4px; }
+.node:not(:last-child)::after { content: ""; position: absolute; right: -15px; top: 50%; width: 14px; height: 2px; background: var(--line); }
+.node .lv { font-family: var(--f-code); font-size: .75rem; color: var(--muted); }
+.node b { font-family: var(--f-display); font-size: 1.05rem; }
+.node small { color: var(--muted); font-size: .85rem; }
+.node .stars { margin-top: auto; padding-top: 6px; letter-spacing: 2px; color: var(--accent); font-size: .95rem; }
+.node.available { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.node.done { border-color: var(--ok); }
+.node.done:not(:last-child)::after { background: var(--ok); }
+.node.locked { opacity: .55; cursor: not-allowed; }
+.node:not(.locked):hover { transform: translateY(-1px); }
+.pill { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 99px; background: var(--panel-2); color: var(--muted); width: fit-content; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.go { background: var(--accent-soft); color: var(--accent); }
+
+/* Lesson */
+.lesson-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; }
+.lesson-head h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); margin: 4px 0; }
+.lesson-head .concept { color: var(--muted); }
+.stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 24px; }
+.stage-tab { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: var(--r); padding: 8px 10px; text-align: left; display: flex; flex-direction: column; min-width: 0; }
+.stage-tab span { font-family: var(--f-code); font-size: .72rem; }
+.stage-tab b { font-family: var(--f-display); color: var(--ink); font-size: 1rem; }
+.stage-tab.active { border-color: var(--ink); background: var(--ink); }
+.stage-tab.active b, .stage-tab.active span { color: var(--bg); }
+.stage-tab.ok b::after { content: " ✓"; color: var(--ok); }
+.stage-tab.active.ok b::after { color: var(--bg); }
+.stage-tab:disabled { opacity: .5; cursor: not-allowed; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; min-width: 0; }
+.panel h3 { font-size: 1.15rem; margin-bottom: 10px; }
+.panel h4 { font-size: .95rem; margin-bottom: 6px; }
+.prose { max-width: 68ch; display: flex; flex-direction: column; gap: 10px; }
+.prose h3 { font-size: 1.25rem; margin-top: 8px; }
+.brief { border-left: 3px solid var(--signal); background: var(--signal-soft); padding: 12px 16px; border-radius: 0 var(--r) var(--r) 0; }
+.brief .eyebrow { color: var(--signal); }
+.terms { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; }
+.terms dt { font-weight: 700; }
+.terms dd { margin: 0; color: var(--muted); }
+table.explain { width: 100%; border-collapse: collapse; font-size: .93rem; }
+table.explain td { border-top: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+table.explain td:first-child { white-space: pre; font-family: var(--f-code); font-size: .84rem; background: var(--code-bg); color: var(--code-ink); width: 1%; }
+.scroll-x { overflow-x: auto; max-width: 100%; }
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.compare > div { border-radius: 8px; padding: 12px; min-width: 0; }
+.compare .good { background: var(--ok-soft); }
+.compare .bad { background: var(--bad-soft); }
+.compare .tag { font-family: var(--f-display); font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
+.compare .good .tag { color: var(--ok); }
+.compare .bad .tag { color: var(--bad); }
+.compare p { font-size: .9rem; margin-top: 8px; }
+ul.mistakes { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.next-row { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+/* Code */
+pre.code { margin: 0; background: var(--code-bg); color: var(--code-ink); font-family: var(--f-code); font-size: .88rem; line-height: 1.6; padding: 12px 14px; border-radius: 8px; overflow-x: auto; white-space: pre; }
+.k { color: var(--t-k); } .s { color: var(--t-s); } .n { color: var(--t-n); } .c { color: var(--t-c); font-style: italic; } .f { color: var(--t-f); } .o { color: var(--t-o); } .p { color: var(--t-p); } .op { color: var(--t-op); }
+
+/* Editor */
+.editor { display: flex; background: var(--code-bg); border-radius: 8px; overflow: auto; max-height: 460px; border: 1px solid var(--code-line); }
+.gutter { position: sticky; left: 0; z-index: 2; background: var(--code-bg); border-right: 1px solid var(--code-line); padding: 12px 8px 12px 10px; font-family: var(--f-code); font-size: .88rem; line-height: 1.6; color: var(--code-muted); text-align: right; user-select: none; display: flex; flex-direction: column; min-width: 2.6em; }
+.gutter span.err { color: var(--code-bg); background: var(--t-op); border-radius: 3px; padding-inline: 3px; }
+.ed-wrap { position: relative; flex: 1; min-width: 0; display: inline-block; }
+.ed-hl, .ed-ta { margin: 0; padding: 12px 14px; font-family: var(--f-code); font-size: .88rem; line-height: 1.6; white-space: pre; tab-size: 2; letter-spacing: 0; word-spacing: 0; border: 0; }
+.ed-hl { color: var(--code-ink); min-height: 100%; pointer-events: none; min-width: max-content; }
+.ed-ta { position: absolute; inset: 0; width: 100%; height: 100%; resize: none; overflow: hidden; background: transparent; color: transparent; caret-color: #FFFFFF; outline: none; }
+.ed-ta::selection { background: rgba(124, 199, 232, .35); color: transparent; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.toolbar .hint-k { margin-left: auto; color: var(--muted); font-size: .8rem; }
+pre.console { margin: 0; background: var(--code-bg); color: #CFE8D2; font-family: var(--f-code); font-size: .85rem; line-height: 1.55; padding: 10px 14px; border-radius: 8px; min-height: 3.4em; max-height: 240px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+pre.console .muted { color: var(--code-muted); }
+pre.console .new { color: #FFFFFF; background: var(--code-hi); }
+.errbox { border: 1px solid var(--bad); background: var(--bad-soft); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.errbox .etype { font-family: var(--f-code); color: var(--bad); font-weight: 600; font-size: .9rem; word-break: break-word; }
+.okbox { border: 1px solid var(--ok); background: var(--ok-soft); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.okbox h4 { color: var(--ok); font-size: 1.1rem; }
+.label { font-family: var(--f-display); font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; margin-bottom: 4px; display: block; }
+
+/* Stepper */
+.stepper { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; }
+.st-code { background: var(--code-bg); border-radius: 8px; padding: 10px 0; font-family: var(--f-code); font-size: .88rem; line-height: 1.6; color: var(--code-ink); overflow-x: auto; min-width: 0; }
+.st-code .ln { display: flex; white-space: pre; padding-right: 14px; border-left: 3px solid transparent; }
+.st-code .ln .no { width: 2.6em; text-align: right; padding-right: 12px; color: var(--code-muted); flex: none; }
+.st-code .ln.cur { background: var(--code-hi); border-left-color: var(--accent); }
+.st-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.st-note { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; min-height: 4.6em; font-size: .95rem; }
+.vt { display: flex; flex-wrap: wrap; gap: 8px; }
+.vbox { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-width: 70px; background: var(--panel); }
+.vbox .vn { font-family: var(--f-code); font-size: .75rem; background: var(--panel-2); padding: 2px 8px; color: var(--muted); }
+.vbox .vv { font-family: var(--f-code); font-size: .9rem; padding: 4px 8px; word-break: break-word; }
+.vbox.changed { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.vbox.locked .vn::after { content: " · const"; }
+.st-ctrl { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.st-count { color: var(--muted); font-size: .88rem; margin-inline: auto; }
+
+/* Widgets */
+.widget { display: flex; flex-direction: column; gap: 12px; }
+.wrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; color: var(--muted); }
+.field input, .field select { font: inherit; font-size: .95rem; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; min-width: 0; }
+.field input[type="text"], .field input[type="number"] { width: 9em; }
+.field input[type="range"] { width: 220px; max-width: 100%; padding: 0; }
+.lamp { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-code); font-weight: 600; padding: 6px 12px; border-radius: 99px; background: var(--panel-2); }
+.lamp i { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+.lamp.t { background: var(--ok-soft); color: var(--ok); } .lamp.t i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.lamp.f { background: var(--bad-soft); color: var(--bad); } .lamp.f i { background: var(--bad); }
+.slots { display: flex; gap: 6px; flex-wrap: wrap; }
+.slot { border: 1px solid var(--line); border-radius: 6px; min-width: 76px; text-align: center; background: var(--panel); overflow: hidden; }
+.slot .si { background: var(--panel-2); font-family: var(--f-code); font-size: .75rem; color: var(--muted); padding: 2px; }
+.slot .sv { font-family: var(--f-code); padding: 8px 6px; }
+.slot.hit { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.machine { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+.machine .mbox { border: 1px dashed var(--line); border-radius: 8px; padding: 10px; font-family: var(--f-code); font-size: .85rem; min-width: 0; word-break: break-word; }
+.machine .mbox.core { border-style: solid; border-color: var(--signal); background: var(--signal-soft); }
+.machine .arrow { color: var(--muted); font-size: 1.2rem; }
+
+/* Challenge */
+.scene { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.scene-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-family: var(--f-display); font-size: .85rem; letter-spacing: .1em; text-transform: uppercase; color: var(--code-muted); }
+.state-lamp { display: inline-flex; align-items: center; gap: 6px; color: var(--code-ink); }
+.state-lamp i { width: 10px; height: 10px; border-radius: 50%; background: #E0645A; box-shadow: 0 0 8px #E0645A; }
+.state-lamp.on i { background: #5BC98B; box-shadow: 0 0 10px #5BC98B; }
+.crt { background: #071009; border-radius: 8px; padding: 14px; min-height: 120px; font-family: var(--f-code); color: #7FE0A0; font-size: .95rem; text-shadow: 0 0 6px rgba(127, 224, 160, .45); white-space: pre-wrap; word-break: break-word; }
+.crt .dim { color: #3F6E4E; text-shadow: none; }
+.doorframe { position: relative; height: 170px; border-radius: 8px; background: #071009; overflow: hidden; display: grid; place-items: center; }
+.doorframe .behind { font-family: var(--f-display); color: #5BC98B; font-size: 1.2rem; letter-spacing: .15em; }
+.leaf { position: absolute; top: 0; bottom: 0; width: 50%; background: repeating-linear-gradient(135deg, #2C3A46 0 14px, #26333E 14px 28px); border: 2px solid #3B4C5B; transition: transform .9s cubic-bezier(.6, 0, .2, 1); }
+.leaf.l { left: 0; } .leaf.r { right: 0; }
+.doorframe.open .leaf.l { transform: translateX(-100%); } .doorframe.open .leaf.r { transform: translateX(100%); }
+.keypad { position: absolute; z-index: 2; right: 12px; top: 12px; background: #0B1117; border: 1px solid #3B4C5B; border-radius: 6px; padding: 6px 10px; font-family: var(--f-code); font-size: .8rem; color: var(--t-n); }
+.grid-host { display: flex; justify-content: center; }
+.grid { position: relative; display: grid; grid-template-columns: repeat(var(--cols), 1fr); width: min(100%, calc(var(--cols) * 44px)); aspect-ratio: var(--cols) / var(--rows); max-width: 100%; border-radius: 6px; overflow: hidden; }
+.cell { border: 1px solid #0B1117; }
+.cell.wall { background: repeating-linear-gradient(45deg, #2A3743 0 6px, #24303A 6px 12px); }
+.cell.floor { background: #18242F; }
+.cell.goal { background: #18242F; box-shadow: inset 0 0 0 3px #5BC98B; position: relative; }
+.cell.goal::after { content: "EXIT"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-code); font-size: 9px; color: #5BC98B; }
+.bot { position: absolute; display: grid; place-items: center; transition: left .2s linear, top .2s linear, transform .2s linear; }
+.bot svg { width: 72%; height: 72%; }
+.bot.crash { animation: shake .35s 2; }
+@keyframes shake { 25% { translate: -3px 0; } 75% { translate: 3px 0; } }
+.cases { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.cases th { text-align: left; font-family: var(--f-display); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; }
+.cases td { border-top: 1px solid var(--line); padding: 7px 8px; vertical-align: top; }
+.cases td code { white-space: pre-wrap; word-break: break-word; }
+.res { font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.res.ok { color: var(--ok); } .res.bad { color: var(--bad); } .res.wait { color: var(--muted); }
+.hints { display: flex; flex-direction: column; gap: 8px; }
+.hint { background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; font-size: .93rem; }
+.stars-big { font-size: 1.8rem; color: var(--accent); letter-spacing: 4px; }
+.predict textarea { width: 100%; font-family: var(--f-code); font-size: .9rem; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; resize: vertical; min-height: 4.5em; }
+ul.ideas { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+/* Roomier layout */
+main { padding-block: 36px 88px; }
+.lesson-head { margin-bottom: 28px; }
+.stages { margin-bottom: 40px; }
+.cols { gap: 32px; }
+.stack { gap: 24px; }
+.stack-lg { display: flex; flex-direction: column; gap: 36px; min-width: 0; }
+.panel { padding: 24px 26px; border-radius: 12px; }
+.panel h3 { margin-bottom: 14px; }
+.toolbar { margin-top: 14px; gap: 10px; }
+.next-row { margin-top: 36px; }
+.reader { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px; }
+.reader .next-row { margin-top: 4px; }
+.reader .prose { max-width: none; gap: 26px; font-size: 1.06rem; line-height: 1.7; }
+.reader .prose section { display: flex; flex-direction: column; gap: 8px; }
+.reader .prose h3 { margin-top: 0; }
+.brief { padding: 16px 20px; }
+.brief-lg { font-size: 1.05rem; line-height: 1.65; align-self: start; }
+table.explain td { padding: 11px 12px; }
+ul.mistakes, ul.ideas { gap: 10px; }
+.terms { gap: 10px 20px; }
+.subnav { display: flex; gap: 8px; flex-wrap: wrap; }
+.sub { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 99px; padding: 6px 14px 6px 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: .92rem; }
+.sub span { width: 24px; height: 24px; border-radius: 50%; background: var(--panel-2); display: grid; place-items: center; font-family: var(--f-code); font-size: .78rem; }
+.sub.on { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.sub.on span { background: var(--accent); color: var(--accent-ink); }
+.confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
+@media (max-width: 560px) {
+  .panel { padding: 18px 16px; }
+  .stack-lg { gap: 26px; }
+}
+footer { color: var(--muted); font-size: .85rem; padding-block: 24px; border-top: 1px solid var(--line); margin-top: 40px; }
+.reset-confirm { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .hero, .cols, .stepper { grid-template-columns: minmax(0, 1fr); }
+  .sector { grid-template-columns: minmax(0, 1fr); }
+  .loop-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .stages { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .stage-tab { padding: 6px 4px; text-align: center; }
+  .stage-tab b { font-size: .78rem; }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+  .node { width: 100%; }
+  .node:not(:last-child)::after { display: none; }
+  .machine { grid-template-columns: minmax(0, 1fr); }
+  .machine .arrow { transform: rotate(90deg); justify-self: center; }
+  .xpbar { width: 90px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <button class="logo" id="logo-btn" aria-label="Back to the station map"><span class="logo-mark">{ }</span><b>JavaScript Quest</b></button>
+    <div class="status" id="status"></div>
+    <button class="btn small" id="sound-btn" aria-pressed="true" title="Typing and button sounds">Sound: on</button>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<div class="wrap"><footer>Progress is saved in this browser. Your code runs in a sandboxed worker and stops automatically after 2 seconds, so an infinite loop can't freeze the page.</footer></div>
+
+<script>
+"use strict";
+/* ================= Helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const KW = new Set("let const var if else for while do function return true false null undefined new of in break continue typeof".split(" "));
+function hl(src) {
+  const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+  let out = "", m;
+  const span = (c, t) => '<span class="' + c + '">' + esc(t) + "</span>";
+  while ((m = re.exec(src))) {
+    if (m[1]) out += span("c", m[1]);
+    else if (m[2]) out += span("s", m[2]);
+    else if (m[3]) out += span("n", m[3]);
+    else if (m[4]) {
+      const w = m[4];
+      if (KW.has(w)) out += span("k", w);
+      else if (w === "console" || w === "robot") out += span("o", w);
+      else if (/^\s*\(/.test(src.slice(re.lastIndex))) out += span("f", w);
+      else out += esc(w);
+    }
+    else if (m[5]) out += m[5];
+    else { const ch = m[6]; out += /[{}()[\];,.]/.test(ch) ? span("p", ch) : /[=+\-*/%<>!&|]/.test(ch) ? span("op", ch) : esc(ch); }
+  }
+  return out;
+}
+const codeBlock = src => '<pre class="code">' + hl(src) + "</pre>";
+const stripComments = s => s.replace(/\/\/[^\n]*/g, "");
+
+// Format a value the way the browser console would (strings bare at top level, quoted inside arrays/objects)
+function show(v, inner = true, d = 0) {
+  if (typeof v === "string") return inner ? '"' + v + '"' : v;
+  if (v === undefined) return "undefined";
+  if (v === null) return "null";
+  if (typeof v === "number" && isNaN(v)) return "NaN";
+  if (Array.isArray(v)) return d > 3 ? "[…]" : "[" + v.map(x => show(x, true, d + 1)).join(", ") + "]";
+  if (typeof v === "object") { const ks = Object.keys(v); if (!ks.length) return "{}"; return d > 3 ? "{…}" : "{ " + ks.map(k => k + ": " + show(v[k], true, d + 1)).join(", ") + " }"; }
+  return String(v);
+}
+function same(a, b) {
+  if (typeof a === "number" && typeof b === "number") return (isNaN(a) && isNaN(b)) || a === b;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => same(x, b[i]));
+  if (a && b && typeof a === "object" && typeof b === "object") { const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every(k => same(a[k], b[k])); }
+  return a === b;
+}
+// Undo the markers the worker uses to send undefined / NaN / functions through JSON
+function restore(v) {
+  if (v === "__undefined__") return undefined;
+  if (v === "__NaN__") return NaN;
+  if (v === "__Infinity__") return Infinity;
+  if (v === "__-Infinity__") return -Infinity;
+  if (Array.isArray(v)) return v.map(restore);
+  if (v && typeof v === "object") { const o = {}; for (const k in v) o[k] = restore(v[k]); return o; }
+  return v;
+}
+
+/* ================= Sound effects (synthesised, no audio files) ================= */
+const Sound = (() => {
+  let ctx = null, on = true, noise = null, lastKey = 0;
+  try { on = localStorage.getItem("jsq-sound") !== "off"; } catch (_) {}
+  function ac() {
+    if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ctx = new C(); } catch (_) { return null; } }
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    return ctx;
+  }
+  // Mechanical-keyboard tick: a very short burst of filtered noise with a little random variation
+  function key(heavy) {
+    if (!on) return;
+    const now = performance.now(); if (now - lastKey < 28) return; lastKey = now;
+    const c = ac(); if (!c) return;
+    if (!noise) {
+      noise = c.createBuffer(1, Math.floor(c.sampleRate * 0.05), c.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.5);
+    }
+    const t = c.currentTime;
+    // Bright click layer
+    const s = c.createBufferSource(); s.buffer = noise; s.playbackRate.value = 0.85 + Math.random() * 0.3;
+    const f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = (heavy ? 1300 : 2400) + Math.random() * 600; f.Q.value = 0.7;
+    const g = c.createGain(); g.gain.value = heavy ? 1.65 : 1.275;
+    s.connect(f).connect(g).connect(out(c)); s.start(t);
+    // Low "thock" layer so the key has body
+    const o = c.createOscillator(), og = c.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(heavy ? 210 : 320, t);
+    o.frequency.exponentialRampToValueAtTime(heavy ? 90 : 140, t + 0.04);
+    og.gain.setValueAtTime(heavy ? 0.45 : 0.3, t);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(og).connect(out(c)); o.start(t); o.stop(t + 0.06);
+  }
+  // Shared output with a compressor, so louder sounds don't distort
+  let master = null;
+  function out(c) {
+    if (!master) {
+      const comp = c.createDynamicsCompressor();
+      comp.threshold.value = -10; comp.knee.value = 6; comp.ratio.value = 4; comp.attack.value = 0.001; comp.release.value = 0.05;
+      master = c.createGain(); master.gain.value = 1;
+      master.connect(comp).connect(c.destination);
+    }
+    return master;
+  }
+  // Soft pop: a sine blip that drops quickly in pitch and fades out
+  function pop() {
+    if (!on) return;
+    const c = ac(); if (!c) return;
+    const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(560 + Math.random() * 60, t);
+    o.frequency.exponentialRampToValueAtTime(190, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.15);
+  }
+  // Short rising chime for a completed repair
+  function chime() {
+    if (!on) return;
+    const c = ac(); if (!c) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((fq, i) => {
+      const t = c.currentTime + i * 0.09, o = c.createOscillator(), g = c.createGain();
+      o.type = "triangle"; o.frequency.value = fq;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      o.connect(g).connect(out(c)); o.start(t); o.stop(t + 0.5);
+    });
+  }
+  function set(v) { on = v; try { localStorage.setItem("jsq-sound", v ? "on" : "off"); } catch (_) {} }
+  return { key, pop, chime, set, get on() { return on; } };
+})();
+
+/* ================= Confetti ================= */
+function celebrate() {
+  Sound.chime();
+  let reduce = false;
+  try { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_) {}
+  if (reduce) return;
+  const cv = document.createElement("canvas");
+  cv.className = "confetti"; cv.setAttribute("aria-hidden", "true");
+  document.body.appendChild(cv);
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  const x = cv.getContext("2d"); x.scale(dpr, dpr);
+  const COLS = ["#F09F4E", "#5BC98B", "#5CC2CB", "#F5CB74", "#E39BC4", "#7CC7E8", "#F07B6F"];
+  const parts = [];
+  // Two cannons in the bottom corners, plus a light shower from the top
+  for (let i = 0; i < 170; i++) {
+    const side = i % 2 ? 1 : -1, fromTop = i > 130;
+    const ang = fromTop ? Math.PI / 2 + (Math.random() - .5) : -Math.PI / 2 + side * (-0.25 - Math.random() * 0.55);
+    const sp = fromTop ? 2 + Math.random() * 2 : 11 + Math.random() * 9;
+    parts.push({
+      x: fromTop ? Math.random() * W : (side < 0 ? W * 0.04 : W * 0.96), y: fromTop ? -20 - Math.random() * 120 : H + 10,
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, r: Math.random() * Math.PI, vr: (Math.random() - .5) * 0.3,
+      w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, c: COLS[i % COLS.length], round: Math.random() < 0.25, wob: Math.random() * 6
+    });
+  }
+  const t0 = performance.now(), LIFE = 3200;
+  (function frame(now) {
+    const el = now - t0;
+    x.clearRect(0, 0, W, H);
+    x.globalAlpha = el > LIFE - 700 ? Math.max(0, (LIFE - el) / 700) : 1;
+    for (const p of parts) {
+      p.vy += 0.28; p.vx *= 0.985; p.vy *= 0.985;
+      p.x += p.vx + Math.sin((el / 180) + p.wob) * 0.6; p.y += p.vy; p.r += p.vr;
+      x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c;
+      if (p.round) { x.beginPath(); x.arc(0, 0, p.w / 2.4, 0, Math.PI * 2); x.fill(); }
+      else x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2)) + 1);
+      x.restore();
+    }
+    if (el < LIFE) requestAnimationFrame(frame); else cv.remove();
+  })(t0);
+}
+const TYPING_KEYS = /^(.|Backspace|Delete|Enter|Tab)$/;
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if (!t || !(t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && /^(text|number|search)$/.test(t.type)))) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || !TYPING_KEYS.test(e.key)) return;
+  Sound.key(e.key === "Enter" || e.key === " " || e.key === "Backspace");
+}, true);
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("button");
+  if (b && !b.disabled && b.id !== "sound-btn") Sound.pop();
+}, true);
+(function () {
+  const b = $("#sound-btn");
+  const draw = () => { b.textContent = "Sound: " + (Sound.on ? "on" : "off"); b.setAttribute("aria-pressed", String(Sound.on)); };
+  b.onclick = () => { Sound.set(!Sound.on); draw(); Sound.pop(); };
+  draw();
+})();
+
+/* ================= Sandboxed runner ================= */
+function workerMain() {
+  const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
+  function fmt(v, inner, d) {
+    if (typeof v === "string") return inner ? '"' + v + '"' : v;
+    if (v === undefined) return "undefined";
+    if (v === null) return "null";
+    if (typeof v === "function") return "[Function: " + (v.name || "anonymous") + "]";
+    if (Array.isArray(v)) return d > 3 ? "[…]" : "[" + v.map(x => fmt(x, true, d + 1)).join(", ") + "]";
+    if (typeof v === "object") { const ks = Object.keys(v); if (!ks.length) return "{}"; return d > 3 ? "{…}" : "{ " + ks.map(k => k + ": " + fmt(v[k], true, d + 1)).join(", ") + " }"; }
+    return String(v);
+  }
+  function makeRobot(map, dir, maxSteps) {
+    const grid = map.map(r => r.split(""));
+    let x = 0, y = 0, steps = 0;
+    grid.forEach((row, yy) => row.forEach((ch, xx) => { if (ch === "R") { x = xx; y = yy; } }));
+    const trace = [{ x, y, dir, ev: "start" }];
+    const cell = (cx, cy) => (grid[cy] && grid[cy][cx]) || "#";
+    const fail = msg => { const e = new Error(msg); e.name = "RobotError"; throw e; };
+    const tick = () => { if (++steps > maxSteps) fail("B0-T ran out of battery after " + maxSteps + " actions. A loop is probably running forever."); };
+    const api = Object.freeze({
+      move() { tick(); const nx = x + DX[dir], ny = y + DY[dir]; if (cell(nx, ny) === "#") { trace.push({ x, y, dir, ev: "crash" }); fail("B0-T bumped into a wall. Check how many times it moves before turning."); } x = nx; y = ny; trace.push({ x, y, dir, ev: "move" }); },
+      turnLeft() { tick(); dir = (dir + 3) % 4; trace.push({ x, y, dir, ev: "left" }); },
+      turnRight() { tick(); dir = (dir + 1) % 4; trace.push({ x, y, dir, ev: "right" }); },
+      atGoal() { return cell(x, y) === "G"; },
+      wallAhead() { return cell(x + DX[dir], y + DY[dir]) === "#"; }
+    });
+    return { api, state: () => ({ x, y, dir, atGoal: cell(x, y) === "G", trace, moves: trace.filter(t => t.ev === "move").length }) };
+  }
+  // Parse (never run) as a plain script: the leading throw stops execution if parsing succeeds.
+  // new Function wraps code in braces, which turns an unclosed { into a misleading error.
+  function parseError(pre, src) {
+    try { (0, eval)('"use strict"; throw 0;\n' + pre + "\n" + src); } catch (e) { return e === 0 ? null : e; }
+    return null;
+  }
+  function findSyntaxLine(pre, code) {
+    const lines = code.split("\n");
+    for (let L = 1; L <= lines.length; L++) {
+      const e = parseError(pre, lines.slice(0, L).join("\n"));
+      if (e && !/end of input|end of script/i.test(e.message)) return L;
+    }
+    return lines.length;
+  }
+  self.onmessage = function (e) {
+    const { code, pre = "", post = "", map, dir } = e.data;
+    const logs = [], report = {};
+    let error = null, robot = null, fn = null;
+    const log = (...a) => { if (logs.length >= 300) throw new Error("More than 300 lines were printed. A loop is probably running too many times."); logs.push(a.map(x => fmt(x, false, 0)).join(" ")); };
+    const con = Object.freeze({ log, info: log, warn: log, error: log });
+    if (map) robot = makeRobot(map, dir === undefined ? 1 : dir, 400);
+    const call = (f, ...args) => { try { return { v: f(...args) }; } catch (err) { return { err: String(err && err.message || err) }; } };
+    try { fn = new Function("console", "robot", "__report", "__call", '"use strict"; ' + pre + "\n" + code + "\n;" + post); }
+    catch (err) { const pe = parseError(pre, code); error = { name: err.name, message: pe ? pe.message : err.message, line: findSyntaxLine(pre, code), syntax: true }; }
+    if (fn) {
+      try { fn(con, robot ? robot.api : undefined, report, call); }
+      catch (err) {
+        const st = err && err.stack ? String(err.stack) : "";
+        const m = st.match(/(?:<anonymous>|Function):(\d+):\d+/);
+        let line = m ? +m[1] - 3 : null;
+        if (line !== null && (line < 1 || line > code.split("\n").length)) line = null;
+        error = { name: (err && err.name) || "Error", message: err && err.message !== undefined ? err.message : String(err), line };
+      }
+    }
+    let rep = {};
+    try { rep = JSON.parse(JSON.stringify(report, (k, v) => v === undefined ? "__undefined__" : typeof v === "function" ? "__function__" : (typeof v === "number" && !isFinite(v)) ? "__" + String(v) + "__" : v)); } catch (_) { rep = {}; }
+    self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null });
+  };
+}
+const WORKER_URL = URL.createObjectURL(new Blob(["(" + workerMain.toString() + ")()"], { type: "text/javascript" }));
+function runOnce({ code, pre = "", post = "", map = null, dir }) {
+  return new Promise(res => {
+    let w;
+    try { w = new Worker(WORKER_URL); } catch (e) { res({ logs: [], report: {}, error: { name: "Error", message: "The code runner could not start in this browser: " + e.message } }); return; }
+    const t = setTimeout(() => { w.terminate(); res({ logs: [], report: {}, robot: null, error: { name: "Timeout", message: "Your code ran for more than 2 seconds and was stopped." } }); }, 2000);
+    w.onmessage = e => { clearTimeout(t); w.terminate(); const d = e.data; d.report = restore(d.report); res(d); };
+    w.onerror = e => { e.preventDefault(); clearTimeout(t); w.terminate(); res({ logs: [], report: {}, error: { name: "Error", message: e.message || "Unknown error" } }); };
+    w.postMessage({ code, pre, post, map, dir });
+  });
+}
+
+// Turn a JavaScript error into a beginner-friendly explanation
+function explainError(err) {
+  const m = err.message || "";
+  let name;
+  if (err.name === "Timeout") return "This usually means an <b>infinite loop</b>: a loop whose condition never becomes false. Check that something inside the loop changes the value the condition is testing (for example <code>i++</code>, or <code>robot.move()</code> inside a <code>while</code>).";
+  if (err.name === "RobotError") return esc(m) + " Watch the replay to see exactly where it happened.";
+  if ((name = m.match(/^(\S+) is not defined/))) {
+    const n = name[1];
+    if (/^[A-Z]/.test(n) && ["Console", "Robot", "Let", "Const", "Function", "If"].includes(n)) return "JavaScript is case-sensitive. <code>" + esc(n) + "</code> should be written in lowercase: <code>" + esc(n.toLowerCase()) + "</code>.";
+    return "JavaScript doesn't know anything called <code>" + esc(n) + "</code>. Check the spelling and capital letters, and make sure it was created with <code>let</code> or <code>const</code> above this line. If you meant it as text, wrap it in quotes.";
+  }
+  if (/end of input|end of script/i.test(m)) return "JavaScript reached the end of your code while it was still waiting for something to close. Count your brackets: every <code>{</code> needs a <code>}</code> and every <code>(</code> needs a <code>)</code>. A line ending in <code>=</code> or <code>+</code> with nothing after it causes this too.";
+  if (/missing \) after argument list/.test(m)) return "A <code>(</code> was opened but not closed, or two values are sitting next to each other without a <code>+</code> or a comma between them.";
+  if (/Invalid or unexpected token|unterminated string|Unterminated string/i.test(m)) return "Something on this line can't be read. The most common cause is a string with a missing closing quote, like <code>\"hello</code>. Curly quotes copied from a document (“ ”) also cause it.";
+  if (/has already been declared|redeclaration/.test(m)) { const n = (m.match(/Identifier '([^']+)'/) || [])[1]; return "You created " + (n ? "<code>" + esc(n) + "</code>" : "the same name") + " twice. A variable is created once with <code>let</code> or <code>const</code>. To change it later, leave the keyword out. If the challenge says a variable already exists, don't create it again."; }
+  if (/Unexpected token|Unexpected identifier|Unexpected string|Unexpected number|expected expression|unexpected token/i.test(m)) return "JavaScript found a word or symbol it didn't expect at this point. Look for a missing bracket, quote, comma or <code>+</code> on this line or the line just above it. Inside a <code>for</code> loop's brackets the three parts are separated by semicolons <code>;</code>, not commas.";
+  if (/Assignment to constant variable|invalid assignment to const/.test(m)) return "You tried to change a variable made with <code>const</code>. Use <code>let</code> if its value needs to change.";
+  if (/before initialization|can't access lexical declaration/.test(m)) return "You used a variable before the line that creates it. Code runs top to bottom, so move the <code>let</code>/<code>const</code> line above.";
+  if (/is not a function/.test(m)) return "You put <code>( )</code> after something that isn't a function. Check the spelling of the name, and that you defined the function.";
+  if (/Cannot read propert|Cannot set propert|is undefined|is null/.test(m)) return "You tried to look inside something that is <code>undefined</code>. This often happens when an array index is past the end, or a name is misspelled.";
+  if (/More than 300 lines/.test(m)) return esc(m);
+  return "Read the message above carefully: it names what went wrong. Then look at the line it points to and the line just before it.";
+}
+
+/* ================= Code editor ================= */
+function createEditor(host, { value = "", minLines = 6, id, onRun, onChange }) {
+  host.innerHTML = '<div class="editor"><div class="gutter" aria-hidden="true"></div><div class="ed-wrap"><pre class="ed-hl" aria-hidden="true"></pre><textarea class="ed-ta" id="' + id + '" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Code editor. Press Control Enter to run."></textarea></div></div>';
+  const ta = $("textarea", host), pre = $(".ed-hl", host), gut = $(".gutter", host);
+  let errLine = null;
+  function render() {
+    const v = ta.value;
+    pre.innerHTML = hl(v) + "\n ";
+    const n = Math.max(v.split("\n").length, minLines);
+    let g = "";
+    for (let i = 1; i <= n; i++) g += '<span class="' + (i === errLine ? "err" : "") + '">' + i + "</span>";
+    gut.innerHTML = g;
+    pre.style.minHeight = "calc(" + n + " * 1.6 * .88rem + 24px)";
+  }
+  function insert(t) {
+    ta.focus();
+    let ok = false;
+    try { ok = document.execCommand("insertText", false, t); } catch (_) { ok = false; }
+    if (!ok) { ta.setRangeText(t, ta.selectionStart, ta.selectionEnd, "end"); }
+    errLine = null; render(); onChange && onChange(ta.value);
+  }
+  ta.addEventListener("input", () => { errLine = null; render(); onChange && onChange(ta.value); });
+  ta.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); onRun && onRun(); return; }
+    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); insert("  "); return; }
+    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const line = before.slice(before.lastIndexOf("\n") + 1);
+      let ind = (line.match(/^\s*/) || [""])[0];
+      if (/[{[(]\s*$/.test(line)) ind += "  ";
+      e.preventDefault(); insert("\n" + ind);
+    }
+    if (e.key === "}" ) {
+      const before = ta.value.slice(0, ta.selectionStart);
+      const line = before.slice(before.lastIndexOf("\n") + 1);
+      if (/^\s{2,}$/.test(line) && line.length >= 2) { e.preventDefault(); ta.setSelectionRange(ta.selectionStart - 2, ta.selectionStart); insert("}"); }
+    }
+  });
+  ta.value = value; render();
+  return {
+    get: () => ta.value,
+    set(v) { ta.value = v; errLine = null; render(); onChange && onChange(v); },
+    mark(line) { errLine = line; render(); },
+    focus: () => ta.focus()
+  };
+}
+
+/* ================= Robot grid ================= */
+const BOT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 L20 20 L12 16 L4 20 Z" fill="#F09F4E" stroke="#1A1006" stroke-width="1.2" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.2" fill="#0B1117"/></svg>';
+function mountGrid(host, map, dir = 1) {
+  const rows = map.length, cols = map[0].length;
+  let cells = "";
+  map.forEach(r => [...r].forEach(ch => { cells += '<div class="cell ' + (ch === "#" ? "wall" : ch === "G" ? "goal" : "floor") + '"></div>'; }));
+  host.innerHTML = '<div class="grid-host"><div class="grid" style="--cols:' + cols + ";--rows:" + rows + '" role="img" aria-label="Robot map">' + cells + '<div class="bot">' + BOT_SVG + "</div></div></div>";
+  const bot = $(".bot", host);
+  bot.style.width = 100 / cols + "%"; bot.style.height = 100 / rows + "%";
+  let angle = dir * 90, token = 0;
+  function place(st, instant) {
+    if (instant) bot.style.transition = "none";
+    bot.style.left = (st.x * 100 / cols) + "%"; bot.style.top = (st.y * 100 / rows) + "%";
+    bot.style.transform = "rotate(" + angle + "deg)";
+    if (instant) { void bot.offsetWidth; bot.style.transition = ""; }
+  }
+  let sx = 0, sy = 0;
+  map.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === "R") { sx = x; sy = y; } }));
+  function reset() { token++; angle = dir * 90; bot.classList.remove("crash"); place({ x: sx, y: sy }, true); }
+  reset();
+  async function play(trace) {
+    const my = ++token;
+    angle = dir * 90; bot.classList.remove("crash"); place({ x: sx, y: sy }, true);
+    const fast = trace.length > 60 ? 70 : 230;
+    for (let i = 1; i < trace.length; i++) {
+      await sleep(fast);
+      if (my !== token) return;
+      const t = trace[i];
+      if (t.ev === "left") angle -= 90;
+      if (t.ev === "right") angle += 90;
+      if (t.ev === "crash") { bot.classList.add("crash"); continue; }
+      place(t);
+    }
+  }
+  return { play, reset };
+}
+
+/* ================= Test helpers ================= */
+const pass = got => ({ ok: true, got });
+const fail = (msg, got) => ({ ok: false, msg, got });
+const q = s => "<code>" + esc(s) + "</code>";
+function expectLogs(logs, exp) {
+  const got = logs.length ? logs.join("\n") : "(nothing printed)";
+  if (!logs.length) return fail("Nothing was printed. Use <code>console.log(...)</code> to send a value to the console.", got);
+  for (let i = 0; i < exp.length; i++) {
+    const g = logs[i], x = exp[i];
+    if (g === undefined) return fail("Line " + (i + 1) + " of the output is missing. Expected " + q(x) + ".", got);
+    if (g !== x) {
+      if (g.toLowerCase() === x.toLowerCase()) return fail("Line " + (i + 1) + " has different capital letters: got " + q(g) + ", expected " + q(x) + ". To a computer, A and a are different characters.", got);
+      if (g.replace(/\s+/g, "") === x.replace(/\s+/g, "")) return fail("Line " + (i + 1) + " has extra or missing spaces: got " + q(g) + ", expected " + q(x) + ". Spaces inside quotes are printed exactly.", got);
+      return fail("Line " + (i + 1) + " should be " + q(x) + " but was " + q(g) + ".", got);
+    }
+  }
+  if (logs.length > exp.length) return fail("Too many lines: expected " + exp.length + ", got " + logs.length + ". Remove the extra <code>console.log</code> calls.", got);
+  return pass(got);
+}
+const grab = (...names) => names.map(n => "__report[" + JSON.stringify(n) + "] = typeof " + n + " === 'undefined' ? undefined : " + n + ";").join(" ");
+const callPost = (fn, args) => "__report.isFn = typeof " + fn + " === 'function'; if (__report.isFn) __report.out = __call(" + fn + (args.length ? ", " + args.map(a => JSON.stringify(a)).join(", ") : "") + ");";
+function callCheck(R, name, callText, exp, tips) {
+  if (!R.isFn) return fail("There is no function called <code>" + name + "</code>. Check the spelling, and that you wrote <code>function " + name + "(...)</code>.", "no function");
+  if (R.out.err !== undefined) return fail("Calling " + q(callText) + " caused an error: " + esc(R.out.err), "error");
+  const v = R.out.v;
+  if (v === undefined) return fail(q(callText) + " returned <code>undefined</code>. The function needs a <code>return</code> statement. <code>console.log</code> only shows a value on screen; <code>return</code> hands it back to the code that called the function.", "undefined");
+  if (!same(v, exp)) { const tip = tips ? tips(v) : ""; return fail(q(callText) + " returned " + q(show(v)) + " but should return " + q(show(exp)) + "." + (tip ? " " + tip : ""), show(v)); }
+  return pass(show(v));
+}
+function robotCheck(r, extra) {
+  if (!r.robot) return fail("The robot didn't run.", "—");
+  if (r.robot.atGoal) return pass("on the exit");
+  const tip = extra ? extra(r.robot) : "";
+  return fail("B0-T stopped after " + r.robot.moves + " move" + (r.robot.moves === 1 ? "" : "s") + " without reaching the exit." + (tip ? " " + tip : ""), r.robot.moves + " moves, not on exit");
+}
+function corridor(n) { return ["#".repeat(n + 3), "#R" + ".".repeat(n - 1) + "G#", "#".repeat(n + 3)]; }
+
+/* ================= Curriculum ================= */
+const WORLDS = [
+  { name: "Boot Sector", blurb: "Wake the station: printing, variables and arithmetic." },
+  { name: "Logic Gates", blurb: "Teach the machines to make decisions." },
+  { name: "Loop Factory", blurb: "Repeat work without repeating code. Meet the robot B0-T." },
+  { name: "Function Forge", blurb: "Package instructions into reusable machines." },
+  { name: "Data Archive", blurb: "Store many values with arrays and objects." },
+  { name: "Glitch Core", blurb: "Final boss. Find and fix the bugs." }
+];
+
+const LESSONS = [
+/* ---------- 1 ---------- */
+{
+  id: "log", world: 0, title: "Speak to the Machine", concept: "console.log and strings",
+  story: "The gate terminal at Station Nine has gone dark. Before you can repair anything, you need to make the machine talk back to you.",
+  learn: [
+    ["Computers follow instructions exactly", "A computer can't guess what you mean. It follows your instructions one at a time, from the top line to the bottom. A list of instructions is called a <b>program</b>, and each instruction is called a <b>statement</b>."],
+    ["Making the machine talk", "To see what a program is doing, you ask it to print a message. In JavaScript you do this with <code>console.log()</code>. The <b>console</b> is a message screen that programmers use to check what is happening. In this game it is the dark panel under your code."],
+    ["Text goes in quotes", "When you want to print words, wrap them in quotation marks. Text in quotes is called a <b>string</b>, because it is a string of characters. Numbers don't need quotes."]
+  ],
+  terms: [["program", "a list of instructions"], ["statement", "one instruction, usually one line"], ["console", "the message screen where output appears"], ["string", "text wrapped in quotes, like \"hello\""]],
+  example: { code: 'console.log("Hello, Quest!");\nconsole.log("I am a programmer");\nconsole.log(7);', lines: ["Prints the text Hello, Quest! The quotes are not printed; they only mark where the text starts and ends.", "Runs next, because code runs top to bottom. Each console.log starts a new line of output.", "Prints the number 7. Numbers don't need quotes."] },
+  symbols: [["console.log", "the instruction that prints a value"], [".", "look inside console for its log tool"], ["( )", "hold the value you hand to the instruction"], ['" "', "mark the start and end of a string"], [";", "ends a statement, like a full stop"]],
+  good: { code: 'console.log("Door open");', why: "The text is inside matching quotes, and the brackets are closed." },
+  bad: { code: "console.log(Door open);", why: "No quotes, so JavaScript thinks <code>Door</code> is the name of something it should already know. You get an error." },
+  mistakes: ["Forgetting the quotes around text.", "Mixing quote types: <code>\"hi'</code> doesn't close. Start and end with the same kind.", "Capital letters: <code>Console.Log</code> fails. JavaScript is case-sensitive, so it must be <code>console.log</code>.", "Forgetting the closing bracket <code>)</code>."],
+  trace: { code: 'console.log("Hello, Quest!");\nconsole.log("I am a programmer");\nconsole.log(7);', steps: [
+    { l: 0, o: "Hello, Quest!", n: "Line 1 runs first. The text between the quotes is printed exactly." },
+    { l: 1, o: "I am a programmer", n: "Then line 2. Each console.log prints on its own line." },
+    { l: 2, o: "7", n: "Numbers need no quotes. 7 is printed as a number. The program ends after the last line." }] },
+  practise: { starter: 'console.log("Hello!");\nconsole.log(42);\n// Your turn: print your own name below this line\n', ideas: ["Print your name in quotes.", "Print a number without quotes, like 2026.", "Delete a closing quote and press Run. Read the error. You'll see many errors as a programmer, and they are there to help.", "Try single quotes: <code>console.log('hi');</code> Both kinds work as long as they match."] },
+  predict: { code: 'console.log("5 + 5");\nconsole.log(5 + 5);', answer: "5 + 5\n10", explain: "The first line has quotes, so it is text and is printed exactly. The second has no quotes, so JavaScript treats it as maths and works out the answer." },
+  challenge: {
+    scene: "terminal", title: "Wake the gate terminal",
+    brief: "The terminal wakes up when it prints exactly two lines, in this order: <code>SYSTEM ONLINE</code> and then <code>Hello, Quest</code>.",
+    starter: "// Print the two wake-up messages\n",
+    hints: ["You need two <code>console.log</code> statements, one for each message.", "Text must be inside quotes: <code>console.log(\"SYSTEM ONLINE\");</code>", "Copy the capitals and the comma exactly. The second line is <code>console.log(\"Hello, Quest\");</code>"],
+    cases: [{ label: "Wake sequence", expect: "SYSTEM ONLINE\nHello, Quest", check: r => expectLogs(r.logs, ["SYSTEM ONLINE", "Hello, Quest"]) }],
+    solution: 'console.log("SYSTEM ONLINE");\nconsole.log("Hello, Quest");',
+    why: ["Prints the first message. The quotes mark it as a string, so it is printed exactly as written, capitals included.", "Runs after line 1, so its message appears second. The order of your code is the order of the output."]
+  },
+  recap: ["<code>console.log()</code> prints a value to the console.", "Strings are text inside matching quotes.", "Code runs from top to bottom, one statement at a time."]
+},
+/* ---------- 2 ---------- */
+{
+  id: "vars", world: 0, title: "Labelled Boxes", concept: "Variables with let and const",
+  story: "The vault door won't open until it can read its security code from memory. Time to store some values.",
+  learn: [
+    ["Boxes with labels", "Programs need to remember things: a score, a name, how much energy is left. A <b>variable</b> is like a box with a label on it. You put a value in the box, and later you use the label to get the value back."],
+    ["Making a box", "You create a variable with <code>let</code>, a name, the <code>=</code> sign and a value. Here <code>=</code> doesn't mean \"equals\" like in maths. It means <b>put this value into this box</b>. Programmers call this <b>assignment</b>."],
+    ["let or const?", "Use <code>let</code> when the value will change later. Use <code>const</code> (short for constant) when it should never change. If you try to change a const, JavaScript stops with an error. That protects values that shouldn't move."],
+    ["Joining text", "The <code>+</code> sign joins strings: <code>\"Robot: \" + robotName</code> becomes <code>\"Robot: Bolt\"</code>. Notice the space inside the quotes after the colon. Without it the words would stick together."]
+  ],
+  terms: [["variable", "a named box that stores a value"], ["assignment", "putting a value into a variable with ="], ["let", "creates a variable that can change"], ["const", "creates a variable that can't be reassigned"]],
+  example: { code: 'let energy = 50;\nconsole.log(energy);\nenergy = 80;\nconsole.log(energy);\nconst robotName = "Bolt";\nconsole.log("Robot: " + robotName);', lines: ["Create a box called energy and put 50 in it. We use let because energy will change.", "Print what is inside energy: 50. No quotes, because we want the value, not the word.", "Put 80 into energy, replacing 50. No let this time: the box already exists.", "Prints 80.", "Create a const called robotName holding the string \"Bolt\". It will never change.", "Join \"Robot: \" with the value of robotName and print Robot: Bolt."] },
+  symbols: [["let", "creates a variable that can change"], ["const", "creates a variable that can't be reassigned"], ["=", "puts the value on the right into the name on the left"], ["+", "with strings, joins them together"]],
+  good: { code: "const maxSpeed = 120;\nlet speed = 0;\nspeed = 60;", why: "maxSpeed never changes, so const. speed changes, so let. When we change speed later, we leave out let." },
+  bad: { code: "const lives = 3;\nlives = 2;", why: "Error: <i>Assignment to constant variable</i>. lives was made with const, so it can't get a new value. Write <code>let lives = 3;</code> instead." },
+  mistakes: ["Quotes around a variable name: <code>console.log(\"energy\")</code> prints the word energy, not 50.", "Using <code>let</code> twice for the same name. Create it once, then assign without let.", "Using a variable before the line that creates it. Code runs top to bottom.", "Names are case-sensitive: <code>robotName</code> and <code>robotname</code> are two different boxes.", "Names can't contain spaces or start with a digit. Join words with capitals instead: <code>doorCode</code>, <code>maxSpeed</code>. This style is called camelCase."],
+  widget: "boxes",
+  trace: { code: 'let energy = 50;\nconsole.log(energy);\nenergy = 80;\nconsole.log(energy);\nconst robotName = "Bolt";\nconsole.log("Robot: " + robotName);', steps: [
+    { l: 0, v: { energy: "50" }, n: "A box labelled energy is created, and 50 goes inside." },
+    { l: 1, o: "50", n: "JavaScript looks inside the energy box and prints what it finds." },
+    { l: 2, v: { energy: "80" }, n: "80 replaces 50. The old value is gone." },
+    { l: 3, o: "80", n: "The box now holds 80." },
+    { l: 4, v: { robotName: '"Bolt"' }, n: "A const box is created. It is locked: it can't get a new value later." },
+    { l: 5, o: "Robot: Bolt", n: "\"Robot: \" + \"Bolt\" is joined into one string first, then printed." }] },
+  practise: { starter: "let coins = 10;\nconsole.log(coins);\ncoins = coins + 5;\nconsole.log(coins);\n", ideas: ["Change <code>coins + 5</code> to <code>coins * 2</code>. What prints?", "Make a const called planet holding your favourite planet, then print <code>\"I live on \" + planet</code>.", "Change <code>let coins</code> to <code>const coins</code> and run. Read the error.", "Print <code>\"coins\"</code> with quotes, then without. Compare."] },
+  predict: { code: 'let a = 3;\na = a + 4;\nconsole.log(a);\nconsole.log("a");', answer: "7\na", explain: "a + 4 uses the current value 3, giving 7, which goes back into a. The last line has quotes, so it prints the letter a, not the variable." },
+  challenge: {
+    scene: "door", title: "Open the vault door",
+    brief: "Create a <code>const</code> named <code>doorCode</code> holding the number <code>4721</code>. Create a <code>let</code> named <code>pilot</code> holding your name as a string. Then print <code>Welcome, </code> followed by your name, built from the variable (for example <code>Welcome, Ada</code>).",
+    starter: "// 1. Create doorCode\n\n// 2. Create pilot\n\n// 3. Print the welcome message\n",
+    hints: ["A number has no quotes: <code>const doorCode = 4721;</code>", "A name is text, so it needs quotes: <code>let pilot = \"Ada\";</code>", "Join with <code>+</code> and keep the space after the comma: <code>console.log(\"Welcome, \" + pilot);</code>"],
+    cases: [{ label: "Door scanner", expect: "doorCode = 4721, pilot is a string, Welcome message", post: grab("doorCode", "pilot"), check: (r, c, src) => {
+      const R = r.report;
+      if (R.doorCode === undefined) return fail("There is no variable called <code>doorCode</code>. Check the spelling: capital C, no spaces.", "no doorCode");
+      if (R.doorCode === "4721") return fail("doorCode is the string <code>\"4721\"</code>. Numbers don't need quotes. Remove them.", show(R.doorCode));
+      if (R.doorCode !== 4721) return fail("doorCode should be 4721 but it is " + q(show(R.doorCode)) + ".", show(R.doorCode));
+      if (!/\bconst\s+doorCode\b/.test(src)) return fail("doorCode has the right value, but create it with <code>const</code>, because a security code shouldn't change.", "4721 (not const)");
+      if (typeof R.pilot !== "string" || !R.pilot.trim()) return fail("Create a variable called <code>pilot</code> holding your name in quotes, like <code>let pilot = \"Ada\";</code>", "pilot = " + show(R.pilot));
+      if (!/\blet\s+pilot\b/.test(src)) return fail("Create pilot with <code>let</code>.", "pilot not made with let");
+      const e = expectLogs(r.logs, ["Welcome, " + R.pilot]);
+      if (!e.ok) return e;
+      if (!/console\.log\s*\([^)]*\bpilot\b/.test(src)) return fail("The message is right, but build it from the variable: <code>\"Welcome, \" + pilot</code>. Then it updates automatically if the name changes.", e.got);
+      return pass(e.got);
+    } }],
+    solution: 'const doorCode = 4721;\nlet pilot = "Ada";\nconsole.log("Welcome, " + pilot);',
+    why: ["const, because the code never changes. 4721 has no quotes, so it is a number.", "let creates pilot. Your name is text, so it goes in quotes.", "\"Welcome, \" + pilot joins the two strings. The space before the closing quote keeps the words apart."]
+  },
+  recap: ["A variable is a labelled box for a value.", "<code>let</code> can change; <code>const</code> can't be reassigned.", "<code>=</code> means \"put into\", and <code>+</code> joins strings."]
+},
+/* ---------- 3 ---------- */
+{
+  id: "math", world: 0, title: "Power Math", concept: "Numbers and arithmetic operators",
+  story: "The power cells are full, but the station can't share the energy until someone does the maths. JavaScript is a very fast calculator.",
+  learn: [
+    ["JavaScript is a calculator", "You can do maths with <code>+</code> (add), <code>-</code> (subtract), <code>*</code> (multiply) and <code>/</code> (divide). There's also <code>%</code>, which gives the <b>remainder</b> after dividing: <code>10 % 3</code> is 1, because 3 goes into 10 three times with 1 left over."],
+    ["Order matters", "Just like in maths class, <code>*</code> and <code>/</code> happen before <code>+</code> and <code>-</code>. So <code>2 + 3 * 4</code> is 14. Use brackets to choose the order: <code>(2 + 3) * 4</code> is 20."],
+    ["Numbers and strings are different", "<code>5</code> is a number. <code>\"5\"</code> is a string that happens to contain the character 5. When you use <code>+</code> and one side is a string, JavaScript joins instead of adding: <code>\"5\" + 3</code> gives <code>\"53\"</code>."],
+    ["Updating with maths", "<code>energy = energy + 10</code> looks odd in maths, but in code it means: work out the right side using the current value, then put the result back in the box. The shortcut <code>energy += 10</code> does the same thing."]
+  ],
+  terms: [["operator", "a symbol that does something to values, like + or *"], ["expression", "a piece of code that produces a value, like cells * 25"], ["remainder (%)", "what's left over after dividing"]],
+  example: { code: "let cells = 4;\nlet perCell = 25;\nlet total = cells * perCell;\nconsole.log(total);\ntotal = total - 30;\nconsole.log(total);\nconsole.log(total % 8);", lines: ["Store 4 in cells.", "Store 25 in perCell.", "Multiply the two values (4 * 25 = 100) and store the answer in total.", "Prints 100.", "Work out total - 30 (70), then put it back into total.", "Prints 70.", "70 divided by 8 is 8 with 6 left over, so this prints 6."] },
+  symbols: [["+", "add (or join, if a string is involved)"], ["-", "subtract"], ["*", "multiply"], ["/", "divide"], ["%", "remainder after dividing"], ["( )", "work this part out first"]],
+  good: { code: "let average = (10 + 20) / 2; // 15", why: "The brackets make the addition happen first, then the division." },
+  bad: { code: "let average = 10 + 20 / 2; // 20!", why: "Division happens first: 20 / 2 is 10, then 10 + 10 is 20. Add brackets." },
+  mistakes: ["<code>\"5\" + 3</code> is <code>\"53\"</code>, not 8. Numbers in quotes are text.", "Using <code>x</code> to multiply. JavaScript uses <code>*</code>.", "Forgetting brackets changes the order of operations.", "<code>total + 5;</code> on its own line does nothing to total. Assign it: <code>total = total + 5;</code>"],
+  widget: "calc",
+  trace: { code: "let cells = 4;\nlet perCell = 25;\nlet total = cells * perCell;\nconsole.log(total);\ntotal = total - 30;\nconsole.log(total);\nconsole.log(total % 8);", steps: [
+    { l: 0, v: { cells: "4" }, n: "cells holds 4." },
+    { l: 1, v: { perCell: "25" }, n: "perCell holds 25." },
+    { l: 2, v: { total: "100" }, n: "JavaScript replaces each name with its value: 4 * 25 = 100." },
+    { l: 3, o: "100", n: "Prints the value of total." },
+    { l: 4, v: { total: "70" }, n: "Right side first: 100 - 30 = 70. Then 70 goes into total." },
+    { l: 5, o: "70", n: "total is now 70." },
+    { l: 6, o: "6", n: "70 ÷ 8 is 8 remainder 6. The % operator gives the 6." }] },
+  practise: { starter: 'let width = 6;\nlet height = 4;\nlet area = width * height;\nconsole.log("Area: " + area);\n', ideas: ["Work out the perimeter: <code>2 * (width + height)</code>.", "Try <code>console.log(17 % 5);</code> What is left over?", "Compare <code>console.log(\"6\" + 4);</code> with <code>console.log(6 + 4);</code>", "Use <code>area += 10;</code> and print area again."] },
+  predict: { code: 'console.log(2 + 3 * 4);\nconsole.log((2 + 3) * 4);\nconsole.log("2" + 3);', answer: "14\n20\n23", explain: "Multiplication first gives 14. Brackets first gives 20. In the last line \"2\" is a string, so + joins it with 3 to make the string 23." },
+  challenge: {
+    scene: "rig", title: "Share the power",
+    brief: "Three power cells hold energy: <code>cellA</code>, <code>cellB</code> and <code>cellC</code>. They already exist, and their values change between tests. Set <code>total</code> to all three added together, and <code>perRobot</code> to the total shared equally between 2 robots. Then print total.",
+    starter: "// cellA, cellB and cellC already exist. Don't create them again.\nlet total = 0;     // replace 0 with a calculation\nlet perRobot = 0;  // replace 0 with a calculation\nconsole.log(total);\n",
+    hints: ["Use the variable names, not numbers. The cell values change in every test.", "<code>let total = cellA + cellB + cellC;</code>", "<code>let perRobot = total / 2;</code> uses total, so it must come after the total line."],
+    cases: [[12, 30, 8], [5, 5, 10], [7, 0, 14]].map(v => {
+      const s = v[0] + v[1] + v[2];
+      return { label: "Cells " + v.join(", "), pre: "const cellA = " + v[0] + ", cellB = " + v[1] + ", cellC = " + v[2] + ";", expect: "total " + s + ", perRobot " + s / 2, post: grab("total", "perRobot"), check: r => {
+        const R = r.report;
+        if (R.total === undefined) return fail("There is no variable called <code>total</code>.", "no total");
+        if (typeof R.total === "string") return fail("total is the string " + q(show(R.total)) + ". Did you put quotes around something? Use the variable names without quotes.", show(R.total));
+        if (R.total !== s) return fail(R.total === 50 && s !== 50 ? "total is 50 in every test. Use <code>cellA + cellB + cellC</code> so it follows the real cell values." : "total should be " + s + " but is " + q(show(R.total)) + ".", "total " + show(R.total));
+        if (R.perRobot !== s / 2) return fail("perRobot should be total ÷ 2 = " + s / 2 + ", but it is " + q(show(R.perRobot)) + ".", "perRobot " + show(R.perRobot));
+        const e = expectLogs(r.logs, [String(s)]);
+        return e.ok ? pass("total " + s + ", perRobot " + s / 2) : e;
+      } };
+    }),
+    solution: "let total = cellA + cellB + cellC;\nlet perRobot = total / 2;\nconsole.log(total);",
+    why: ["JavaScript swaps each name for its current value and adds them. Because you used names, it works for any cell values.", "Uses the total from the line above and divides by 2.", "Prints the number stored in total."]
+  },
+  recap: ["Operators: + - * / and % (remainder).", "* and / happen before + and -. Brackets go first.", "<code>\"5\" + 3</code> joins; <code>5 + 3</code> adds."]
+},
+/* ---------- 4 ---------- */
+{
+  id: "bool", world: 1, title: "True or False", concept: "Comparisons and booleans",
+  story: "The security gate in Sector 2 only understands yes-or-no questions. You'll need to ask them in JavaScript.",
+  learn: [
+    ["Yes-or-no values", "Some questions only have two answers. JavaScript has a value type for this: <b>booleans</b>, which are either <code>true</code> or <code>false</code>. They are written without quotes."],
+    ["Asking with comparisons", "A comparison asks a question about two values and answers with a boolean. <code>5 > 3</code> is true. <code>2 >= 9</code> is false. <code>level === 3</code> is true only if level holds exactly 3."],
+    ["One, two or three equals signs", "<code>=</code> puts a value in a box. <code>===</code> asks \"are these exactly the same?\" There's also <code>==</code>, a looser version that can give surprising answers, so stick to <code>===</code> and <code>!==</code>."],
+    ["Combining questions", "<code>&&</code> means AND: true only if both sides are true. <code>||</code> means OR: true if at least one side is true. <code>!</code> means NOT: it flips true to false and false to true."]
+  ],
+  terms: [["boolean", "a value that is either true or false"], ["comparison", "an expression that compares two values, like a > b"], ["logical operator", "&&, || or !, which combine booleans"]],
+  example: { code: "let level = 4;\nlet hasKey = true;\nconsole.log(level > 3);\nconsole.log(level === 10);\nconsole.log(hasKey && level >= 5);\nconsole.log(hasKey || level >= 5);", lines: ["level holds 4.", "hasKey holds the boolean true (no quotes).", "Is 4 greater than 3? Yes, so this prints true.", "Is 4 exactly 10? No, so false.", "hasKey is true, but level >= 5 is false. && needs both, so false.", "|| needs only one to be true. hasKey is, so true."] },
+  symbols: [["===", "are these exactly the same?"], ["!==", "are these different?"], [">  <", "greater than, less than"], [">=  <=", "greater than or equal, less than or equal"], ["&&", "and: both sides true"], ["||", "or: at least one side true"], ["!", "not: flips true and false"]],
+  good: { code: "const isFive = level === 5;", why: "=== compares. isFive becomes true or false, and level is left alone." },
+  bad: { code: "const isFive = level = 5;", why: "A single = puts 5 into level, overwriting it, and isFive becomes 5 instead of a boolean." },
+  mistakes: ["Using <code>=</code> when you mean <code>===</code>.", "<code>\"true\"</code> in quotes is a string, not a boolean.", "<code>5 === \"5\"</code> is false: a number and a string are different types.", "<code>18 < age < 30</code> doesn't work like maths. Write <code>age > 18 && age < 30</code>."],
+  widget: "compare",
+  trace: { code: "let level = 4;\nlet hasKey = true;\nconsole.log(level > 3);\nconsole.log(level === 10);\nconsole.log(hasKey && level >= 5);\nconsole.log(hasKey || level >= 5);", steps: [
+    { l: 0, v: { level: "4" }, n: "level holds 4." },
+    { l: 1, v: { hasKey: "true" }, n: "hasKey holds true. It's a boolean, not text." },
+    { l: 2, o: "true", n: "4 > 3 → true." },
+    { l: 3, o: "false", n: "4 === 10 → false." },
+    { l: 4, o: "false", n: "true && (4 >= 5) → true && false → false. AND needs both." },
+    { l: 5, o: "true", n: "true || false → true. OR needs just one." }] },
+  practise: { starter: "let fuel = 40;\nlet shieldsUp = false;\nconsole.log(fuel > 50);\nconsole.log(!shieldsUp);\n", ideas: ["Print <code>fuel >= 40</code>. Then try <code>fuel > 40</code>.", "Print <code>fuel > 10 && shieldsUp</code>. Why is it false?", "Print <code>5 === \"5\"</code>.", "Make <code>const safe = fuel > 20 || shieldsUp;</code> and print it."] },
+  predict: { code: "let x = 7;\nconsole.log(x >= 7);\nconsole.log(x > 7 || x === 0);\nconsole.log(!(x === 7));", answer: "true\nfalse\nfalse", explain: "7 >= 7 is true. 7 > 7 is false and 7 === 0 is false, so OR gives false. x === 7 is true, and ! flips it to false." },
+  challenge: {
+    scene: "rig", title: "Program the security gate",
+    brief: "The gate lets a visitor in only if they have a badge <b>and</b> their clearance <code>level</code> is 3 or higher. <code>hasBadge</code> and <code>level</code> already exist and change between tests. Create <code>const canEnter</code> holding a true/false expression, then print it.",
+    starter: "// hasBadge and level already exist\nconst canEnter = false; // replace false with your expression\nconsole.log(canEnter);\n",
+    hints: ["\"3 or higher\" is written <code>level >= 3</code>.", "Both things must be true, so join them with <code>&&</code>.", "<code>const canEnter = hasBadge && level >= 3;</code>"],
+    cases: [[true, 5], [true, 3], [true, 2], [false, 9]].map(([b, l]) => {
+      const exp = b && l >= 3;
+      return { label: "Badge: " + b + ", level: " + l, pre: "const hasBadge = " + b + ", level = " + l + ";", expect: String(exp), post: grab("canEnter"), check: r => {
+        const R = r.report;
+        if (R.canEnter === undefined) return fail("There is no variable called <code>canEnter</code>.", "no canEnter");
+        if (typeof R.canEnter !== "boolean") return fail("canEnter should be true or false, but it is " + q(show(R.canEnter)) + ". A comparison like <code>level >= 3</code> produces a boolean.", show(R.canEnter));
+        if (R.canEnter !== exp) return fail(b ? (l >= 3 ? "A visitor with a badge and level " + l + " should be allowed in." : "Level " + l + " is below 3, so this visitor must be refused even with a badge. Check you're using <code>>= 3</code>.") : "This visitor has no badge, so they must be refused whatever their level. Are you using <code>||</code> instead of <code>&&</code>?", String(R.canEnter));
+        const e = expectLogs(r.logs, [String(exp)]);
+        return e.ok ? pass(String(exp)) : e;
+      } };
+    }),
+    solution: "const canEnter = hasBadge && level >= 3;\nconsole.log(canEnter);",
+    why: ["level >= 3 is a question with a true/false answer. && combines it with hasBadge: both must be true for canEnter to be true.", "Prints the boolean."]
+  },
+  recap: ["Booleans are true or false.", "Compare with ===, !==, >, <, >=, <=.", "&& needs both, || needs one, ! flips."]
+},
+/* ---------- 5 ---------- */
+{
+  id: "if", world: 1, title: "Choose a Path", concept: "if, else if and else",
+  story: "The coolant system is overheating, and its alarm can't decide what to report. Teach it to choose.",
+  learn: [
+    ["Programs that decide", "Until now, every line ran. With <code>if</code>, a block of code runs <b>only when its condition is true</b>. This is how programs react to different situations."],
+    ["How an if is built", "<code>if (condition) { ... }</code>. The round brackets hold the question, which must give true or false. The curly braces hold the code to run when the answer is true. That group of lines is called a <b>block</b>."],
+    ["else and else if", "<code>else</code> means \"otherwise\": it runs when the if was false. <code>else if</code> asks another question. JavaScript checks from the top and runs <b>only the first block whose condition is true</b>, then skips the rest."],
+    ["Indentation", "Lines inside braces are pushed in by two spaces. JavaScript doesn't need this, but people do: it shows at a glance which lines belong to which block."]
+  ],
+  terms: [["condition", "the true/false question inside if ( )"], ["block", "the lines between { and }"], ["branch", "one of the possible paths the program can take"]],
+  example: { code: 'let battery = 35;\nif (battery > 80) {\n  console.log("Full power");\n} else if (battery > 20) {\n  console.log("Normal mode");\n} else {\n  console.log("Low power!");\n}', lines: ["Store 35 in battery.", "Ask: is battery more than 80?", "Runs only if the answer was true.", "Otherwise, ask a second question: more than 20?", "Runs only if the first question was false and this one is true.", "If every question was false…", "…this fallback runs.", "Closes the last block."] },
+  symbols: [["if (…)", "run the block only when the question is true"], ["{ }", "the start and end of a block"], ["else if (…)", "another question, asked only if the ones above were false"], ["else", "the fallback when nothing above matched"]],
+  good: { code: 'if (battery > 80) {\n  console.log("Full");\n} else {\n  console.log("Not full");\n}', why: "Exactly one of the two messages prints, depending on battery." },
+  bad: { code: 'if (battery > 20) {\n  console.log("Normal");\n} else if (battery > 80) {\n  console.log("Full");\n}', why: "A battery of 90 matches the first question, so \"Full\" can never print. Check the biggest case first." },
+  mistakes: ["<code>if (x = 5)</code> assigns instead of comparing. Use <code>===</code>.", "Giving else a condition: <code>else (x > 5)</code>. Use <code>else if</code>.", "Checking conditions in the wrong order, so a later branch can never be reached.", "A missing closing <code>}</code> causes \"Unexpected end of input\".", "A semicolon right after <code>if (...);</code> ends the if early."],
+  widget: "branch",
+  trace: { code: 'let battery = 35;\nif (battery > 80) {\n  console.log("Full power");\n} else if (battery > 20) {\n  console.log("Normal mode");\n} else {\n  console.log("Low power!");\n}', steps: [
+    { l: 0, v: { battery: "35" }, n: "battery holds 35." },
+    { l: 1, n: "Is 35 > 80? false. Skip this block." },
+    { l: 3, n: "Is 35 > 20? true. Run this block." },
+    { l: 4, o: "Normal mode", n: "The matching branch prints its message." },
+    { l: 7, n: "One branch has run, so else is skipped. Done." }] },
+  practise: { starter: 'let battery = 90;\nif (battery > 80) {\n  console.log("Full power");\n} else if (battery > 20) {\n  console.log("Normal mode");\n} else {\n  console.log("Low power!");\n}\n', ideas: ["Change battery to 80. Which message prints, and why?", "Try 0 and 21.", "Add a new branch at the top for <code>battery === 100</code> that prints \"Perfect\".", "Delete the last <code>}</code> and read the error."] },
+  predict: { code: 'let t = 60;\nif (t > 60) {\n  console.log("A");\n} else if (t >= 60) {\n  console.log("B");\n} else {\n  console.log("C");\n}', answer: "B", explain: "60 > 60 is false, so A is skipped. 60 >= 60 is true, so B prints, and the else is skipped." },
+  challenge: {
+    scene: "rig", title: "Fix the coolant alarm",
+    brief: "<code>temperature</code> already exists and changes between tests. Print <code>OVERHEAT</code> if it is above 90, <code>WARM</code> if it is 60 or more, and <code>COOL</code> otherwise. Exactly one word should print.",
+    starter: '// temperature already exists\nif (temperature > 90) {\n  console.log("OVERHEAT");\n}\n// add the WARM and COOL cases\n',
+    hints: ["Continue the same chain: <code>} else if (temperature >= 60) {</code> and then <code>} else {</code>.", "Don't start a separate if for each case. A chain makes sure only one message prints."],
+    cases: [95, 90, 60, 59, 12].map(t => {
+      const w = t > 90 ? "OVERHEAT" : t >= 60 ? "WARM" : "COOL";
+      return { label: "temperature = " + t, pre: "const temperature = " + t + ";", expect: w, check: r => {
+        if (r.logs.length > 1) return fail("Printed " + r.logs.length + " messages (" + esc(r.logs.join(", ")) + "). Only one should print. Join your checks with <code>else if</code> and <code>else</code>.", r.logs.join(", "));
+        if (t === 90 && r.logs[0] === "OVERHEAT") return fail("At exactly 90 the coolant is WARM. \"Above 90\" means <code>> 90</code>, not <code>>= 90</code>.", "OVERHEAT");
+        if (t === 60 && r.logs[0] === "COOL") return fail("60 counts as WARM. \"60 or more\" means <code>>= 60</code>.", "COOL");
+        return expectLogs(r.logs, [w]);
+      } };
+    }),
+    solution: '// temperature already exists\nif (temperature > 90) {\n  console.log("OVERHEAT");\n} else if (temperature >= 60) {\n  console.log("WARM");\n} else {\n  console.log("COOL");\n}',
+    why: ["A comment reminding you that temperature comes from the station.", "First question: strictly above 90?", "Runs only for the hottest readings.", "Only asked if the first was false. So here temperature is 90 or less, and we check 60 or more.", "Runs for 60 up to 90.", "Everything else, meaning below 60…", "…is COOL.", "Closes the chain. Exactly one branch ran."]
+  },
+  recap: ["<code>if</code> runs a block only when its condition is true.", "else if / else form a chain; only the first match runs.", "Order your conditions so every branch can be reached."]
+},
+/* ---------- 6 ---------- */
+{
+  id: "for", world: 2, title: "Loop Factory", concept: "for loops",
+  story: "Meet B0-T, the station's delivery robot. It's waiting at the start of a long conveyor, and typing the same command over and over won't scale.",
+  learn: [
+    ["Meet B0-T", "B0-T understands three commands: <code>robot.move()</code> moves one square forward, <code>robot.turnLeft()</code> and <code>robot.turnRight()</code> turn on the spot. The brackets mean \"do it now\". These commands are <b>functions</b>, and you'll build your own later."],
+    ["Repeating yourself", "Writing <code>robot.move();</code> twenty times is slow, and it breaks as soon as the distance changes. A <b>loop</b> repeats a block of code for you."],
+    ["The three parts of a for loop", "<code>for (let i = 0; i < 5; i++) { ... }</code> has three parts separated by semicolons. <b>Start</b>: create a counter <code>i</code> set to 0. <b>Condition</b>: checked before each round; the loop continues while it is true. <b>Update</b>: <code>i++</code> adds 1 to i after each round."],
+    ["Counting from zero", "With <code>i = 0</code> and <code>i < 5</code>, i takes the values 0, 1, 2, 3 and 4. That's five rounds. Each round is called an <b>iteration</b>."]
+  ],
+  terms: [["loop", "code that repeats a block"], ["iteration", "one round of the loop"], ["counter", "a variable (usually i) that tracks the round"], ["i++", "short for i = i + 1"]],
+  example: { code: 'for (let i = 0; i < 3; i++) {\n  console.log("Lap " + i);\n}\nconsole.log("Done");', lines: ["Start i at 0. Keep going while i < 3. After each round, add 1.", "The block: runs once per round, using the current i.", "End of the block. Go back up, update i and check again.", "Runs once, after the loop has finished."] },
+  symbols: [["let i = 0", "start: create the counter"], ["i < 3", "condition: keep going while this is true"], ["i++", "update: add 1 after each round"], [";", "separates the three parts inside the brackets"]],
+  good: { code: "for (let i = 0; i < 4; i++) {\n  robot.move();\n}", why: "Moves exactly 4 times: i is 0, 1, 2, 3." },
+  bad: { code: "for (let i = 0; i < 4; i--) {\n  robot.move();\n}", why: "i-- counts down, so i < 4 is always true. The loop never ends." },
+  mistakes: ["Commas instead of semicolons inside the brackets.", "Off by one: <code>i <= 4</code> runs five times (0 to 4).", "Forgetting <code>i++</code>, or counting the wrong way, makes an infinite loop.", "Putting the code that should repeat outside the braces."],
+  trace: { code: 'for (let i = 0; i < 3; i++) {\n  console.log("Lap " + i);\n}\nconsole.log("Done");', steps: [
+    { l: 0, v: { i: "0" }, n: "Start: the counter i is created with 0." },
+    { l: 0, n: "Check: 0 < 3 is true, so run the block." },
+    { l: 1, o: "Lap 0", n: "Round 1 uses i = 0." },
+    { l: 0, v: { i: "1" }, n: "Update: i++ makes i 1. Check: 1 < 3 is true." },
+    { l: 1, o: "Lap 1", n: "Round 2." },
+    { l: 0, v: { i: "2" }, n: "i becomes 2. 2 < 3 is true." },
+    { l: 1, o: "Lap 2", n: "Round 3." },
+    { l: 0, v: { i: "3" }, n: "i becomes 3. 3 < 3 is false, so the loop stops." },
+    { l: 3, o: "Done", n: "The program continues after the loop." }] },
+  practise: { map: ["#########", "#R......#", "#.......#", "#......G#", "#########"], starter: "robot.move();\nrobot.move();\n// Try replacing these lines with a for loop\n", ideas: ["Use a for loop to move 7 times.", "Move to the right wall, <code>robot.turnRight()</code>, then move 2 more to reach the exit.", "Make the loop run 9 times and watch what happens at the wall.", "Add <code>console.log(i);</code> inside the loop to watch the counter."] },
+  predict: { code: "for (let i = 1; i <= 3; i++) {\n  console.log(i * 10);\n}", answer: "10\n20\n30", explain: "i starts at 1 and the loop runs while i <= 3, so i is 1, 2 and 3. Each round prints i times 10." },
+  challenge: {
+    scene: "robot", title: "Run the conveyor",
+    brief: "B0-T faces a straight conveyor. The exit is exactly <code>steps</code> squares ahead. <code>steps</code> already exists and changes between tests. Use a <code>for</code> loop to move B0-T onto the exit.",
+    starter: "// steps already exists\n\n",
+    hints: ["The loop header is <code>for (let i = 0; i < steps; i++) {</code>", "Put <code>robot.move();</code> inside the braces, and close the loop with <code>}</code>."],
+    src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a <code>for</code> loop. Writing robot.move() by hand won't work, because steps changes between tests." }],
+    cases: [5, 8].map(n => ({ label: "Conveyor of " + n, map: corridor(n), dir: 1, pre: "const steps = " + n + ";", expect: "on the exit", check: r => robotCheck(r, b => b.moves < n ? "It needed " + n + ". Does your loop run <code>steps</code> times? Check the condition <code>i < steps</code>." : "") })),
+    solution: "// steps already exists\nfor (let i = 0; i < steps; i++) {\n  robot.move();\n}",
+    why: ["Reminder that steps is given to you.", "The counter starts at 0 and the loop runs while i < steps, so it runs exactly steps times, whatever that number is.", "Each round moves B0-T one square.", "End of the loop."]
+  },
+  recap: ["A for loop has start; condition; update.", "<code>i < n</code> starting from 0 runs n times.", "Loops let the same code handle different distances."]
+},
+/* ---------- 7 ---------- */
+{
+  id: "while", world: 2, title: "Keep Going While", concept: "while loops and sensors",
+  story: "The maintenance tunnels bend in places nobody mapped. B0-T has sensors, but it needs you to tell it when to stop.",
+  learn: [
+    ["When you don't know how many", "A for loop is great when you know the count. Sometimes you only know when to stop: \"keep driving until you reach the exit\". That's what a <code>while</code> loop is for."],
+    ["How while works", "<code>while (condition) { ... }</code> checks the condition. If it's true, the block runs, and then the condition is checked again. As soon as it's false, the loop ends."],
+    ["Sensors", "B0-T can answer questions. <code>robot.atGoal()</code> gives true when it's standing on the exit. <code>robot.wallAhead()</code> gives true when the next square is a wall. Put <code>!</code> in front to flip the answer: <code>while (!robot.atGoal())</code> reads as \"while not at the goal\"."],
+    ["Infinite loops", "If the condition never becomes false, the loop runs forever. Make sure something inside the loop changes the answer. Here, moving the robot changes what the sensors see. If it does happen, Quest stops your code after 2 seconds."]
+  ],
+  terms: [["while loop", "repeats while a condition stays true"], ["infinite loop", "a loop whose condition never becomes false"], ["sensor", "a function that answers a question with true or false"]],
+  example: { code: 'let fuel = 3;\nwhile (fuel > 0) {\n  console.log("Fuel: " + fuel);\n  fuel = fuel - 1;\n}\nconsole.log("Empty!");', lines: ["Start with 3 units of fuel.", "Before each round, ask: is there fuel left?", "Print the current fuel.", "Use one unit. This line is what eventually makes the condition false.", "Go back and check the condition again.", "Runs once the loop has ended."] },
+  symbols: [["while (…)", "repeat the block while this is true"], ["!", "not: flips true and false"], ["robot.atGoal()", "asks the robot a yes/no question"]],
+  good: { code: "while (!robot.wallAhead()) {\n  robot.move();\n}", why: "Each move brings the wall closer, so the condition eventually becomes false." },
+  bad: { code: "let fuel = 3;\nwhile (fuel > 0) {\n  console.log(fuel);\n}", why: "fuel never changes, so fuel > 0 stays true forever: an infinite loop." },
+  mistakes: ["Forgetting to change anything inside the loop.", "Forgetting the <code>!</code>, so the loop stops straight away instead of running.", "Forgetting the brackets on a sensor: <code>robot.atGoal</code> without <code>()</code> doesn't ask the question.", "Using while when you know the exact count. A for loop is clearer there."],
+  trace: { code: 'let fuel = 3;\nwhile (fuel > 0) {\n  console.log("Fuel: " + fuel);\n  fuel = fuel - 1;\n}\nconsole.log("Empty!");', steps: [
+    { l: 0, v: { fuel: "3" }, n: "fuel starts at 3." },
+    { l: 1, n: "3 > 0 is true, so enter the loop." },
+    { l: 2, o: "Fuel: 3" }, { l: 3, v: { fuel: "2" }, n: "Burn one unit." },
+    { l: 1, n: "2 > 0 is true. Again." }, { l: 2, o: "Fuel: 2" }, { l: 3, v: { fuel: "1" } },
+    { l: 1, n: "1 > 0 is true. Again." }, { l: 2, o: "Fuel: 1" }, { l: 3, v: { fuel: "0" } },
+    { l: 1, n: "0 > 0 is false. The loop ends." },
+    { l: 5, o: "Empty!", n: "Code after the loop runs." }] },
+  practise: { map: ["##########", "#R.......#", "########.#", "########G#", "##########"], starter: "while (!robot.wallAhead()) {\n  robot.move();\n}\nrobot.turnRight();\n", ideas: ["Run it. Then add a second while loop that uses <code>robot.atGoal()</code> to finish the route.", "Remove the <code>!</code> and run. Why doesn't the robot move?", "Count the moves: create <code>let moves = 0;</code>, add 1 inside the loop, and print it at the end."] },
+  predict: { code: "let n = 1;\nwhile (n < 20) {\n  n = n * 3;\n}\nconsole.log(n);", answer: "27", explain: "n goes 1, 3, 9, 27. When n is 27, 27 < 20 is false, so the loop stops and prints 27." },
+  challenge: {
+    scene: "robot", title: "Navigate the bent tunnel",
+    brief: "Drive B0-T forward until it reaches a wall, turn right, then drive until it is on the exit. Tunnel lengths change between tests, so you can't count squares: use <code>while</code> loops with the sensors.",
+    starter: "// Sensors: robot.wallAhead() and robot.atGoal()\n\n",
+    hints: ["First loop: <code>while (!robot.wallAhead()) { robot.move(); }</code>", "After <code>robot.turnRight();</code>, a second loop: <code>while (!robot.atGoal()) { robot.move(); }</code>"],
+    src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use <code>while</code> loops with the sensors. Tunnel lengths change between tests." }],
+    cases: [
+      { label: "Short tunnel", map: ["#######", "#R...##", "####.##", "####.##", "####G##", "#######"], dir: 1, expect: "on the exit", check: r => robotCheck(r) },
+      { label: "Long tunnel", map: ["##########", "#R......##", "#######.##", "#######G##", "##########"], dir: 1, expect: "on the exit", check: r => robotCheck(r) }
+    ],
+    solution: "while (!robot.wallAhead()) {\n  robot.move();\n}\nrobot.turnRight();\nwhile (!robot.atGoal()) {\n  robot.move();\n}",
+    why: ["While the square ahead is not a wall…", "…move forward. Each move brings the wall closer, so this loop ends.", "End of the first loop: B0-T is facing the wall.", "Turn to face down the tunnel.", "While not standing on the exit…", "…keep moving.", "End. B0-T is on the exit, whatever the tunnel lengths were."]
+  },
+  recap: ["while repeats as long as its condition is true.", "Something inside the loop must eventually make it false.", "Use while when you know when to stop but not how many times."]
+},
+/* ---------- 8 ---------- */
+{
+  id: "func", world: 3, title: "Build a Machine", concept: "Functions and parameters",
+  story: "The Function Forge builds machines out of code. Your first job: package B0-T's moves into a command of your own.",
+  learn: [
+    ["Teach the computer a new word", "A <b>function</b> is a named set of instructions that you can run whenever you like. You've already used some: <code>console.log</code> and <code>robot.move</code> are functions somebody else wrote."],
+    ["Defining a function", "<code>function greet(name) { ... }</code> creates a function called greet. <b>Defining doesn't run it.</b> JavaScript just remembers the instructions for later, like writing down a recipe."],
+    ["Calling a function", "<code>greet(\"Ada\")</code> <b>calls</b> the function: it runs the instructions now. The value in the brackets is an <b>argument</b>. Inside the function it is stored in the <b>parameter</b> <code>name</code>, which works like a variable."],
+    ["Why bother?", "Write the steps once, use them many times. If you find a bug, you fix it in one place. And a good name like <code>moveSteps</code> makes your code read like a description of what it does."]
+  ],
+  terms: [["function", "a named, reusable block of code"], ["parameter", "a placeholder name in the definition, like name"], ["argument", "the actual value you pass in a call, like \"Ada\""], ["call", "running a function with name()"]],
+  example: { code: 'function greet(name) {\n  console.log("Hello, " + name + "!");\n}\ngreet("Ada");\ngreet("Bolt");', lines: ["Define a function called greet with one parameter, name. Nothing runs yet.", "The body: uses whatever value name holds during this call.", "End of the definition.", "Call greet with \"Ada\": inside, name is \"Ada\". Prints Hello, Ada!", "Call again with a different argument. Prints Hello, Bolt!"] },
+  symbols: [["function", "starts a function definition"], ["greet", "the function's name"], ["(name)", "the parameter: a placeholder for the value passed in"], ["greet(\"Ada\")", "a call: run it now with \"Ada\""]],
+  good: { code: "function spin() {\n  robot.turnLeft();\n  robot.turnLeft();\n}\nspin();", why: "Defined once, then called. The robot turns around." },
+  bad: { code: "function spin() {\n  robot.turnLeft();\n  robot.turnLeft();\n}", why: "Defined but never called, so nothing happens. Add <code>spin();</code>" },
+  mistakes: ["Defining a function and never calling it.", "Calling without brackets: <code>spin</code> on its own does nothing; <code>spin()</code> runs it.", "Using a parameter outside its function. It only exists inside the braces.", "Mismatched braces, especially with a loop inside a function."],
+  widget: "machine",
+  trace: { code: 'function greet(name) {\n  console.log("Hello, " + name + "!");\n}\ngreet("Ada");\ngreet("Bolt");', steps: [
+    { l: 0, n: "JavaScript reads the definition and remembers it. Nothing is printed yet." },
+    { l: 3, n: "A call! Jump into greet, taking \"Ada\" along." },
+    { l: 1, v: { name: '"Ada"' }, o: "Hello, Ada!", n: "Inside, the parameter name holds \"Ada\"." },
+    { l: 2, n: "End of the function. Jump back to just after the call." },
+    { l: 4, n: "Second call, this time with \"Bolt\"." },
+    { l: 1, v: { name: '"Bolt"' }, o: "Hello, Bolt!", n: "Same instructions, different value." },
+    { l: 2, n: "Back out. The program is finished." }] },
+  practise: { starter: 'function shout(word) {\n  console.log(word + "!!!");\n}\nshout("Go");\n', ideas: ["Call shout three times with different words.", "Add a second parameter: <code>function shout(word, times)</code> and use a loop inside to print it times times.", "Remove the call and run. What prints?"] },
+  predict: { code: 'function twice(x) {\n  console.log(x);\n  console.log(x);\n}\ntwice("hi");\ntwice(5);', answer: "hi\nhi\n5\n5", explain: "Each call runs the whole body. The first call has x = \"hi\", the second x = 5." },
+  challenge: {
+    scene: "robot", title: "Forge a movement command",
+    brief: "Write a function <code>moveSteps(count)</code> that moves B0-T forward <code>count</code> times, using a loop inside it. Then use moveSteps and turns to guide B0-T to the exit. Use moveSteps at least twice.",
+    starter: "function moveSteps(count) {\n  // move the robot count times\n}\n\n// Now guide B0-T to the exit\n",
+    hints: ["Inside the function: <code>for (let i = 0; i < count; i++) { robot.move(); }</code>", "The route is 3 forward, turn right, 2 forward, turn left, 5 forward."],
+    src: [
+      { test: s => /function\s+moveSteps\s*\(\s*[A-Za-z_$][\w$]*\s*\)/.test(s), msg: "Define <code>function moveSteps(count)</code> with one parameter." },
+      { test: s => (s.match(/moveSteps\s*\(\s*\d+\s*\)/g) || []).length >= 2, msg: "Call <code>moveSteps(...)</code> with a number at least twice, for example <code>moveSteps(3);</code>" }
+    ],
+    cases: [{ label: "Forge floor", map: ["###########", "#R...######", "####.######", "####.....G#", "###########"], dir: 1, expect: "on the exit", check: r => robotCheck(r) }],
+    solution: "function moveSteps(count) {\n  for (let i = 0; i < count; i++) {\n    robot.move();\n  }\n}\n\nmoveSteps(3);\nrobot.turnRight();\nmoveSteps(2);\nrobot.turnLeft();\nmoveSteps(5);",
+    why: ["Define moveSteps. count is a placeholder for whatever number the caller passes.", "A loop that runs count times.", "Each round moves one square.", "End of the loop.", "End of the function.", "", "Call with 3: inside, count is 3.", "Face down the corridor.", "Reuse the same function with 2.", "Turn back east.", "And once more with 5. Three calls, one definition."]
+  },
+  recap: ["Define with <code>function name(param) { }</code>; call with <code>name(value)</code>.", "Defining doesn't run anything. Calling does.", "Parameters let one function handle different values."]
+},
+/* ---------- 9 ---------- */
+{
+  id: "return", world: 3, title: "Return the Result", concept: "Return values",
+  story: "The repair shop wants a price calculator. Printing the price isn't enough: the shop's other machines need to use the number.",
+  learn: [
+    ["Functions that answer", "<code>console.log</code> only shows a value on screen. The rest of your program can't use it. <code>return</code> sends a value <b>back to the code that called the function</b>, so it can be stored, compared or used in more maths."],
+    ["Using the answer", "<code>let cost = withShipping(50);</code> works in two steps: the function runs and returns a value, and then the call is replaced by that value. It's as if you'd written <code>let cost = 65;</code>"],
+    ["return ends the function", "As soon as <code>return</code> runs, the function stops. Any lines after it in the same block are skipped."],
+    ["No return means undefined", "If a function never reaches a return, the call gives back <code>undefined</code>, JavaScript's way of saying \"no value\"."]
+  ],
+  terms: [["return value", "the value a function sends back"], ["undefined", "the value meaning \"nothing here\""]],
+  example: { code: "function withShipping(price) {\n  return price + 15;\n}\nlet total = withShipping(50);\nconsole.log(total);\nconsole.log(withShipping(10) + 1);", lines: ["Define withShipping with a parameter price.", "Work out price + 15 and send it back. The function ends here.", "End of the definition.", "Call with 50. The call becomes 65, which is stored in total.", "Prints 65.", "withShipping(10) becomes 25, then + 1 gives 26."] },
+  symbols: [["return", "send this value back and stop the function"], ["withShipping(50)", "the call is replaced by the returned value"]],
+  good: { code: "function double(n) {\n  return n * 2;\n}\nlet x = double(4); // 8", why: "The answer comes back and is stored in x." },
+  bad: { code: "function double(n) {\n  console.log(n * 2);\n}\nlet x = double(4); // undefined", why: "It prints 8 but returns nothing, so x is undefined." },
+  mistakes: ["Logging instead of returning.", "Code after return never runs.", "Calling the function but ignoring the result.", "With an if inside a function, make sure every path reaches a return."],
+  trace: { code: "function withShipping(price) {\n  return price + 15;\n}\nlet total = withShipping(50);\nconsole.log(total);\nconsole.log(withShipping(10) + 1);", steps: [
+    { l: 0, n: "Remember the definition. Nothing runs yet." },
+    { l: 3, n: "To work out total, JavaScript must call withShipping(50) first." },
+    { l: 1, v: { price: "50" }, n: "Inside, price is 50. price + 15 is 65, and return sends 65 back." },
+    { l: 3, v: { total: "65" }, n: "The call is replaced by 65, which is stored in total." },
+    { l: 4, o: "65" },
+    { l: 1, v: { price: "10" }, n: "The next line calls withShipping(10). It returns 25." },
+    { l: 5, o: "26", n: "25 + 1 = 26 is printed." }] },
+  practise: { starter: "function square(n) {\n  return n * n;\n}\nlet big = square(9);\nconsole.log(big);\nconsole.log(square(3) + square(4));\n", ideas: ["Write <code>function half(n)</code> that returns n / 2 and print <code>half(square(4))</code>.", "Replace return with console.log in square and run. What happens to big?", "Put a console.log after the return and check whether it prints."] },
+  predict: { code: 'function f(x) {\n  return x + 1;\n  console.log("never");\n}\nconsole.log(f(f(1)));', answer: "3", explain: "f(1) returns 2, then f(2) returns 3. The console.log inside f comes after return, so it never runs." },
+  challenge: {
+    scene: "rig", title: "Price the repairs",
+    brief: "Write <code>function repairCost(parts)</code> that <b>returns</b> the price. Each part costs 15 coins, and orders of <b>more than</b> 10 parts get 20 coins off the total.",
+    starter: "function repairCost(parts) {\n  // work out the price and return it\n}\n\nconsole.log(repairCost(4)); // should print 60\n",
+    hints: ["Store <code>parts * 15</code> in a variable, subtract 20 inside <code>if (parts > 10) { }</code>, then <code>return</code> the variable at the end."],
+    cases: [[2, 30], [10, 150], [11, 145], [0, 0], [20, 280]].map(([p, exp]) => ({
+      label: "repairCost(" + p + ")", expect: String(exp), post: callPost("repairCost", [p]),
+      check: r => callCheck(r.report, "repairCost", "repairCost(" + p + ")", exp, v => p === 10 && v === 130 ? "Exactly 10 parts gets no discount. \"More than 10\" means <code>> 10</code>." : p > 10 && v === p * 15 ? "Orders over 10 parts need 20 coins taken off." : "")
+    })),
+    solution: "function repairCost(parts) {\n  let cost = parts * 15;\n  if (parts > 10) {\n    cost = cost - 20;\n  }\n  return cost;\n}\n\nconsole.log(repairCost(4)); // should print 60",
+    why: ["Define the function. parts is the number of parts ordered.", "Start with the full price.", "Only big orders, strictly more than 10…", "…get 20 coins off.", "End of the if.", "Send the final price back to whoever called the function.", "End of the function.", "", "Test it: repairCost(4) returns 60, which console.log prints."]
+  },
+  recap: ["<code>return</code> sends a value back and ends the function.", "A call is replaced by its return value.", "No return means the call gives undefined."]
+},
+/* ---------- 10 ---------- */
+{
+  id: "arrays", world: 4, title: "Crystal Rack", concept: "Arrays and indexes",
+  story: "The Data Archive stores energy crystals on racks. One variable per crystal would be chaos. You need a list.",
+  learn: [
+    ["A list in one box", "An <b>array</b> holds many values in order. You write it with square brackets and commas: <code>[\"ruby\", \"jade\", \"opal\"]</code>. Each value is called an <b>element</b>."],
+    ["Positions start at 0", "Each element has a position number called an <b>index</b>. The first index is <b>0</b>, not 1. <code>crystals[0]</code> is the first crystal and <code>crystals[1]</code> is the second."],
+    ["How many?", "<code>crystals.length</code> tells you how many elements there are. Because counting starts at 0, the last element is at <code>crystals.length - 1</code>. Reading an index that doesn't exist gives <code>undefined</code>."],
+    ["Changing an array", "<code>crystals[0] = \"onyx\"</code> replaces an element. <code>crystals.push(\"onyx\")</code> adds one to the end, and <code>crystals.pop()</code> removes the last. An array made with const can still change its contents. const only stops you replacing the whole array."]
+  ],
+  terms: [["array", "an ordered list of values"], ["element", "one value in an array"], ["index", "an element's position, starting at 0"], [".length", "how many elements there are"]],
+  example: { code: 'const crystals = ["ruby", "jade", "opal"];\nconsole.log(crystals[0]);\nconsole.log(crystals.length);\ncrystals.push("onyx");\nconsole.log(crystals[crystals.length - 1]);\nconsole.log(crystals);', lines: ["Create an array with three strings.", "Index 0 is the first element: prints ruby.", "There are 3 elements.", "Add \"onyx\" to the end. Now there are 4.", "length is 4, so the last index is 3: prints onyx.", "Prints the whole array."] },
+  symbols: [["[ ]", "create an array, or read an element by index"], [",", "separates elements"], [".length", "how many elements"], [".push(x)", "add x to the end"], [".pop()", "remove the last element"]],
+  good: { code: "const last = crystals[crystals.length - 1];", why: "Works for any array size." },
+  bad: { code: "const last = crystals[crystals.length];", why: "One past the end, so this gives undefined." },
+  mistakes: ["Counting from 1 instead of 0.", "<code>arr[arr.length]</code> is past the end.", "Forgetting the commas between elements.", "Using round brackets to read an element: <code>arr(0)</code> instead of <code>arr[0]</code>."],
+  widget: "array",
+  trace: { code: 'const crystals = ["ruby", "jade", "opal"];\nconsole.log(crystals[0]);\nconsole.log(crystals.length);\ncrystals.push("onyx");\nconsole.log(crystals[crystals.length - 1]);\nconsole.log(crystals);', steps: [
+    { l: 0, v: { crystals: '["ruby", "jade", "opal"]' }, n: "Three elements at indexes 0, 1 and 2." },
+    { l: 1, o: "ruby", n: "Index 0 is the first element." },
+    { l: 2, o: "3", n: "length counts the elements: 3." },
+    { l: 3, v: { crystals: '["ruby", "jade", "opal", "onyx"]' }, n: "push adds to the end. onyx is at index 3." },
+    { l: 4, o: "onyx", n: "length is now 4, so length - 1 is 3." },
+    { l: 5, o: '["ruby", "jade", "opal", "onyx"]', n: "The whole array is printed." }] },
+  practise: { starter: 'const tools = ["wrench", "scanner", "torch"];\nconsole.log(tools[1]);\ntools.push("magnet");\nconsole.log(tools.length);\n', ideas: ["Print the first tool.", "Print <code>tools[10]</code>. What do you get?", "Replace the scanner with a laser using <code>tools[1] = \"laser\";</code>", "Call <code>tools.pop();</code> and print the array."] },
+  predict: { code: "const a = [10, 20, 30];\na[1] = 99;\nconsole.log(a[1] + a[2]);\nconsole.log(a.length);", answer: "129\n3", explain: "a[1] becomes 99, and 99 + 30 is 129. Replacing an element doesn't change the length." },
+  challenge: {
+    scene: "rig", title: "Sort the crystal rack",
+    brief: "<code>crystals</code> already exists and holds a different rack in each test. Create <code>first</code> holding the first crystal and <code>last</code> holding the last crystal. Then add <code>\"obsidian\"</code> to the end of the rack, and print how many crystals there are now.",
+    starter: "// crystals already exists\n",
+    hints: ["<code>crystals[0]</code>, <code>crystals[crystals.length - 1]</code>, <code>crystals.push(...)</code> and <code>crystals.length</code>. Read last before you push."],
+    cases: [["ruby", "jade", "opal"], ["amber", "beryl", "coral", "diamond", "emerald"], ["quartz"]].map(arr => ({
+      label: show(arr), pre: "const crystals = " + JSON.stringify(arr) + ";", expect: "first " + show(arr[0]) + ", last " + show(arr[arr.length - 1]) + ", prints " + (arr.length + 1),
+      post: grab("first", "last", "crystals"),
+      check: r => {
+        const R = r.report, L = arr[arr.length - 1];
+        if (R.first === undefined && !("first" in R)) return fail("There is no variable called <code>first</code>.", "no first");
+        if (R.first !== arr[0]) return fail(R.first === arr[1] ? "first holds the second crystal. Indexes start at 0, so the first is <code>crystals[0]</code>." : "first should be " + q(show(arr[0])) + " but is " + q(show(R.first)) + ".", "first " + show(R.first));
+        if (R.last !== L) {
+          if (R.last === undefined) return fail("last is undefined. <code>crystals[crystals.length]</code> is one past the end. Use <code>crystals.length - 1</code>.", "last undefined");
+          if (R.last === "obsidian") return fail("last is \"obsidian\": you read the last crystal after pushing. Read it before adding the new one.", "last \"obsidian\"");
+          return fail("last should be " + q(show(L)) + " but is " + q(show(R.last)) + ". Use <code>crystals[crystals.length - 1]</code> so it works for any rack size.", "last " + show(R.last));
+        }
+        if (!same(R.crystals, arr.concat("obsidian"))) return fail("The rack should be " + q(show(arr.concat("obsidian"))) + " but is " + q(show(R.crystals)) + ". Use <code>crystals.push(\"obsidian\");</code>", show(R.crystals));
+        const e = expectLogs(r.logs, [String(arr.length + 1)]);
+        return e.ok ? pass("first " + show(arr[0]) + ", last " + show(L) + ", prints " + (arr.length + 1)) : e;
+      }
+    })),
+    solution: '// crystals already exists\nconst first = crystals[0];\nconst last = crystals[crystals.length - 1];\ncrystals.push("obsidian");\nconsole.log(crystals.length);',
+    why: ["The rack is given to you.", "Index 0 is always the first element.", "length - 1 is always the last index, whatever the size.", "Add the new crystal after reading last, so last still holds the original end.", "length now includes obsidian."]
+  },
+  recap: ["Arrays hold ordered lists: <code>[a, b, c]</code>.", "Indexes start at 0; the last is <code>length - 1</code>.", "<code>push</code> adds to the end."]
+},
+/* ---------- 11 ---------- */
+{
+  id: "arrloop", world: 4, title: "Scan the Archive", concept: "Looping through arrays",
+  story: "The archive's power readings arrive as long lists. You'll need loops and arrays working together.",
+  learn: [
+    ["Visit every element", "Combine a for loop with indexes: start i at 0 and keep going while <code>i < cells.length</code>. Inside, <code>cells[i]</code> is the current element. This visits every element exactly once, for any length."],
+    ["for...of", "When you only need the elements, not their positions, <code>for (const cell of cells) { ... }</code> is shorter. Each round, cell holds the next element."],
+    ["The accumulator pattern", "To add up a list, create <code>let total = 0;</code> <b>before</b> the loop, add each element inside the loop, and use total <b>after</b> the loop. The total builds up, or accumulates."],
+    ["The counting pattern", "To count matching elements, start <code>let count = 0;</code> and inside the loop add 1 only when an if condition is true. This combines everything from Sectors 1 to 3."]
+  ],
+  terms: [["accumulator", "a variable that builds up a result across a loop"], ["for...of", "a loop that visits each element directly"], ["NaN", "\"Not a Number\", the result of maths with undefined"]],
+  example: { code: "const cells = [12, 7, 30];\nlet total = 0;\nfor (let i = 0; i < cells.length; i++) {\n  total = total + cells[i];\n}\nconsole.log(total);", lines: ["Three readings.", "The accumulator starts at 0, before the loop.", "i goes 0, 1, 2: one round per element.", "Add the current element to the running total.", "End of the loop.", "After the loop, total holds 49."] },
+  symbols: [["i < cells.length", "stop after the last index"], ["cells[i]", "the element for this round"], ["for (const x of arr)", "visit each element as x"]],
+  good: { code: "let total = 0;\nfor (const c of cells) {\n  total = total + c;\n}", why: "total is created once, before the loop, and grows each round." },
+  bad: { code: "for (let i = 0; i <= cells.length; i++) {\n  total = total + cells[i];\n}", why: "<= runs one round too many. cells[3] is undefined, and adding undefined gives NaN." },
+  mistakes: ["<code><= length</code> goes one past the end.", "Creating the accumulator inside the loop resets it every round.", "Returning inside the loop stops after the first element.", "Forgetting to return the result after the loop."],
+  trace: { code: "const cells = [12, 7, 30];\nlet total = 0;\nfor (let i = 0; i < cells.length; i++) {\n  total = total + cells[i];\n}\nconsole.log(total);", steps: [
+    { l: 0, v: { cells: "[12, 7, 30]" } }, { l: 1, v: { total: "0" }, n: "The accumulator starts empty." },
+    { l: 2, v: { i: "0" }, n: "0 < 3, so start round 1." }, { l: 3, v: { total: "12" }, n: "0 + cells[0] → 0 + 12 = 12" },
+    { l: 2, v: { i: "1" }, n: "1 < 3, so round 2." }, { l: 3, v: { total: "19" }, n: "12 + cells[1] → 12 + 7 = 19" },
+    { l: 2, v: { i: "2" }, n: "2 < 3, so round 3." }, { l: 3, v: { total: "49" }, n: "19 + cells[2] → 19 + 30 = 49" },
+    { l: 2, v: { i: "3" }, n: "3 < 3 is false. Every element has been visited." },
+    { l: 5, o: "49", n: "Use the result after the loop." }] },
+  practise: { starter: 'const readings = [4, 18, 9, 27];\nfor (const r of readings) {\n  console.log("Reading: " + r);\n}\n', ideas: ["Add up the readings with an accumulator.", "Count how many readings are above 10.", "Find the biggest: start <code>let best = readings[0];</code> and replace it whenever you find a bigger one."] },
+  predict: { code: "const nums = [4, 9, 2];\nlet best = nums[0];\nfor (const n of nums) {\n  if (n > best) {\n    best = n;\n  }\n}\nconsole.log(best);", answer: "9", explain: "best starts at 4. 9 > 4, so best becomes 9. 2 > 9 is false. The loop ends with best = 9." },
+  challenge: {
+    scene: "rig", title: "Build the archive scanner",
+    brief: "Write two functions. <code>totalEnergy(cells)</code> returns the sum of all numbers in the array. <code>countAbove(cells, limit)</code> returns how many numbers are <b>greater than</b> limit. Both must work for any array, including an empty one.",
+    starter: "function totalEnergy(cells) {\n\n}\n\nfunction countAbove(cells, limit) {\n\n}\n",
+    hints: ["Use the accumulator pattern in both: start at 0 before the loop, update inside it (with an if for countAbove), and return after the loop has ended."],
+    cases: [
+      ["totalEnergy", [[5, 10, 15]], 30], ["totalEnergy", [[]], 0], ["totalEnergy", [[42]], 42],
+      ["countAbove", [[5, 10, 15], 8], 2], ["countAbove", [[3, 3, 3, 50], 3], 1], ["countAbove", [[], 10], 0]
+    ].map(([fn, args, exp]) => {
+      const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")";
+      return { label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
+        if (typeof v === "number" && isNaN(v)) return "NaN means undefined got into the maths. Does your loop go one past the end with <code><=</code>?";
+        if (fn === "totalEnergy" && args[0].length > 1 && v === args[0][0]) return "Only the first element was counted. Is the return inside the loop? Move it after the closing brace.";
+        if (fn === "countAbove" && exp === 1 && v === 4) return "\"Greater than\" means <code>></code>. Numbers equal to the limit don't count.";
+        return "";
+      }) };
+    }),
+    solution: "function totalEnergy(cells) {\n  let total = 0;\n  for (const c of cells) {\n    total = total + c;\n  }\n  return total;\n}\n\nfunction countAbove(cells, limit) {\n  let count = 0;\n  for (const c of cells) {\n    if (c > limit) {\n      count = count + 1;\n    }\n  }\n  return count;\n}",
+    why: ["Define the first function.", "Accumulator before the loop.", "Visit each element as c.", "Add it to the total.", "End of the loop.", "Return after every element has been added. An empty array skips the loop and returns 0.", "End of totalEnergy.", "", "Define the second function with two parameters.", "Counter before the loop.", "Visit each element.", "Only numbers strictly above the limit…", "…add 1 to the count.", "End of the if.", "End of the loop.", "Return the count.", "End of countAbove."]
+  },
+  recap: ["Loop from 0 while <code>i < arr.length</code>, or use for...of.", "Accumulator: create before, update inside, use after.", "NaN usually means you read past the end."]
+},
+/* ---------- 12 ---------- */
+{
+  id: "objects", world: 4, title: "Robot Profiles", concept: "Objects and properties",
+  story: "Every robot on the station needs a profile card: a name, a battery level and a list of skills. You need a way to keep related values together.",
+  learn: [
+    ["Describing one thing", "An array is a list of similar things. An <b>object</b> describes one thing with labelled values: <code>{ name: \"Bolt\", battery: 100 }</code>. Each <b>label: value</b> pair is called a <b>property</b>, and the label is called a <b>key</b>."],
+    ["Reading properties", "Use a dot: <code>bot.name</code> gives \"Bolt\". Reading a key that doesn't exist gives <code>undefined</code>, not an error, so watch your spelling."],
+    ["Changing and adding", "<code>bot.battery = 80;</code> changes a property. <code>bot.colour = \"red\";</code> adds a new one. As with arrays, const stops you replacing the whole object but not changing what's inside."],
+    ["You've used objects already", "Values can be anything, even arrays or functions. <code>robot</code> is an object, and <code>move</code> is a function stored inside it. A function stored in an object is called a <b>method</b>."]
+  ],
+  terms: [["object", "a group of labelled values"], ["property", "one key: value pair"], ["key", "the label of a property"], ["method", "a function stored in an object"]],
+  example: { code: 'const bot = {\n  name: "Bolt",\n  battery: 100,\n  skills: ["weld", "scan"]\n};\nconsole.log(bot.name);\nbot.battery = bot.battery - 25;\nconsole.log(bot.battery);\nconsole.log(bot.skills[1]);', lines: ["Start an object with {.", "Key name, value \"Bolt\". A comma separates properties.", "Key battery, a number.", "Key skills, holding an array. No comma after the last property.", "Close the object.", "Dot notation reads a property: Bolt.", "Read battery, subtract 25 and store it back: 75.", "Prints 75.", "skills is an array, so [1] reads its second element: scan."] },
+  symbols: [["{ }", "create an object"], ["key: value", "a property: a label and its value"], [",", "separates properties"], [".", "read or change a property: bot.name"]],
+  good: { code: 'const cell = { id: 7, charge: 40 };\ncell.charge = 55;', why: "Colons inside the object, commas between properties, and a dot to update." },
+  bad: { code: 'const cell = { id = 7, charge = 40 };', why: "Inside an object, keys use <code>:</code>, not <code>=</code>. This is a SyntaxError." },
+  mistakes: ["Using <code>=</code> instead of <code>:</code> inside an object.", "Missing commas between properties.", "A misspelled key gives undefined rather than an error.", "Quotes in dot notation: <code>bot.\"name\"</code> is invalid. Write <code>bot.name</code>."],
+  trace: { code: 'const bot = {\n  name: "Bolt",\n  battery: 100,\n  skills: ["weld", "scan"]\n};\nconsole.log(bot.name);\nbot.battery = bot.battery - 25;\nconsole.log(bot.battery);\nconsole.log(bot.skills[1]);', steps: [
+    { l: 0, v: { "bot.name": '"Bolt"', "bot.battery": "100", "bot.skills": '["weld", "scan"]' }, n: "Lines 1 to 5 build one object with three properties." },
+    { l: 5, o: "Bolt", n: "bot.name looks up the key name." },
+    { l: 6, v: { "bot.battery": "75" }, n: "Read 100, subtract 25, store 75 back." },
+    { l: 7, o: "75" },
+    { l: 8, o: "scan", n: "bot.skills is an array; index 1 is its second element." }] },
+  practise: { starter: 'const ship = {\n  name: "Comet",\n  speed: 12\n};\nconsole.log(ship.name + " flies at " + ship.speed);\n', ideas: ["Double the speed with <code>ship.speed = ship.speed * 2;</code>", "Add a crew array property and print the first crew member.", "Print <code>ship.colour</code> before you've created it.", "Print the whole object with <code>console.log(ship);</code>"] },
+  predict: { code: "const p = { x: 2, y: 5 };\np.x = p.x + p.y;\nconsole.log(p.x);\nconsole.log(p.z);", answer: "7\nundefined", explain: "p.x becomes 2 + 5 = 7. There is no key z, so p.z is undefined. It isn't an error." },
+  challenge: {
+    scene: "rig", title: "Register your robot",
+    brief: "Create <code>const bot</code> with three properties: <code>name</code> (a string), <code>battery</code> (a number) and <code>skills</code> (an array of at least 2 strings). Then write <code>function describe(robot)</code> that <b>returns</b> a sentence like <code>Bolt has 80% battery</code> for any robot object it is given.",
+    starter: "const bot = {\n  // name, battery, skills\n};\n\nfunction describe(robot) {\n  // return a sentence using robot.name and robot.battery\n}\n\nconsole.log(describe(bot));\n",
+    hints: ["Build the sentence with +: <code>robot.name + \" has \" + robot.battery + \"% battery\"</code>. Use the parameter robot, not bot, inside the function."],
+    cases: [
+      { label: "Your bot object", expect: "name, battery and skills set", post: grab("bot"), check: r => {
+        const b = r.report.bot;
+        if (!b || typeof b !== "object" || Array.isArray(b)) return fail("Create an object: <code>const bot = { ... };</code>", show(b));
+        if (typeof b.name !== "string" || !b.name) return fail("bot needs a <code>name</code> property holding a string.", show(b));
+        if (typeof b.battery !== "number") return fail("bot.battery should be a number (no quotes).", show(b));
+        if (!Array.isArray(b.skills) || b.skills.length < 2 || !b.skills.every(s => typeof s === "string")) return fail("bot.skills should be an array of at least 2 strings, like <code>[\"weld\", \"scan\"]</code>.", show(b));
+        return pass(show(b));
+      } },
+      { label: "describe(bot)", expect: "your bot's sentence", post: grab("bot") + " " + "__report.isFn = typeof describe === 'function'; if (__report.isFn && typeof bot !== 'undefined') __report.out = __call(describe, bot);", check: r => {
+        const b = r.report.bot || {};
+        return callCheck(r.report, "describe", "describe(bot)", b.name + " has " + b.battery + "% battery", null);
+      } },
+      ...[{ name: "Zed", battery: 15 }, { name: "Mira", battery: 100 }].map(o => ({
+        label: "describe(" + show(o) + ")", expect: o.name + " has " + o.battery + "% battery", post: grab("bot") + " " + callPost("describe", [o]),
+        check: r => callCheck(r.report, "describe", "describe(" + show(o) + ")", o.name + " has " + o.battery + "% battery", v => {
+          const b = r.report.bot;
+          if (b && typeof v === "string" && b.name && v.indexOf(b.name) >= 0) return "The sentence mentions your bot, not the robot passed in. Inside describe, use the parameter <code>robot</code>, not <code>bot</code>.";
+          if (typeof v === "string" && v.replace(/\s+/g, "") === (o.name + "has" + o.battery + "%battery")) return "Check the spaces: there's a space after the name and after \"has\", but none before %.";
+          return "";
+        })
+      }))
+    ],
+    solution: 'const bot = {\n  name: "Bolt",\n  battery: 80,\n  skills: ["weld", "scan"]\n};\n\nfunction describe(robot) {\n  return robot.name + " has " + robot.battery + "% battery";\n}\n\nconsole.log(describe(bot));',
+    why: ["Start the object.", "A string property.", "A number property.", "An array property. No trailing comma needed.", "Close the object.", "", "robot is a parameter: it holds whichever object is passed in.", "Read two properties and join them into one string, then return it.", "End of the function.", "", "Pass bot in. Inside describe, robot refers to bot this time."]
+  },
+  recap: ["Objects group labelled values: <code>{ key: value }</code>.", "Read and change properties with a dot.", "Functions can take objects as parameters."]
+},
+/* ---------- 13 ---------- */
+{
+  id: "boss", world: 5, title: "The Glitch King", concept: "Debugging",
+  story: "The Glitch King has scrambled the station's main scanner. It's riddled with bugs, and there's no tutorial left to lean on. Use everything you've learned.",
+  learn: [
+    ["Every programmer writes bugs", "A <b>bug</b> is a mistake in code. Professional programmers spend a large part of their time <b>debugging</b>: finding and fixing them. It's a skill, and it gets faster with practice."],
+    ["Read the error message", "An error tells you three things: the <b>type</b> (SyntaxError, ReferenceError, TypeError), a <b>message</b> describing the problem, and a <b>line number</b>. Fix the first error first: one mistake can cause others."],
+    ["Bugs without errors", "Some bugs don't cause an error. The code runs but gives the wrong answer. These are <b>logic bugs</b>. Find them by printing values partway through with console.log and comparing them with what you expected."],
+    ["A debugging routine", "1. Run the code. 2. Read the error, or compare the output with what you expected. 3. Look at the reported line and the one above it. 4. Change one thing. 5. Run again. Changing many things at once makes it hard to know what fixed it."]
+  ],
+  terms: [["SyntaxError", "the code can't be read at all; nothing runs"], ["ReferenceError", "a name that doesn't exist, often a typo"], ["TypeError", "a value used the wrong way"], ["logic bug", "code that runs but gives the wrong result"]],
+  example: { code: "let speed = 10;\nconsole.log(sped);", lines: ["Create speed.", "ReferenceError: sped is not defined (line 2). A typo: JavaScript has never heard of sped."] },
+  symbols: [["SyntaxError", "JavaScript can't understand the code; nothing runs"], ["ReferenceError", "a name that doesn't exist"], ["TypeError", "a value used the wrong way, like changing a const"], ["NaN", "\"Not a Number\": maths with something that isn't a number"]],
+  good: { code: "for (let i = 0; i < nums.length; i++) {\n  console.log(i, nums[i]);\n  total = total + nums[i];\n}", why: "A temporary console.log shows every value the loop sees. Remove it once the bug is fixed." },
+  bad: { code: "// change five lines at once\n// and hope something works", why: "If it starts working, you won't know which change fixed it. If it gets worse, you won't know which change broke it." },
+  mistakes: ["Ignoring the line number in the error.", "Fixing a later error before the first one.", "Assuming that no error means correct output.", "Forgetting to remove debugging console.logs."],
+  trace: { code: "const nums = [4, 6];\nlet total = 0;\nfor (let i = 0; i <= nums.length; i++) {\n  total = total + nums[i];\n}\nconsole.log(total);", steps: [
+    { l: 0, v: { nums: "[4, 6]" } }, { l: 1, v: { total: "0" } },
+    { l: 2, v: { i: "0" }, n: "0 <= 2 is true." }, { l: 3, v: { total: "4" } },
+    { l: 2, v: { i: "1" }, n: "1 <= 2 is true." }, { l: 3, v: { total: "10" } },
+    { l: 2, v: { i: "2" }, n: "2 <= 2 is still true. This is the bug." },
+    { l: 3, v: { total: "NaN" }, n: "nums[2] doesn't exist, so it's undefined. 10 + undefined = NaN." },
+    { l: 2, v: { i: "3" }, n: "3 <= 2 is false. The loop stops." },
+    { l: 5, o: "NaN", n: "No error message, just a wrong answer. Fix: use < instead of <=." }] },
+  practise: { starter: "let total = 0;\nconst nums = [1, 2, 3];\nfor (let i = 0; i <= nums.length; i++) {\n  total = total + nums[i];\n}\nconsole.log(total);\n", ideas: ["Run it. Why NaN?", "Add <code>console.log(i, nums[i]);</code> inside the loop and run it again.", "Fix the bug so it prints 6.", "Misspell total on the last line and read the ReferenceError."] },
+  predict: { code: "const a = [1, 2];\nconsole.log(a[2] + 1);", answer: "NaN", explain: "a[2] is past the end, so it's undefined. undefined + 1 isn't a number, so the result is NaN." },
+  challenge: {
+    scene: "rig", title: "Defeat the Glitch King",
+    brief: "This scanner has <b>4 bugs</b>. <code>scanReport(levels)</code> should return an object <code>{ highest, alerts, total }</code>: the biggest level, how many levels are above 70, and the sum of all levels. Fix it until every test passes.",
+    starter: "// The Glitch King scrambled this scanner. Find all 4 bugs!\nfunction scanReport(levels) {\n  let highest = levels[0];\n  let alerts = 0;\n  let total = 0;\n  for (let i = 1; i <= levels.length; i++) {\n    total = total + levels[i];\n    if (levels[i] > highest) {\n      highest = levels[i];\n    }\n    if (levels[i] > 70) {\n      alerts = alerts + 1;\n    }\n  }\n  return { highest: highest, alert: alerts, total: total };\n}\n\nconsole.log(scanReport([40, 85, 72, 10]);\n",
+    hints: ["Fix the SyntaxError first. Then compare each test's result with the expected object: which key is misnamed, and which numbers are off?"],
+    cases: [[40, 85, 72, 10], [90, 5], [3], [71, 71]].map(lv => {
+      const exp = { highest: Math.max(...lv), alerts: lv.filter(x => x > 70).length, total: lv.reduce((a, b) => a + b, 0) };
+      const txt = "scanReport(" + show(lv) + ")";
+      return { label: txt, expect: show(exp), post: callPost("scanReport", [lv]), check: r => callCheck(r.report, "scanReport", txt, exp, v => {
+        if (v && typeof v === "object") {
+          if ("alert" in v && !("alerts" in v)) return "The object uses the key <code>alert</code>, but it should be <code>alerts</code>.";
+          if (typeof v.total === "number" && isNaN(v.total)) return "total is NaN: the loop reads one element past the end. Check the loop condition.";
+          if (v.total === exp.total - lv[0]) return "The first level is being skipped. Which index does the loop start at?";
+        }
+        return "";
+      }) };
+    }),
+    solution: "function scanReport(levels) {\n  let highest = levels[0];\n  let alerts = 0;\n  let total = 0;\n  for (let i = 0; i < levels.length; i++) {\n    total = total + levels[i];\n    if (levels[i] > highest) {\n      highest = levels[i];\n    }\n    if (levels[i] > 70) {\n      alerts = alerts + 1;\n    }\n  }\n  return { highest: highest, alerts: alerts, total: total };\n}\n\nconsole.log(scanReport([40, 85, 72, 10]));",
+    why: ["Define the function.", "Start highest at the first level.", "Counter for alerts.", "Accumulator for the sum.", "Bugs 1 and 2: start at 0 so the first level is counted, and use < so the loop stops at the last index.", "Add the current level.", "Is this the biggest so far?", "Remember it.", "", "Above 70 counts as an alert.", "Add one.", "", "End of the loop.", "Bug 3: the key must be alerts, exactly as specified.", "End of the function.", "", "Bug 4: the call was missing a closing bracket, which caused the SyntaxError."]
+  },
+  recap: ["Read the error type, message and line number.", "Fix the first error first, and change one thing at a time.", "No error doesn't mean correct: check the output against what you expected."]
+}
+];
+
+/* ================= Progress store ================= */
+const STORE_KEY = "js-quest-v1";
+let store = { done: {}, drafts: {}, sess: {} };
+try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(store, s); } catch (_) {}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (_) {} }
+const xp = () => Object.values(store.done).reduce((a, d) => a + 100 + 25 * d.stars, 0);
+const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"]];
+function rankInfo() { const x = xp(); let i = 0; RANKS.forEach((r, k) => { if (x >= r[0]) i = k; }); const next = RANKS[i + 1]; return { x, name: RANKS[i][1], next, pct: next ? (x - RANKS[i][0]) / (next[0] - RANKS[i][0]) : 1 }; }
+const unlocked = i => i === 0 || !!store.done[LESSONS[i - 1].id];
+const sess = id => (store.sess[id] = store.sess[id] || { attempts: 0, hints: 0, revealed: false, fails: 0 });
+const HINT_BUDGET = i => LESSONS[i].challenge.hints.length;
+
+function renderStatus() {
+  const r = rankInfo();
+  const done = Object.keys(store.done).length, stars = Object.values(store.done).reduce((a, d) => a + d.stars, 0);
+  $("#status").innerHTML = '<span><span class="rank">' + r.name + '</span> <span class="muted tnum">· ' + r.x + " XP</span></span>" +
+    '<span class="xpbar" title="' + (r.next ? (r.next[0] - r.x) + " XP to " + r.next[1] : "Top rank") + '"><i style="width:' + Math.round(r.pct * 100) + '%"></i></span>' +
+    '<span class="muted tnum">' + done + "/" + LESSONS.length + " repairs · ★ " + stars + "</span>";
+}
+
+/* ================= Views ================= */
+const app = $("#app");
+let view = { name: "map" };
+function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
+function render() { renderStatus(); if (view.name === "map") renderMap(); else renderLesson(); }
+$("#logo-btn").onclick = () => go({ name: "map" });
+
+function renderMap() {
+  const nextIdx = LESSONS.findIndex((l, i) => unlocked(i) && !store.done[l.id]);
+  const r = rankInfo();
+  const ni = nextIdx < 0 ? null : LESSONS[nextIdx];
+  let h = '<section class="hero"><div><p class="eyebrow">Station Nine · Maintenance log</p><h1>JavaScript Quest</h1>' +
+    '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across six sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
+    (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
+    '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
+    '<div style="margin-top:auto;color:var(--code-muted)">// stars: 3 = no hints and at most 2 checks</div></div></section>';
+  h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Edit and run freely"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
+  WORLDS.forEach((w, wi) => {
+    h += '<section class="sector"><div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div><div class="nodes">';
+    LESSONS.forEach((l, i) => {
+      if (l.world !== wi) return;
+      const d = store.done[l.id], u = unlocked(i);
+      const cls = d ? "done" : u ? "available" : "locked";
+      h += '<button class="node ' + cls + '" data-i="' + i + '"' + (u ? "" : ' disabled aria-disabled="true"') + '><span class="lv">LESSON ' + String(i + 1).padStart(2, "0") + "</span><b>" + esc(l.title) + "</b><small>" + esc(l.concept) + "</small>" +
+        (d ? '<span class="stars" aria-label="' + d.stars + ' of 3 stars">' + "★".repeat(d.stars) + "☆".repeat(3 - d.stars) + "</span>" : u ? '<span class="pill go" style="margin-top:auto">Ready</span>' : '<span class="pill" style="margin-top:auto">Locked</span>') + "</button>";
+    });
+    h += "</div></section>";
+  });
+  h += '<p class="muted small" style="margin-top:20px"><span class="reset-confirm" id="reset-area"><button class="btn small" id="reset">Reset progress</button></span></p>';
+  app.innerHTML = h;
+  $$(".node", app).forEach(b => b.onclick = () => { const i = +b.dataset.i; if (unlocked(i)) go({ name: "lesson", i, stage: 0 }); });
+  const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
+  $("#reset").onclick = () => {
+    $("#reset-area").innerHTML = '<span>Erase all stars, XP and saved code?</span><button class="btn small" id="reset-yes" style="border-color:var(--bad);color:var(--bad)">Erase progress</button><button class="btn small" id="reset-no">Keep it</button>';
+    $("#reset-yes").onclick = () => { store = { done: {}, drafts: {}, sess: {} }; save(); render(); };
+    $("#reset-no").onclick = render;
+  };
+}
+
+const STAGES = ["Learn", "Visualise", "Practise", "Challenge", "Review"];
+function renderLesson() {
+  const L = LESSONS[view.i], d = store.done[L.id];
+  const w = WORLDS[L.world];
+  let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button><div><p class="eyebrow">Sector ' + (L.world + 1) + " · " + w.name + " · Lesson " + (view.i + 1) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div></div>";
+  h += '<nav class="stages" aria-label="Lesson stages">' + STAGES.map((s, k) => {
+    const dis = k === 4 && !d;
+    return '<button class="stage-tab ' + (k === view.stage ? "active " : "") + (k === 3 && d ? "ok" : "") + '" data-k="' + k + '"' + (dis ? " disabled" : "") + (k === view.stage ? ' aria-current="step"' : "") + "><span>0" + (k + 1) + "</span><b>" + s + "</b></button>";
+  }).join("") + "</nav><div id=\"stage\"></div>";
+  app.innerHTML = h;
+  $("#back").onclick = () => go({ name: "map" });
+  $$(".stage-tab", app).forEach(b => b.onclick = () => { view.stage = +b.dataset.k; view.page = 0; render(); });
+  const host = $("#stage");
+  [stageLearn, stageVisual, stagePractise, stageChallenge, stageReview][view.stage](host, L, view.i);
+}
+const nextBtn = (label, stage) => '<div class="next-row"><button class="btn primary" data-goto="' + stage + '">' + label + " →</button></div>";
+function wireGoto(host) { $$("[data-goto]", host).forEach(b => b.onclick = () => { view.stage = +b.dataset.goto; view.page = 0; render(); window.scrollTo({ top: 0 }); }); }
+
+/* ---- Stage 1: Learn (three short pages) ---- */
+const LEARN_PAGES = ["The idea", "Read the code", "Avoid mistakes"];
+function stageLearn(host, L) {
+  const pg = Math.min(view.page || 0, LEARN_PAGES.length - 1);
+  let body = "";
+  if (pg === 0) {
+    body += '<div class="brief"><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div>";
+    body += '<div class="prose">' + L.learn.map(s => "<section><h3>" + s[0] + "</h3><p>" + s[1] + "</p></section>").join("") + "</div>";
+    body += '<div class="panel"><h3>Words to know</h3><dl class="terms">' + L.terms.map(t => "<dt>" + esc(t[0]) + "</dt><dd>" + esc(t[1]) + "</dd>").join("") + "</dl></div>";
+  } else if (pg === 1) {
+    body += '<div class="prose"><p>Here is the idea as real code. Read each line on the left, then its meaning on the right.</p></div>';
+    body += '<div class="panel"><h3>Example, line by line</h3><div class="scroll-x"><table class="explain"><tbody>' + L.example.code.split("\n").map((ln, i) => "<tr><td>" + (hl(ln) || " ") + "</td><td>" + esc(L.example.lines[i] || "") + "</td></tr>").join("") + "</tbody></table></div></div>";
+    body += '<div class="panel"><h3>What the symbols mean</h3><div class="scroll-x"><table class="explain"><tbody>' + L.symbols.map(s => "<tr><td>" + hl(s[0]) + "</td><td>" + esc(s[1]) + "</td></tr>").join("") + "</tbody></table></div></div>";
+  } else {
+    body += '<div class="panel"><h3>Correct and incorrect</h3><div class="compare"><div class="good"><span class="tag">Works</span>' + codeBlock(L.good.code) + "<p>" + L.good.why + '</p></div><div class="bad"><span class="tag">Broken</span>' + codeBlock(L.bad.code) + "<p>" + L.bad.why + "</p></div></div></div>";
+    body += '<div class="panel"><h3>Common beginner mistakes</h3><ul class="mistakes">' + L.mistakes.map(m => "<li>" + m + "</li>").join("") + "</ul></div>";
+  }
+  const sub = '<nav class="subnav" aria-label="Learn pages">' + LEARN_PAGES.map((p, k) => '<button class="sub' + (k === pg ? " on" : "") + '" data-pg="' + k + '"' + (k === pg ? ' aria-current="page"' : "") + "><span>" + (k + 1) + "</span>" + p + "</button>").join("") + "</nav>";
+  const nav = '<div class="next-row">' + (pg > 0 ? '<button class="btn" data-pg="' + (pg - 1) + '">← ' + LEARN_PAGES[pg - 1] + "</button>" : "") +
+    (pg < LEARN_PAGES.length - 1 ? '<button class="btn primary" data-pg="' + (pg + 1) + '">Next: ' + LEARN_PAGES[pg + 1] + " →</button>" : '<button class="btn primary" data-goto="1">Watch it run →</button>') + "</div>";
+  host.innerHTML = '<div class="reader">' + sub + body + nav + "</div>";
+  $$("[data-pg]", host).forEach(b => b.onclick = () => { view.page = +b.dataset.pg; render(); window.scrollTo({ top: 0 }); });
+  wireGoto(host);
+}
+
+/* ---- Stage 2: Visualise ---- */
+function stageVisual(host, L) {
+  host.innerHTML = '<div class="stack">' + (L.widget ? '<div class="panel"><h3>Try it with the controls</h3><div id="widget"></div></div>' : "") +
+    '<div class="panel"><h3>Step through the code</h3><p class="muted small" style="margin-bottom:12px">Press Step to run one moment at a time. The highlighted line is the one JavaScript is working on.</p><div id="stepper"></div></div></div>' + nextBtn("Practise", 2);
+  if (L.widget) WIDGETS[L.widget]($("#widget", host));
+  mountStepper($("#stepper", host), L.trace);
+  wireGoto(host);
+}
+function mountStepper(host, tr) {
+  let k = 0;
+  const lines = tr.code.split("\n");
+  host.innerHTML = '<div class="stepper"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side"><div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
+    '<div class="st-ctrl"><button class="btn small" data-a="reset">Restart</button><button class="btn small" data-a="prev">← Back</button><span class="st-count tnum"></span><button class="btn primary small" data-a="next">Step →</button></div></div>';
+  function draw() {
+    const vars = {}, out = []; let changed = {};
+    for (let i = 0; i <= k; i++) { const s = tr.steps[i]; if (s.v) { Object.assign(vars, s.v); if (i === k) changed = s.v; } if (s.o !== undefined) out.push([s.o, i === k]); }
+    const s = tr.steps[k];
+    $(".st-code", host).innerHTML = lines.map((ln, i) => '<div class="ln' + (i === s.l ? " cur" : "") + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(ln) || " ") + "</span></div>").join("");
+    $(".st-note", host).innerHTML = s.n ? esc(s.n) : (s.o !== undefined ? "Prints " + esc(s.o) + "." : "Next line.");
+    const keys = Object.keys(vars);
+    $(".vt", host).innerHTML = keys.length ? keys.map(n => '<div class="vbox' + (n in changed ? " changed" : "") + '"><div class="vn">' + esc(n) + '</div><div class="vv">' + esc(vars[n]) + "</div></div>").join("") : '<span class="muted small">None yet</span>';
+    $(".console", host).innerHTML = out.length ? out.map(o => '<span class="' + (o[1] ? "new" : "") + '">' + esc(o[0]) + "</span>").join("\n") : '<span class="muted">(empty)</span>';
+    $(".st-count", host).textContent = "Step " + (k + 1) + " of " + tr.steps.length;
+    $('[data-a="prev"]', host).disabled = k === 0;
+    $('[data-a="next"]', host).disabled = k === tr.steps.length - 1;
+  }
+  host.addEventListener("click", e => { const a = e.target.closest("[data-a]"); if (!a) return; if (a.dataset.a === "next" && k < tr.steps.length - 1) k++; if (a.dataset.a === "prev" && k > 0) k--; if (a.dataset.a === "reset") k = 0; draw(); });
+  draw();
+}
+
+/* ---- Widgets ---- */
+const WIDGETS = {
+  boxes(host) {
+    const boxes = {};
+    host.innerHTML = '<div class="widget"><div class="wrow"><label class="field">Keyword<select id="wb-kw"><option>let</option><option>const</option></select></label><label class="field">Name<input type="text" id="wb-name" value="score"></label><label class="field">Value<input type="text" id="wb-val" value="10"></label><button class="btn signal" id="wb-make">Create box</button><button class="btn" id="wb-set">Assign new value</button></div>' +
+      '<div id="wb-code"></div><div class="vt" id="wb-boxes"></div><div id="wb-msg" class="small"></div></div>';
+    const kw = $("#wb-kw", host), nm = $("#wb-name", host), vl = $("#wb-val", host), msg = $("#wb-msg", host);
+    const valid = n => /^[A-Za-z_$][\w$]*$/.test(n) && !KW.has(n);
+    const fmtVal = v => { v = v.trim(); if (/^-?\d+(\.\d+)?$/.test(v) || v === "true" || v === "false") return v; if (/^".*"$/.test(v) || /^'.*'$/.test(v)) return '"' + v.slice(1, -1) + '"'; return null; };
+    function draw(code) {
+      $("#wb-code", host).innerHTML = code ? codeBlock(code) : '<p class="muted small">Build a statement, then create a box or assign a new value. Text needs quotes, like "Ada".</p>';
+      const ks = Object.keys(boxes);
+      $("#wb-boxes", host).innerHTML = ks.length ? ks.map(k => '<div class="vbox' + (boxes[k].c ? " locked" : "") + (boxes[k].fresh ? " changed" : "") + '"><div class="vn">' + esc(k) + '</div><div class="vv">' + esc(boxes[k].v) + "</div></div>").join("") : "";
+      ks.forEach(k => boxes[k].fresh = false);
+    }
+    function say(t, bad) { msg.innerHTML = t; msg.style.color = bad ? "var(--bad)" : "var(--muted)"; }
+    $("#wb-make", host).onclick = () => {
+      const n = nm.value.trim(), v = fmtVal(vl.value);
+      const code = kw.value + " " + n + " = " + vl.value.trim() + ";";
+      if (!valid(n)) { draw(code); return say("SyntaxError: <code>" + esc(n || "(empty)") + "</code> isn't a valid name. Names start with a letter and contain no spaces.", true); }
+      if (v === null) { draw(code); return say("ReferenceError: JavaScript would treat <code>" + esc(vl.value) + "</code> as a variable name. Put text in quotes.", true); }
+      if (boxes[n]) { draw(code); return say("SyntaxError: <code>" + esc(n) + "</code> has already been declared. Use \"Assign new value\" instead.", true); }
+      boxes[n] = { v, c: kw.value === "const", fresh: true }; draw(code); say("Created a " + kw.value + " box called " + esc(n) + ".");
+    };
+    $("#wb-set", host).onclick = () => {
+      const n = nm.value.trim(), v = fmtVal(vl.value);
+      const code = n + " = " + vl.value.trim() + ";";
+      if (!boxes[n]) { draw(code); return say("ReferenceError: " + esc(n || "(empty)") + " is not defined. Create the box first.", true); }
+      if (v === null) { draw(code); return say("Put text in quotes.", true); }
+      if (boxes[n].c) { draw(code); return say("TypeError: Assignment to constant variable. " + esc(n) + " was made with const, so it can't change.", true); }
+      boxes[n].v = v; boxes[n].fresh = true; draw(code); say("The old value was replaced.");
+    };
+    draw("");
+  },
+  calc(host) {
+    host.innerHTML = '<div class="widget"><div class="wrow"><label class="field">Left value<input type="text" id="wc-a" value="7"></label><label class="field">Operator<select id="wc-op"><option>+</option><option>-</option><option>*</option><option>/</option><option>%</option></select></label><label class="field">Right value<input type="text" id="wc-b" value="3"></label><label class="field" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="wc-str"> Left value is text (in quotes)</label></div><div id="wc-out"></div></div>';
+    const upd = () => {
+      const aRaw = $("#wc-a", host).value.trim(), bRaw = $("#wc-b", host).value.trim(), op = $("#wc-op", host).value, str = $("#wc-str", host).checked;
+      const a = str ? aRaw : Number(aRaw), b = Number(bRaw);
+      const code = "console.log(" + (str ? '"' + aRaw + '"' : aRaw) + " " + op + " " + bRaw + ");";
+      let res, why;
+      if (!str && isNaN(a) || isNaN(b)) { res = "NaN"; why = "One side isn't a number, so the answer is NaN (Not a Number)."; }
+      else {
+        const r = op === "+" ? a + b : op === "-" ? a - b : op === "*" ? a * b : op === "/" ? a / b : a % b;
+        res = show(r, false);
+        why = str && op === "+" ? "One side is a string, so + joins them instead of adding." : str ? "For - * / and %, JavaScript converts the text \"" + esc(aRaw) + "\" to a number first." : op === "%" ? aRaw + " ÷ " + bRaw + " = " + Math.trunc(a / b) + " remainder " + res + "." : op === "/" && b === 0 ? "Dividing by zero gives Infinity in JavaScript." : "Plain arithmetic.";
+      }
+      $("#wc-out", host).innerHTML = codeBlock(code) + '<p style="margin-top:8px"><span class="label">Console</span><code style="font-size:1rem">' + esc(res) + '</code></p><p class="muted small">' + why + "</p>";
+    };
+    $$("input,select", host).forEach(e => e.addEventListener("input", upd)); upd();
+  },
+  compare(host) {
+    const sel = id => '<select id="' + id + '"><option value="n">number</option><option value="s">string</option></select>';
+    host.innerHTML = '<div class="widget"><div class="wrow"><label class="field">Left<input type="text" id="wq-a" value="5"></label><label class="field">as' + sel("wq-at") + '</label><label class="field">Operator<select id="wq-op"><option>===</option><option>!==</option><option>&gt;</option><option>&lt;</option><option>&gt;=</option><option>&lt;=</option></select></label><label class="field">Right<input type="text" id="wq-b" value="5"></label><label class="field">as' + sel("wq-bt") + '</label></div><div id="wq-out"></div></div>';
+    const upd = () => {
+      const ar = $("#wq-a", host).value, br = $("#wq-b", host).value, at = $("#wq-at", host).value, bt = $("#wq-bt", host).value, op = $("#wq-op", host).value;
+      const a = at === "n" ? Number(ar) : ar, b = bt === "n" ? Number(br) : br;
+      const lit = (v, t) => t === "n" ? String(v) : '"' + v + '"';
+      const r = op === "===" ? a === b : op === "!==" ? a !== b : op === ">" ? a > b : op === "<" ? a < b : op === ">=" ? a >= b : a <= b;
+      let why = "";
+      if ((op === "===" || op === "!==") && at !== bt) why = "A number and a string are different types, so they are never ===, even if they look alike.";
+      else if (at === "s" && bt === "s" && /[<>]/.test(op)) why = "Strings are compared letter by letter, like in a dictionary. \"10\" < \"9\" is true because \"1\" comes before \"9\".";
+      $("#wq-out", host).innerHTML = codeBlock("console.log(" + lit(ar, at) + " " + op + " " + lit(br, bt) + ");") + '<p style="margin-top:10px"><span class="lamp ' + (r ? "t" : "f") + '"><i></i>' + r + "</span></p>" + (why ? '<p class="muted small" style="margin-top:6px">' + why + "</p>" : "");
+    };
+    $$("input,select", host).forEach(e => e.addEventListener("input", upd)); upd();
+  },
+  branch(host) {
+    host.innerHTML = '<div class="widget"><label class="field">battery: <b id="wbr-v" class="tnum"></b><input type="range" id="wbr" min="0" max="100" value="35"></label><div class="stepper" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)"><div class="st-code" id="wbr-code"></div><div class="st-side"><div class="st-note" id="wbr-note"></div><div><span class="label">Console</span><pre class="console" id="wbr-out"></pre></div></div></div></div>';
+    const upd = () => {
+      const b = +$("#wbr", host).value;
+      const code = ["let battery = " + b + ";", "if (battery > 80) {", '  console.log("Full power");', "} else if (battery > 20) {", '  console.log("Normal mode");', "} else {", '  console.log("Low power!");', "}"];
+      const ran = b > 80 ? [0, 1, 2] : b > 20 ? [0, 1, 3, 4] : [0, 1, 3, 5, 6];
+      $("#wbr-v", host).textContent = b;
+      $("#wbr-code", host).innerHTML = code.map((ln, i) => '<div class="ln' + (ran.includes(i) ? " cur" : "") + '" style="' + (ran.includes(i) || i === 7 ? "" : "opacity:.4") + '"><span class="no">' + (i + 1) + "</span><span>" + hl(ln) + "</span></div>").join("");
+      const c1 = b > 80, c2 = b > 20;
+      $("#wbr-note", host).innerHTML = "<code>" + b + " &gt; 80</code> → <b>" + c1 + "</b>" + (c1 ? ". First branch runs; the rest are skipped." : "<br><code>" + b + " &gt; 20</code> → <b>" + c2 + "</b>" + (c2 ? ". Second branch runs." : ". Nothing matched, so else runs."));
+      $("#wbr-out", host).textContent = c1 ? "Full power" : c2 ? "Normal mode" : "Low power!";
+    };
+    $("#wbr", host).addEventListener("input", upd); upd();
+  },
+  machine(host) {
+    host.innerHTML = '<div class="widget"><div class="wrow"><label class="field">Argument (text)<input type="text" id="wm-a" value="Ada"></label></div><div class="machine" id="wm"></div></div>';
+    const upd = () => {
+      const a = $("#wm-a", host).value;
+      $("#wm", host).innerHTML = '<div class="mbox"><span class="label">Call</span>' + hl('greet("' + a + '");') + '</div><span class="arrow" aria-hidden="true">→</span><div class="mbox core"><span class="label">Inside greet</span>' + hl('name = "' + a + '"') + "<br>" + hl('console.log("Hello, " + name + "!");') + '</div><span class="arrow" aria-hidden="true">→</span><div class="mbox"><span class="label">Console</span>' + esc("Hello, " + a + "!") + "</div>";
+    };
+    $("#wm-a", host).addEventListener("input", upd); upd();
+  },
+  array(host) {
+    let arr = ["ruby", "jade", "opal"], hit = -1, line = 'const crystals = ["ruby", "jade", "opal"];', res = "";
+    host.innerHTML = '<div class="widget"><div class="slots" id="wa-s"></div><div class="wrow"><label class="field">Index<input type="number" id="wa-i" value="0"></label><button class="btn signal" id="wa-read">Read crystals[index]</button><label class="field">New crystal<input type="text" id="wa-p" value="onyx"></label><button class="btn" id="wa-push">push</button><button class="btn" id="wa-pop">pop</button></div><div id="wa-out"></div></div>';
+    const draw = () => {
+      $("#wa-s", host).innerHTML = arr.map((v, i) => '<div class="slot' + (i === hit ? " hit" : "") + '"><div class="si">[' + i + ']</div><div class="sv">' + esc(v) + "</div></div>").join("") || '<span class="muted small">Empty array []</span>';
+      $("#wa-out", host).innerHTML = codeBlock(line) + (res ? '<p style="margin-top:6px"><span class="label">Result</span><code>' + esc(res) + "</code></p>" : "") + '<p class="muted small" style="margin-top:4px">crystals.length is ' + arr.length + (arr.length ? ", so the last index is " + (arr.length - 1) : "") + ".</p>";
+    };
+    $("#wa-read", host).onclick = () => { const i = Math.trunc(+$("#wa-i", host).value); hit = i; line = "console.log(crystals[" + i + "]);"; res = i >= 0 && i < arr.length ? arr[i] : "undefined   (no element at index " + i + ")"; draw(); };
+    $("#wa-push", host).onclick = () => { const v = $("#wa-p", host).value.trim() || "onyx"; arr.push(v); hit = arr.length - 1; line = 'crystals.push("' + v + '");'; res = "added at index " + hit; draw(); };
+    $("#wa-pop", host).onclick = () => { const v = arr.pop(); hit = -1; line = "crystals.pop();"; res = v === undefined ? "undefined   (nothing to remove)" : 'removed "' + v + '"'; draw(); };
+    draw();
+  }
+};
+
+/* ---- Output and error rendering ---- */
+function renderResult(host, r, ed) {
+  const out = r.logs && r.logs.length ? esc(r.logs.join("\n")) : '<span class="muted">(nothing printed)</span>';
+  let h = '<span class="label">Console</span><pre class="console">' + out + "</pre>";
+  if (r.error) {
+    h += '<div class="errbox" style="margin-top:10px" role="alert"><span class="etype">' + esc(r.error.name) + ": " + esc(r.error.message) + (r.error.line ? " (line " + r.error.line + ")" : "") + "</span><p>" + explainError(r.error) + "</p></div>";
+    if (ed && r.error.line) ed.mark(r.error.line);
+  }
+  host.innerHTML = h;
+}
+
+/* ---- Stage 3: Practise ---- */
+function stagePractise(host, L) {
+  const P = L.practise, key = L.id + ":p";
+  const sandbox = '<div class="panel"><h3>Sandbox</h3><p class="muted small" style="margin-bottom:14px">Nothing here is graded. Change the code, break it on purpose, and see what happens.</p><div id="ped"></div><div class="toolbar"><button class="btn primary" id="prun">Run ▶</button><button class="btn" id="preset">Reset code</button><span class="hint-k">Ctrl + Enter runs</span></div><div id="pout" style="margin-top:16px"></div></div>';
+  host.innerHTML = '<div class="stack-lg">' +
+    (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' : sandbox) +
+    '<div class="cols"><div class="panel"><h3>Experiments to try</h3><ul class="ideas">' + P.ideas.map(i => "<li>" + i + "</li>").join("") + "</ul></div>" +
+    '<div class="panel predict"><h3>Predict the output</h3><p class="muted small" style="margin-bottom:10px">Before running anything, write what you think this prints, one value per line.</p>' + codeBlock(L.predict.code) + '<label class="label" for="pred" style="margin-top:14px">Your prediction</label><textarea id="pred" spellcheck="false"></textarea><div class="toolbar"><button class="btn signal" id="pcheck">Check prediction</button></div><div id="pres" style="margin-top:12px"></div></div></div></div>' + nextBtn("Take on the challenge", 3);
+  const grid = P.map ? mountGrid($("#pgrid", host), P.map, 1) : null;
+  const ed = createEditor($("#ped", host), { value: store.drafts[key] ?? P.starter, id: "ed-" + key.replace(":", "-"), minLines: 7, onRun: run, onChange: v => { store.drafts[key] = v; save(); } });
+  async function run() {
+    $("#pout", host).innerHTML = '<p class="muted small">Running…</p>';
+    const r = await runOnce({ code: ed.get(), map: P.map || null, dir: 1 });
+    renderResult($("#pout", host), r, ed);
+    if (grid && r.robot) { grid.play(r.robot.trace); if (r.robot.atGoal) $("#pout", host).insertAdjacentHTML("beforeend", '<p class="small" style="color:var(--ok);margin-top:6px">B0-T reached the exit.</p>'); }
+  }
+  $("#prun", host).onclick = run;
+  $("#preset", host).onclick = () => { ed.set(P.starter); grid && grid.reset(); $("#pout", host).innerHTML = ""; };
+  $("#pcheck", host).onclick = () => {
+    const norm = s => s.split("\n").map(x => x.trim()).filter(Boolean).join("\n");
+    const ok = norm($("#pred", host).value) === norm(L.predict.answer);
+    $("#pres", host).innerHTML = '<div class="' + (ok ? "okbox" : "errbox") + '"><b>' + (ok ? "Correct." : "Not quite. The output is:") + "</b>" + (ok ? "" : '<pre class="console">' + esc(L.predict.answer) + "</pre>") + "<p>" + esc(L.predict.explain) + "</p></div>";
+  };
+  wireGoto(host);
+}
+
+/* ---- Stage 4: Challenge ---- */
+function stageChallenge(host, L, idx) {
+  const C = L.challenge, key = L.id + ":c", S = sess(L.id), done = store.done[L.id];
+  const budget = HINT_BUDGET(idx);
+  host.innerHTML = '<div class="stack-lg">' +
+    '<div class="cols"><div class="brief brief-lg"><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div>" +
+    '<div class="scene"><div class="scene-head"><span>' + esc(C.title) + '</span><span class="state-lamp" id="lamp"><i></i><span>Offline</span></span></div><div id="scene"></div></div></div>' +
+    '<div class="panel"><h3>Your code</h3><div id="ced"></div><div class="toolbar"><button class="btn" id="crun">Run ▶</button><button class="btn primary" id="ccheck">Check solution</button><button class="btn small" id="creset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
+    '<div id="cfeed" aria-live="polite" style="margin-top:16px"></div><div id="cout" style="margin-top:16px"></div></div>' +
+    '<div class="cols"><div class="panel"><h3>Test results</h3><div class="scroll-x"><table class="cases"><thead><tr><th>Test</th><th>Expected</th><th>Result</th></tr></thead><tbody id="cases"></tbody></table></div></div>' +
+    '<div class="panel"><h3>Hints</h3><p class="muted small" style="margin-bottom:12px">' + budget + " hint" + (budget === 1 ? "" : "s") + " for this repair. Hints get scarcer as you go deeper into the station. Using one lowers the stars you can earn.</p><div class=\"hints\" id=\"hints\"></div><div class=\"toolbar\"><button class=\"btn small\" id=\"hintbtn\"></button><span id=\"revealwrap\"></span></div></div></div>" +
+    "</div>";
+  const ed = createEditor($("#ced", host), { value: store.drafts[key] ?? C.starter, id: "ed-" + L.id + "-c", minLines: 10, onRun: () => check(), onChange: v => { store.drafts[key] = v; save(); } });
+  const sceneHost = $("#scene", host);
+  let grid = null;
+  function drawScene(state) {
+    const on = state && state.pass;
+    $("#lamp", host).className = "state-lamp" + (on ? " on" : "");
+    $("#lamp span", host).textContent = on ? "Online" : "Offline";
+    if (C.scene === "robot") { if (!grid) grid = mountGrid(sceneHost, C.cases[0].map, C.cases[0].dir); return; }
+    if (C.scene === "terminal") { const lines = state && state.logs && state.logs.length ? esc(state.logs.join("\n")) : '<span class="dim">_ waiting for output…</span>'; sceneHost.innerHTML = '<div class="crt">' + lines + (on ? '\n\n<span>&gt; ACCESS GRANTED</span>' : "") + "</div>"; return; }
+    if (C.scene === "door") { const code = state && state.report && state.report.doorCode !== undefined ? show(state.report.doorCode) : "----"; sceneHost.innerHTML = '<div class="doorframe' + (on ? " open" : "") + '"><div class="behind">VAULT OPEN</div><div class="leaf l"></div><div class="leaf r"></div><div class="keypad">doorCode: ' + esc(code) + "</div></div>"; return; }
+    const n = C.cases.length, p = state && state.passed !== undefined ? state.passed : 0;
+    sceneHost.innerHTML = '<div class="crt" style="min-height:0">' + (state ? (on ? "ALL " + n + " CHECKS PASSED\n&gt; machine restored" : p + " / " + n + " checks passing\n&gt; repair incomplete") : '<span class="dim">' + n + " test rigs connected. Run a check to power them.</span>") + "</div>";
+  }
+  function drawCases(results) {
+    $("#cases", host).innerHTML = C.cases.map((c, i) => {
+      const r = results && results[i];
+      return "<tr><td><code>" + esc(c.label) + "</code></td><td><code>" + esc(c.expect) + "</code></td><td>" + (r ? '<span class="res ' + (r.ok ? "ok" : "bad") + '">' + (r.ok ? "Pass" : "Fail") + "</span>" + (r.got !== undefined && !r.ok ? '<br><code class="small">' + esc(r.got) + "</code>" : "") : '<span class="res wait">Not run</span>') + "</td></tr>";
+    }).join("");
+  }
+  function drawHints() {
+    $("#hints", host).innerHTML = C.hints.slice(0, S.hints).map((t, i) => '<div class="hint"><b>Hint ' + (i + 1) + ".</b> " + t + "</div>").join("");
+    const b = $("#hintbtn", host);
+    b.textContent = S.hints < budget ? "Show hint " + (S.hints + 1) + " of " + budget : "No hints left";
+    b.disabled = S.hints >= budget;
+    const rw = $("#revealwrap", host);
+    if (S.revealed) rw.innerHTML = '<div style="margin-top:10px"><span class="label">Worked solution</span>' + codeBlock(C.solution) + '<p class="muted small" style="margin-top:6px">Read it line by line, then type or adapt it yourself and check again. Revealing the solution caps this repair at 1 star.</p></div>';
+    else if (S.fails >= 3) { rw.innerHTML = '<button class="btn small" id="reveal">Show a worked solution (max 1 star)</button>'; $("#reveal", host).onclick = () => { S.revealed = true; save(); drawHints(); }; }
+    else rw.innerHTML = "";
+  }
+  $("#hintbtn", host).onclick = () => { if (S.hints < budget) { S.hints++; save(); drawHints(); } };
+  $("#creset", host).onclick = () => { ed.set(C.starter); };
+  async function run() {
+    const c = C.cases[0];
+    $("#cout", host).innerHTML = '<p class="muted small">Running…</p>';
+    const r = await runOnce({ code: ed.get(), pre: c.pre || "", map: c.map || null, dir: c.dir });
+    renderResult($("#cout", host), r, ed);
+    if (grid && r.robot) grid.play(r.robot.trace);
+    if (C.scene === "terminal") drawScene({ logs: r.logs });
+  }
+  async function check() {
+    const code = ed.get(), src = stripComments(code);
+    $("#cfeed", host).innerHTML = '<p class="muted small">Checking ' + C.cases.length + " test" + (C.cases.length > 1 ? "s" : "") + "…</p>";
+    S.attempts++;
+    const runs = [];
+    for (const c of C.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir }));
+    const results = runs.map((r, i) => r.error ? { ok: false, msg: null, got: r.error.name, err: r.error } : C.cases[i].check(r, C.cases[i], src));
+    const firstErr = runs.findIndex(r => r.error);
+    const showIdx = firstErr >= 0 ? firstErr : Math.max(0, results.findIndex(x => !x.ok));
+    renderResult($("#cout", host), runs[showIdx], ed);
+    if (C.cases.length > 1) $("#cout", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Showing output from test: <code>' + esc(C.cases[showIdx].label) + "</code></p>");
+    if (grid) { grid = mountGrid(sceneHost, C.cases[showIdx].map, C.cases[showIdx].dir); if (runs[showIdx].robot) grid.play(runs[showIdx].robot.trace); }
+    let srcFail = null;
+    if (firstErr < 0 && results.every(x => x.ok) && C.src) srcFail = C.src.find(s => !s.test(src));
+    drawCases(results);
+    const passed = results.filter(x => x.ok).length;
+    const allOk = passed === results.length && !srcFail;
+    drawScene({ pass: allOk, logs: runs[0].logs, report: runs[0].report, passed });
+    if (allOk) {
+      const stars = S.revealed ? 1 : (S.hints === 0 && S.attempts <= 2) ? 3 : (S.hints <= 1 && S.attempts <= 4) ? 2 : 1;
+      const prev = store.done[L.id];
+      const best = Math.max(stars, prev ? prev.stars : 0);
+      store.done[L.id] = { stars: best, code };
+      store.sess[L.id] = { attempts: 0, hints: 0, revealed: false, fails: 0 };
+      Object.assign(S, store.sess[L.id]);
+      save(); renderStatus(); celebrate();
+      $("#cfeed", host).innerHTML = '<div class="okbox"><h4>Machine repaired</h4><span class="stars-big" aria-label="' + stars + ' of 3 stars">' + "★".repeat(stars) + "☆".repeat(3 - stars) + "</span><p>" + (stars === 3 ? "Clean repair: no hints and hardly any retries." : stars === 2 ? "Solid work. Solve it with no hints and at most 2 checks for 3 stars." : "Repaired. Replay later without hints to earn more stars.") + (prev && prev.stars > stars ? " Your best of " + prev.stars + " stars is kept." : "") + '</p><div class="toolbar"><button class="btn primary" id="toreview">See why it works →</button></div></div>';
+      $("#toreview", host).onclick = () => { view.stage = 4; render(); window.scrollTo({ top: 0 }); };
+      $$('.stage-tab', app)[4].disabled = false; $$('.stage-tab', app)[3].classList.add("ok");
+    } else {
+      S.fails++; save();
+      let msg;
+      if (firstErr >= 0) msg = "<b>Your code stopped with an error</b>" + (C.cases.length > 1 ? " in test <code>" + esc(C.cases[firstErr].label) + "</code>" : "") + ". The explanation is below the editor" + (runs[firstErr].error.line ? ", and line " + runs[firstErr].error.line + " is marked in red" : "") + ".";
+      else if (srcFail) msg = "<b>All tests produced the right result, but there's one more requirement.</b> " + srcFail.msg;
+      else { const f = results.find(x => !x.ok); msg = "<b>" + passed + " of " + results.length + " tests pass.</b> " + f.msg; }
+      $("#cfeed", host).innerHTML = '<div class="errbox"><p>' + msg + "</p>" + (S.fails >= 3 && !S.revealed ? '<p class="small">Stuck? You can reveal a worked solution in the hints panel.</p>' : "") + "</div>";
+      drawHints();
+    }
+  }
+  $("#crun", host).onclick = run;
+  $("#ccheck", host).onclick = check;
+  drawScene(done ? { pass: true, passed: C.cases.length, logs: [] } : null);
+  drawCases(null); drawHints();
+  if (done) $("#cfeed", host).innerHTML = '<div class="okbox"><p><b>Already repaired with ' + done.stars + " star" + (done.stars > 1 ? "s" : "") + ".</b> You can solve it again to improve your score, or continue to the review.</p></div>";
+}
+
+/* ---- Stage 5: Review ---- */
+function stageReview(host, L, idx) {
+  const d = store.done[L.id], C = L.challenge;
+  if (!d) { host.innerHTML = '<div class="panel"><p>Repair the machine in the Challenge stage to unlock the review.</p>' + nextBtn("Go to the challenge", 3) + "</div>"; wireGoto(host); return; }
+  const next = LESSONS[idx + 1];
+  const solLines = C.solution.split("\n");
+  host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4><span class="stars-big">' + "★".repeat(d.stars) + "☆".repeat(3 - d.stars) + '</span><p>+' + (100 + 25 * d.stars) + ' XP toward your rank.</p></div>' +
+    '<div class="panel"><h3>Your solution</h3>' + codeBlock(d.code) + '<p class="muted small" style="margin-top:8px">Your version doesn\'t have to match the model below. If every test passed, it works. Compare the two to see other ways of writing the same idea.</p></div>' +
+    '<div class="panel"><h3>What you learned</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div></div>" +
+    '<div class="stack"><div class="panel"><h3>Why the model solution works</h3><div class="scroll-x"><table class="explain"><tbody>' + solLines.map((ln, i) => "<tr><td>" + (hl(ln) || " ") + "</td><td>" + esc(C.why[i] || "") + "</td></tr>").join("") + "</tbody></table></div></div>" +
+    '<div class="panel"><h3>Watch out for</h3><ul class="mistakes">' + L.mistakes.slice(0, 2).map(m => "<li>" + m + "</li>").join("") + "</ul></div></div></div>" +
+    '<div class="next-row"><button class="btn" id="tomap">Station map</button>' + (next ? '<button class="btn primary" id="tonext">Next: ' + esc(next.title) + " →</button>" : '<span class="pill ok" style="align-self:center">Station fully repaired</span>') + "</div>";
+  $("#tomap", host).onclick = () => go({ name: "map" });
+  const tn = $("#tonext", host); if (tn) tn.onclick = () => go({ name: "lesson", i: idx + 1, stage: 0 });
+}
+
+render();
+</script>
+
+</html>
