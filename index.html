@@ -9,7 +9,7 @@
 <title>JavaScript Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 /* Layout: a station maintenance console. Sticky status bar, a sector map wired like a circuit, and each lesson as a five-stage workbench. */
 :root {
@@ -34,7 +34,7 @@
   --code-line: #1E2D3B;
   --code-hi: #24384A;
   --t-k: #F2A65A; --t-s: #A3D98F; --t-n: #F5CB74; --t-c: #6C8195; --t-f: #7CC7E8; --t-o: #E39BC4; --t-p: #A8B6C3; --t-op: #F08A7E;
-  --f-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-display: "Pixelify Sans", "Segoe UI", system-ui, sans-serif;
   --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --f-code: "JetBrains Mono", ui-monospace, Consolas, "Courier New", monospace;
   --r: 6px;
@@ -294,6 +294,66 @@ ul.mistakes, ul.ideas { gap: 10px; }
   .panel { padding: 18px 16px; }
   .stack-lg { gap: 26px; }
 }
+/* ===== Pixel game skin: square corners, thick frames, hard drop shadows, pixel sprites ===== */
+:root { --frame: #15202B; --shadow: #A3B0BC; --btn-shadow: #8E9BA8; --accent-deep: #7A3A08; --grid-dot: rgba(21, 32, 43, .08); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --frame: #3A4B5C; --shadow: #04080C; --btn-shadow: #04080C; --accent-deep: #8A4A12; --grid-dot: rgba(225, 232, 238, .05); } }
+:root[data-theme="dark"] { --frame: #3A4B5C; --shadow: #04080C; --btn-shadow: #04080C; --accent-deep: #8A4A12; --grid-dot: rgba(225, 232, 238, .05); }
+body { background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.5px); background-size: 12px 12px; }
+.px { image-rendering: crisp-edges; image-rendering: pixelated; }
+.panel, .node, .stage-tab, .scene, .hero-card, .loop-strip div, .brief, .errbox, .okbox, .editor, pre.code, pre.console, .st-code, .st-note, .hint,
+.vbox, .slot, .crt, .doorframe, .grid, .compare > div, .keypad, .pill, .sub, .sub span, .field input, .field select, .lamp, .xpbar, .xpbar i,
+.predict textarea, .logo-mark, code, .machine .mbox, .btn { border-radius: 0 !important; }
+.panel, .hero-card, .scene { border: 3px solid var(--frame); box-shadow: 6px 6px 0 var(--shadow); }
+.loop-strip div { border: 3px solid var(--frame); box-shadow: 4px 4px 0 var(--shadow); }
+.loop-strip b, .stage-tab b, .node b, .btn, .pill, .sub, .label, .eyebrow, .res, .scene-head { font-family: var(--f-display); }
+.btn { border: 3px solid var(--frame); box-shadow: 0 4px 0 var(--btn-shadow); letter-spacing: .02em; transition: transform .05s, box-shadow .05s; }
+.btn:hover:not(:disabled) { border-color: var(--frame); filter: brightness(1.05); }
+.btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 0 0 var(--btn-shadow); }
+.btn.primary { border-color: var(--accent-deep); box-shadow: 0 4px 0 var(--accent-deep); }
+.btn.primary:active:not(:disabled) { box-shadow: 0 0 0 var(--accent-deep); }
+.btn.signal { border-color: var(--frame); }
+.stage-tab { border: 3px solid var(--frame); box-shadow: 0 4px 0 var(--btn-shadow); }
+.stage-tab.active { transform: translateY(4px); box-shadow: none; background: var(--accent); border-color: var(--accent-deep); }
+.stage-tab.active b, .stage-tab.active span, .stage-tab.active.ok b::after { color: var(--accent-ink); }
+.node { border: 3px solid var(--frame); box-shadow: 5px 5px 0 var(--shadow); transition: transform .08s, box-shadow .08s; }
+.node:not(.locked):hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--shadow); }
+.node.available { border-color: var(--accent); box-shadow: 5px 5px 0 var(--accent-deep); }
+.node.available:hover { box-shadow: 7px 7px 0 var(--accent-deep); }
+.node.done { border-color: var(--ok); }
+.node:not(:last-child)::after { height: 3px; background: var(--frame); }
+.node b { font-size: 1.12rem; font-weight: 600; }
+.pill { border: 2px solid currentColor; display: inline-flex; align-items: center; gap: 5px; }
+.xpbar { height: 14px; border: 2px solid var(--frame); background: var(--panel-2); }
+.xpbar i { background: repeating-linear-gradient(90deg, var(--accent) 0 8px, var(--accent-deep) 8px 10px); }
+.status-stars { display: inline-flex; align-items: center; gap: 4px; }
+img.mini { width: 14px; height: 14px; vertical-align: -2px; }
+.pxstars { display: inline-flex; gap: 4px; align-items: center; }
+.pxstars img { width: 20px; height: 20px; }
+.pxstars.big img { width: 34px; height: 34px; }
+.node .stars { letter-spacing: 0; }
+.hero-banner { display: block; width: 100%; height: auto; aspect-ratio: 5 / 1; margin-bottom: 28px; border: 3px solid var(--frame); box-shadow: 6px 6px 0 var(--shadow); background: #070B16; }
+.hero h1 { font-weight: 700; letter-spacing: .01em; }
+.sector-info { display: flex; gap: 14px; align-items: flex-start; }
+.sec-icon { width: 52px; height: auto; flex: none; }
+.head-icon { width: 56px; height: auto; flex: none; align-self: center; }
+.dialog { display: flex; gap: 16px; align-items: flex-start; border: 3px solid var(--signal); border-left-width: 3px; box-shadow: 4px 4px 0 var(--shadow); }
+.dialog .portrait { width: 64px; height: auto; flex: none; background: var(--code-bg); border: 3px solid var(--frame); padding: 6px; }
+.dialog > div { min-width: 0; }
+.cell { border: 0; }
+.cell.wall { background: var(--tile-wall, repeating-linear-gradient(45deg, #2A3743 0 6px, #24303A 6px 12px)) 0 0 / 100% 100%; image-rendering: pixelated; }
+.cell.floor { background: var(--tile-floor, #18242F) 0 0 / 100% 100%; image-rendering: pixelated; }
+.cell.goal { background: var(--tile-exit, #18242F) 0 0 / 100% 100%; image-rendering: pixelated; box-shadow: none; }
+.cell.goal::after { content: none; }
+.bot img { width: 82%; height: auto; image-rendering: pixelated; }
+.grid { border: 3px solid var(--frame); }
+.okbox, .errbox { border-width: 3px; }
+.okbox h4, .drill-head h3, .panel h3, .lesson-head h2 { font-weight: 600; }
+@media (max-width: 560px) {
+  .hero-banner { aspect-ratio: 5 / 1; box-shadow: 4px 4px 0 var(--shadow); }
+  .dialog .portrait { width: 48px; }
+  .head-icon { width: 40px; }
+  .panel, .hero-card, .scene { box-shadow: 4px 4px 0 var(--shadow); }
+}
 footer { color: var(--muted); font-size: .85rem; padding-block: 24px; border-top: 1px solid var(--line); margin-top: 40px; }
 .reset-confirm { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
@@ -385,6 +445,101 @@ function restore(v) {
   if (Array.isArray(v)) return v.map(restore);
   if (v && typeof v === "object") { const o = {}; for (const k in v) o[k] = restore(v[k]); return o; }
   return v;
+}
+
+/* ================= Pixel sprites =================
+   Each sprite is a grid of palette letters ("." = transparent), drawn once to a canvas
+   and reused as a data: URL. Shown with image-rendering: pixelated so pixels stay crisp. */
+const PAL = { k: "#0B1117", w: "#E8EEF2", o: "#F09F4E", O: "#B4580E", g: "#5BC98B", G: "#2E7D55", b: "#5CC2CB", B: "#2B6F7A", n: "#9FE3F0",
+  y: "#F5CB74", r: "#F07B6F", s: "#8A9AAB", S: "#4A5A6B", d: "#26333E", f: "#18242F", e: "#22323F", h: "#6B4226", c: "#F2C9A0" };
+function outlined(rows) {
+  // Pad by one pixel, then outline every empty pixel that touches a coloured (non-outline) one
+  const g = [".".repeat(rows[0].length + 2), ...rows.map(r => "." + r + "."), ".".repeat(rows[0].length + 2)].map(r => [...r]);
+  const coloured = (x, y) => g[y] && g[y][x] && g[y][x] !== "." && g[y][x] !== "k";
+  return g.map((row, y) => row.map((ch, x) => ch === "." && (coloured(x - 1, y) || coloured(x + 1, y) || coloured(x, y - 1) || coloured(x, y + 1)) ? "k" : ch).join(""));
+}
+function pxCanvas(rows) {
+  const c = document.createElement("canvas"); c.width = rows[0].length; c.height = rows.length;
+  const x = c.getContext("2d");
+  rows.forEach((row, yy) => [...row].forEach((ch, xx) => { if (PAL[ch]) { x.fillStyle = PAL[ch]; x.fillRect(xx, yy, 1, 1); } }));
+  return c;
+}
+const spriteCache = new Map();
+function spriteURL(name) {
+  if (spriteCache.has(name)) return spriteCache.get(name);
+  let url = "";
+  try { const s = SPRITES[name]; url = pxCanvas(s.raw ? s.rows : outlined(s.rows)).toDataURL(); } catch (_) { url = ""; }
+  spriteCache.set(name, url);
+  return url;
+}
+const pxImg = (name, cls, alt) => { const u = spriteURL(name); return u ? '<img class="px ' + (cls || "") + '" src="' + u + '" alt="' + esc(alt || "") + '"' + (alt ? "" : ' aria-hidden="true"') + ">" : ""; };
+function gearRows() {
+  const rows = [];
+  for (let y = 0; y < 16; y++) {
+    let r = "";
+    for (let x = 0; x < 16; x++) {
+      const dx = x - 7.5, dy = y - 7.5, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+      const tooth = Math.floor((a + Math.PI) / (Math.PI * 2) * 16) % 2 === 0;
+      r += d < 2.2 ? "." : d < 3.4 ? "S" : d < 5.6 ? (dy < -1 && dx < 1 ? "y" : "o") : d < 7.6 && tooth ? "O" : ".";
+    }
+    rows.push(r);
+  }
+  return rows;
+}
+const SPRITES = {
+  robot: { rows: ["...kkkkkk...", "..kbbbbbbk..", ".kbwbbbbwbk.", "kSkbbbbbbkSk", "kSkookkookSk", "kSkoOyyOokSk", "kSkoOyyOokSk", "kSkooooookSk", "kSkOooooOkSk", "kSkOOOOOOkSk", ".kkkkkkkkkk."] },
+  pilot: { rows: ["...kkkkkk...", "..khhhhhhk..", ".khhhhhhhhk.", ".khcccccchk.", ".kcckcckcck.", ".kcccccccck.", ".kcccrrccck.", "..kcccccck..", "...kkkkkk...", "..kbbbbbbk..", ".kbbbwwbbbk.", "kcbbbbbbbbck", "kckbbbbbbkck", ".k.kSSSSk.k.", "...kSkkSk...", "...kkk.kkk.."] },
+  terminal: { rows: [".kkkkkkkkkk.", ".kSSSSSSSSk.", ".kSkkkkkkSk.", ".kSkgkkkkSk.", ".kSkggkkkSk.", ".kSkgkkkkSk.", ".kSkkkggkSk.", ".kSkkkkkkSk.", ".kkkkkkkkkk.", "....kSSk....", "..kkkkkkkk.."] },
+  bolt: { rows: ["......kkkk..", ".....kyyyk..", "....kyyyk...", "...kyyyk....", "..kyyyykkk..", "..kyyyyyyk..", "..kkkyyyyk..", "....kyyyk...", "...kyyyk....", "...kyyk.....", "..kyyk......", "..kkk......."] },
+  gear: { rows: gearRows() },
+  anvil: { rows: ["........o.o.", ".........o..", "kkkkkkkkkk..", "kSSSSSSSSSkk", ".kSSSSSSSSSk", "..kkSSSSkkk.", "....kSSk....", "....kSSk....", "...kSSSSk...", "..kSSSSSSk..", "..kkkkkkkk.."] },
+  crystal: { rows: ["....kkkk....", "...knnbbk...", "..knnwbbbk..", ".knnnbbbbBk.", "kkkkkkkkkkkk", ".kbnnbbbBBk.", "..kbnbbBBk..", "...kbbBBk...", "....kbBk....", ".....kk....."] },
+  skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
+  star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
+  starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  lock: { rows: ["..kkkk..", ".kk..kk.", ".k....k.", "kkkkkkkk", "kssssssk", "ksskkssk", "kssksssk", "kkkkkkkk"], raw: true },
+  wall: { raw: true, rows: ["SSSSdSSS", "SSSSdSSS", "dddddddd", "SdSSSSSS", "SdSSSSSS", "dddddddd", "SSSSdSSS", "SSSSdSSS"] },
+  floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
+  exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
+};
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "skull"];
+const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
+// Hand pixel tiles to CSS for the robot grid
+(function () { try { const r = document.documentElement.style; ["wall", "floor", "exit"].forEach(t => { const u = spriteURL(t); if (u) r.setProperty("--tile-" + t, "url(" + u + ")"); }); } catch (_) {} })();
+
+// Pixel banner for the station map: deep space, a planet, the station deck, the pilot and B0-T
+function drawHeroScene(cv) {
+  const W = 320, H = 64, x = cv.getContext && cv.getContext("2d");
+  if (!x) return;
+  cv.width = W; cv.height = H;
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const bands = ["#070B16", "#0A1020", "#0E162B", "#131D36"];
+  for (let y = 0; y < 48; y++) for (let xx = 0; xx < W; xx++) {
+    const b = Math.min(3, Math.floor(y / 12)), dither = (y % 12) >= 10 && ((xx + y) % 2 === 0);
+    x.fillStyle = bands[dither ? Math.min(3, b + 1) : b]; x.fillRect(xx, y, 1, 1);
+  }
+  const stars = Array.from({ length: 70 }, () => ({ x: Math.floor(rnd() * W), y: Math.floor(rnd() * 44), c: ["#E8EEF2", "#9FE3F0", "#F5CB74"][Math.floor(rnd() * 3)], big: rnd() < 0.12 }));
+  const planet = () => {
+    for (let y = -13; y <= 13; y++) for (let xx = -13; xx <= 13; xx++) {
+      const d = Math.hypot(xx, y); if (d > 12.5) continue;
+      const shade = xx + y * 0.4 > 4 ? ((xx + y) % 2 ? "#B4580E" : "#8A4A12") : (y < -6 && xx < -2 ? "#F5CB74" : "#F09F4E");
+      x.fillStyle = shade; x.fillRect(262 + xx, 20 + y, 1, 1);
+    }
+    x.fillStyle = "#F5CB74"; for (let xx = -19; xx <= 19; xx++) if (Math.abs(xx) > 12 || (xx < 0)) x.fillRect(262 + xx, 21 + Math.round(xx * 0.18), 1, 1);
+  };
+  function frame(t) {
+    for (const s of stars) { const on = s.big ? ((t + s.x) % 3 !== 0) : true; x.fillStyle = on ? s.c : bands[Math.floor(s.y / 12)]; x.fillRect(s.x, s.y, 1, 1); if (s.big) { x.fillStyle = on ? s.c : bands[Math.floor(s.y / 12)]; x.fillRect(s.x - 1, s.y, 1, 1); x.fillRect(s.x + 1, s.y, 1, 1); x.fillRect(s.x, s.y - 1, 1, 1); x.fillRect(s.x, s.y + 1, 1, 1); } }
+  }
+  frame(0); planet();
+  // Station deck
+  for (let y = 48; y < H; y++) for (let xx = 0; xx < W; xx++) { x.fillStyle = y === 48 ? "#5CC2CB" : y === 49 ? "#2B6F7A" : ((xx % 16 === 0 || y === 56) ? "#1C2834" : "#26333E"); x.fillRect(xx, y, 1, 1); }
+  // Station windows strip
+  for (let xx = 120; xx < 220; xx += 10) { x.fillStyle = "#1C2834"; x.fillRect(xx, 36, 8, 12); x.fillStyle = "#F5CB74"; x.fillRect(xx + 2, 39, 4, 3); }
+  const put = (name, px, py) => { try { const s = SPRITES[name]; x.drawImage(pxCanvas(s.raw ? s.rows : outlined(s.rows)), px, py); } catch (_) {} };
+  put("pilot", 30, 30); put("robot", 50, 36); put("terminal", 76, 35); put("skull", 290, 50 - 13 - 30);
+  // Gentle twinkle while the map is on screen
+  let reduce = false; try { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_) {}
+  if (!reduce) { let t = 0; const id = setInterval(() => { if (!cv.isConnected) return clearInterval(id); frame(++t); planet(); put("skull", 290, 7); }, 700); }
 }
 
 /* ================= Sound effects (synthesised, no audio files) ================= */
@@ -495,10 +650,10 @@ function celebrate() {
     for (const p of parts) {
       p.vy += 0.28; p.vx *= 0.985; p.vy *= 0.985;
       p.x += p.vx + Math.sin((el / 180) + p.wob) * 0.6; p.y += p.vy; p.r += p.vr;
-      x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c;
-      if (p.round) { x.beginPath(); x.arc(0, 0, p.w / 2.4, 0, Math.PI * 2); x.fill(); }
-      else x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r * 2)) + 1);
-      x.restore();
+      // Pixel confetti: square chunks snapped to a 4px grid that "flip" between widths
+      const PX = 4, sz = p.round ? PX * 2 : PX * 2, flip = Math.abs(Math.cos(p.r * 2)) > 0.5;
+      x.fillStyle = p.c;
+      x.fillRect(Math.round(p.x / PX) * PX, Math.round(p.y / PX) * PX, flip ? sz + PX : PX, flip ? PX : sz);
     }
     if (el < LIFE) requestAnimationFrame(frame); else cv.remove();
   })(t0);
@@ -678,7 +833,7 @@ function mountGrid(host, map, dir = 1) {
   const rows = map.length, cols = map[0].length;
   let cells = "";
   map.forEach(r => [...r].forEach(ch => { cells += '<div class="cell ' + (ch === "#" ? "wall" : ch === "G" ? "goal" : "floor") + '"></div>'; }));
-  host.innerHTML = '<div class="grid-host"><div class="grid" style="--cols:' + cols + ";--rows:" + rows + '" role="img" aria-label="Robot map">' + cells + '<div class="bot">' + BOT_SVG + "</div></div></div>";
+  host.innerHTML = '<div class="grid-host"><div class="grid" style="--cols:' + cols + ";--rows:" + rows + '" role="img" aria-label="Robot map">' + cells + '<div class="bot">' + (pxImg("robot", "", "") || BOT_SVG) + "</div></div></div>";
   const bot = $(".bot", host);
   bot.style.width = 100 / cols + "%"; bot.style.height = 100 / rows + "%";
   let angle = dir * 90, token = 0;
@@ -1541,7 +1696,7 @@ function renderStatus() {
   const done = Object.keys(store.done).length, stars = Object.values(store.done).reduce((a, d) => a + d.stars, 0);
   $("#status").innerHTML = '<span><span class="rank">' + r.name + '</span> <span class="muted tnum">· ' + r.x + " XP</span></span>" +
     '<span class="xpbar" title="' + (r.next ? (r.next[0] - r.x) + " XP to " + r.next[1] : "Top rank") + '"><i style="width:' + Math.round(r.pct * 100) + '%"></i></span>' +
-    '<span class="muted tnum">' + done + "/" + LESSONS.length + " repairs · ★ " + stars + "</span>";
+    '<span class="muted tnum status-stars">' + done + "/" + LESSONS.length + " repairs · " + (pxImg("star", "mini") || "★") + " " + stars + "</span>";
 }
 
 /* ================= Views ================= */
@@ -1555,25 +1710,27 @@ function renderMap() {
   const nextIdx = LESSONS.findIndex((l, i) => unlocked(i) && !store.done[l.id]);
   const r = rankInfo();
   const ni = nextIdx < 0 ? null : LESSONS[nextIdx];
-  let h = '<section class="hero"><div><p class="eyebrow">Station Nine · Maintenance log</p><h1>JavaScript Quest</h1>' +
+  let h = '<canvas class="px hero-banner" id="hero-px" width="320" height="64" role="img" aria-label="Pixel scene: the pilot and robot B0-T on Station Nine\'s deck, with the Glitch King watching from space"></canvas>' +
+    '<section class="hero"><div><p class="eyebrow">Station Nine · Maintenance log</p><h1>JavaScript Quest</h1>' +
     '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across six sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
     (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
     '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
     '<div style="margin-top:auto;color:var(--code-muted)">// stars: 3 = no hints and at most 2 checks</div></div></section>';
   h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Guided drills, then free play"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
   WORLDS.forEach((w, wi) => {
-    h += '<section class="sector"><div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div><div class="nodes">';
+    h += '<section class="sector"><div class="sector-info">' + pxImg(WORLD_ICONS[wi], "sec-icon") + '<div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div></div><div class="nodes">';
     LESSONS.forEach((l, i) => {
       if (l.world !== wi) return;
       const d = store.done[l.id], u = unlocked(i);
       const cls = d ? "done" : u ? "available" : "locked";
       h += '<button class="node ' + cls + '" data-i="' + i + '"' + (u ? "" : ' disabled aria-disabled="true"') + '><span class="lv">LESSON ' + String(i + 1).padStart(2, "0") + "</span><b>" + esc(l.title) + "</b><small>" + esc(l.concept) + "</small>" +
-        (d ? '<span class="stars" aria-label="' + d.stars + ' of 3 stars">' + "★".repeat(d.stars) + "☆".repeat(3 - d.stars) + "</span>" : u ? '<span class="pill go" style="margin-top:auto">Ready</span>' : '<span class="pill" style="margin-top:auto">Locked</span>') + "</button>";
+        (d ? '<span class="stars">' + pxStars(d.stars) + "</span>" : u ? '<span class="pill go" style="margin-top:auto">Ready</span>' : '<span class="pill" style="margin-top:auto">' + pxImg("lock", "mini") + " Locked</span>") + "</button>";
     });
     h += "</div></section>";
   });
   h += '<p class="muted small" style="margin-top:20px"><span class="reset-confirm" id="reset-area"><button class="btn small" id="reset">Reset progress</button></span></p>';
   app.innerHTML = h;
+  try { drawHeroScene($("#hero-px")); } catch (_) {}
   $$(".node", app).forEach(b => b.onclick = () => { const i = +b.dataset.i; if (unlocked(i)) go({ name: "lesson", i, stage: 0 }); });
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
   $("#reset").onclick = () => {
@@ -1587,7 +1744,7 @@ const STAGES = ["Learn", "Visualise", "Practise", "Challenge", "Review"];
 function renderLesson() {
   const L = LESSONS[view.i], d = store.done[L.id];
   const w = WORLDS[L.world];
-  let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button><div><p class="eyebrow">Sector ' + (L.world + 1) + " · " + w.name + " · Lesson " + (view.i + 1) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div></div>";
+  let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button>' + pxImg(WORLD_ICONS[L.world], "head-icon") + '<div><p class="eyebrow">Sector ' + (L.world + 1) + " · " + w.name + " · Lesson " + (view.i + 1) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div></div>";
   h += '<nav class="stages" aria-label="Lesson stages">' + STAGES.map((s, k) => {
     const dis = (k === 4 && !d) || (k === 3 && !drillsDone(L));
     const ok = (k === 3 && d) || (k === 2 && (L.drills || []).length && drillsDone(L));
@@ -1608,7 +1765,7 @@ function stageLearn(host, L) {
   const pg = Math.min(view.page || 0, LEARN_PAGES.length - 1);
   let body = "";
   if (pg === 0) {
-    body += '<div class="brief"><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div>";
+    body += '<div class="brief dialog">' + pxImg(L.world === 5 ? "skull" : "pilot", "portrait") + '<div><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div></div>";
     body += '<div class="prose">' + L.learn.map(s => "<section><h3>" + s[0] + "</h3><p>" + s[1] + "</p></section>").join("") + "</div>";
     body += '<div class="panel"><h3>Words to know</h3><dl class="terms">' + L.terms.map(t => "<dt>" + esc(t[0]) + "</dt><dd>" + esc(t[1]) + "</dd>").join("") + "</dl></div>";
   } else if (pg === 1) {
@@ -1894,7 +2051,7 @@ function stageChallenge(host, L, idx) {
   const C = L.challenge, key = L.id + ":c", S = sess(L.id), done = store.done[L.id];
   const budget = HINT_BUDGET(idx);
   host.innerHTML = '<div class="stack-lg">' +
-    '<div class="cols"><div class="brief brief-lg"><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div>" +
+    '<div class="cols"><div class="brief brief-lg dialog">' + pxImg(C.scene === "robot" ? "robot" : L.world === 5 ? "skull" : WORLD_ICONS[L.world], "portrait") + '<div><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div></div>" +
     '<div class="scene"><div class="scene-head"><span>' + esc(C.title) + '</span><span class="state-lamp" id="lamp"><i></i><span>Offline</span></span></div><div id="scene"></div></div></div>' +
     '<div class="panel"><h3>Your code</h3><div id="ced"></div><div class="toolbar"><button class="btn" id="crun">Run ▶</button><button class="btn primary" id="ccheck">Check solution</button><button class="btn small" id="creset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
     '<div id="cfeed" aria-live="polite" style="margin-top:16px"></div><div id="cout" style="margin-top:16px"></div></div>' +
@@ -1959,7 +2116,7 @@ function stageChallenge(host, L, idx) {
       store.sess[L.id] = { attempts: 0, hints: 0, revealed: false, fails: 0 };
       Object.assign(S, store.sess[L.id]);
       save(); renderStatus(); celebrate();
-      $("#cfeed", host).innerHTML = '<div class="okbox"><h4>Machine repaired</h4><span class="stars-big" aria-label="' + stars + ' of 3 stars">' + "★".repeat(stars) + "☆".repeat(3 - stars) + "</span><p>" + (stars === 3 ? "Clean repair: no hints and hardly any retries." : stars === 2 ? "Solid work. Solve it with no hints and at most 2 checks for 3 stars." : "Repaired. Replay later without hints to earn more stars.") + (prev && prev.stars > stars ? " Your best of " + prev.stars + " stars is kept." : "") + '</p><div class="toolbar"><button class="btn primary" id="toreview">See why it works →</button></div></div>';
+      $("#cfeed", host).innerHTML = '<div class="okbox"><h4>Machine repaired</h4>' + pxStars(stars, true) + "<p>" + (stars === 3 ? "Clean repair: no hints and hardly any retries." : stars === 2 ? "Solid work. Solve it with no hints and at most 2 checks for 3 stars." : "Repaired. Replay later without hints to earn more stars.") + (prev && prev.stars > stars ? " Your best of " + prev.stars + " stars is kept." : "") + '</p><div class="toolbar"><button class="btn primary" id="toreview">See why it works →</button></div></div>';
       $("#toreview", host).onclick = () => { view.stage = 4; render(); window.scrollTo({ top: 0 }); };
       $$('.stage-tab', app)[4].disabled = false; $$('.stage-tab', app)[3].classList.add("ok");
     } else {
@@ -1981,7 +2138,7 @@ function stageReview(host, L, idx) {
   if (!d) { host.innerHTML = '<div class="panel"><p>Repair the machine in the Challenge stage to unlock the review.</p>' + nextBtn("Go to the challenge", 3) + "</div>"; wireGoto(host); return; }
   const next = LESSONS[idx + 1];
   const solLines = C.solution.split("\n");
-  host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4><span class="stars-big">' + "★".repeat(d.stars) + "☆".repeat(3 - d.stars) + '</span><p>+' + (100 + 25 * d.stars) + ' XP toward your rank.</p></div>' +
+  host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4>' + pxStars(d.stars, true) + '<p>+' + (100 + 25 * d.stars) + ' XP toward your rank.</p></div>' +
     '<div class="panel"><h3>Your solution</h3>' + codeBlock(d.code) + '<p class="muted small" style="margin-top:8px">Your version doesn\'t have to match the model below. If every test passed, it works. Compare the two to see other ways of writing the same idea.</p></div>' +
     '<div class="panel"><h3>What you learned</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div></div>" +
     '<div class="stack"><div class="panel"><h3>Why the model solution works</h3><div class="scroll-x"><table class="explain"><tbody>' + solLines.map((ln, i) => "<tr><td>" + (hl(ln) || " ") + "</td><td>" + esc(C.why[i] || "") + "</td></tr>").join("") + "</tbody></table></div></div>" +

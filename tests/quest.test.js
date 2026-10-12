@@ -117,6 +117,17 @@ const tests = async () => {
   ok(drillsDone(LESSONS[1]), "lessons repaired before drills existed stay unlocked");
   ok(unlocked(2) && !unlocked(3), "next lesson unlocks only after the previous repair");
 
+  // 6. Pixel sprites are well-formed
+  for (const [name, s] of Object.entries(SPRITES)) {
+    const w = s.rows[0].length;
+    ok(s.rows.every(r => r.length === w), "sprite " + name + ": every row is the same width", s.rows.map(r => r.length).join(","));
+    ok(s.rows.every(r => [...r].every(ch => ch === "." || PAL[ch])), "sprite " + name + ": only palette colours");
+    const o = outlined(s.rows);
+    ok(o.length === s.rows.length + 2 && o.every(r => r.length === w + 2), "sprite " + name + ": outline pass pads by one pixel");
+  }
+  ok(WORLD_ICONS.length === WORLDS.length && WORLD_ICONS.every(n => SPRITES[n]), "every sector has an icon sprite");
+  ok(spriteURL("robot") === "" && pxImg("robot") === "", "sprites degrade to nothing when canvas is unavailable");
+
   console.log("\n" + passes + " passed, " + failures + " failed");
   process.exit(failures ? 1 : 0);
 };
