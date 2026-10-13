@@ -117,6 +117,28 @@ const tests = async () => {
   ok(drillsDone(LESSONS[1]), "lessons repaired before drills existed stay unlocked");
   ok(unlocked(2) && !unlocked(3), "next lesson unlocks only after the previous repair");
 
+  // 5b. Save codes
+  const sample = freshStore();
+  sample.done.log = { stars: 3, code: 'console.log("SYSTEM ONLINE");', hints: 0, attempts: 1, revealed: false, at: 1 };
+  sample.done.vars = { stars: 2, code: "const doorCode = 4721; // ünïcödé ✓", hints: 1, attempts: 3, revealed: false, at: 2 };
+  sample.drills.log = [true, true]; sample.drafts["vars:c"] = "let pilot = \"Zoë\";";
+  const codeStr = makeSaveCode(sample);
+  ok(/^JSQ1\.[A-Za-z0-9+/=]+\.[a-z0-9]+$/.test(codeStr), "save code has the JSQ1.<data>.<check> shape");
+  const back = readSaveCode("  " + codeStr.slice(0, 20) + "\n" + codeStr.slice(20) + "  ");
+  ok(back.ok && back.store.done.log.stars === 3 && back.store.done.vars.code === sample.done.vars.code && back.store.drafts["vars:c"] === sample.drafts["vars:c"] && back.store.drills.log[1] === true,
+    "save code round-trips progress, drafts and non-English text (even with spaces or line breaks pasted in)", JSON.stringify(back.error || ""));
+  ok(!readSaveCode(codeStr.slice(0, -3)).ok, "a truncated save code is rejected");
+  const parts = codeStr.split(".");
+  const flipped = parts[1].slice(0, 10) + (parts[1][10] === "A" ? "B" : "A") + parts[1].slice(11);
+  ok(!readSaveCode([parts[0], flipped, parts[2]].join(".")).ok, "an edited save code fails the check");
+  ok(/start with/.test(readSaveCode("hello").error || ""), "random text gets a 'save codes start with JSQ1' message");
+  const evilBody = b64encode(JSON.stringify({ v: 1, done: { log: { stars: 99, code: 5 }, hacked: { stars: 3 } }, drills: { log: [true, "yes", true, true] }, drafts: { "__proto__:c": "x", "log:p": "ok" }, stats: { "bad key!": 4 } }));
+  const evil = readSaveCode(SAVE_PREFIX + "." + evilBody + "." + hashStr(evilBody));
+  ok(evil.ok && evil.store.done.log.stars === 3 && evil.store.done.log.code === "" && !evil.store.done.hacked && evil.store.drills.log.length === 2 && evil.store.drills.log[1] === false &&
+    Object.keys(evil.store.drafts).join() === "log:p" && !("bad key!" in evil.store.stats), "loaded saves are cleaned: unknown lessons dropped, stars clamped, junk types removed", JSON.stringify(evil.store));
+  ok(/^\d+\.\d+\.\d+$/.test(APP_VERSION), "app version is a semantic version number");
+  ok(SYMBOLS.every(s => typeof s[0] === "string" && s[0].length && s[1]), "every symbol-bar button has text and a spoken label");
+
   // 6. Pixel sprites are well-formed
   for (const [name, s] of Object.entries(SPRITES)) {
     const w = s.rows[0].length;

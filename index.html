@@ -286,6 +286,24 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Symbol bar (phones and touch screens) */
+.symbar { display: none; }
+@media (pointer: coarse), (max-width: 700px) {
+  .symbar { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; margin-bottom: 4px; scrollbar-width: thin; }
+}
+.sym { flex: none; min-width: 40px; height: 40px; padding: 0 8px; font-family: var(--f-code); font-size: 1.05rem; font-weight: 600; color: var(--ink); background: var(--panel-2); border: 2px solid var(--frame); border-radius: 0; box-shadow: 0 3px 0 var(--btn-shadow); touch-action: manipulation; }
+.sym:active { transform: translateY(3px); box-shadow: none; }
+/* Save panel */
+.savepanel { margin-top: 36px; }
+.savebox { width: 100%; min-height: 5em; font-family: var(--f-code); font-size: .8rem; word-break: break-all; background: var(--panel); color: var(--ink); border: 2px solid var(--frame); padding: 8px; resize: vertical; }
+.ver { display: inline-block; margin-left: 6px; font-family: var(--f-display); color: var(--ink); }
+/* Toasts */
+.toasts { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 90; display: flex; flex-direction: column; gap: 10px; align-items: center; width: min(92vw, 420px); pointer-events: none; }
+.toast { pointer-events: auto; width: 100%; background: var(--code-bg); color: var(--code-ink); border: 3px solid var(--accent); box-shadow: 5px 5px 0 var(--shadow); padding: 10px 14px; font-family: var(--f-display); display: flex; gap: 12px; align-items: center; animation: toast-in .25s steps(4); }
+.toast img { width: 36px; height: auto; flex: none; }
+.toast small { display: block; font-family: var(--f-body); color: var(--code-muted); font-size: .82rem; }
+.toast.out { opacity: 0; transition: opacity .35s; }
+@keyframes toast-in { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
 .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
 @media (max-width: 560px) {
   /* The status bar wraps to several lines on phones, so let it scroll away instead of covering the page */
@@ -386,7 +404,8 @@ footer { color: var(--muted); font-size: .85rem; padding-block: 24px; border-top
   </div>
 </header>
 <main class="wrap" id="app"></main>
-<div class="wrap"><footer>Progress is saved in this browser. Your code runs in a sandboxed worker and stops automatically after 2 seconds, so an infinite loop can't freeze the page.</footer></div>
+<div class="wrap"><footer>Progress is saved in this browser. Your code runs in a sandboxed worker and stops automatically after 2 seconds, so an infinite loop can't freeze the page. <span id="ver" class="ver"></span></footer></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
 
 <script>
 "use strict";
@@ -600,26 +619,37 @@ const Sound = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
     o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.15);
   }
-  // Short rising chime for a completed repair
-  function chime() {
+  // 8-bit notes: square waves through a gentle low-pass so they sound retro without being harsh
+  function notes(seq, vol) {
     if (!on) return;
     const c = ac(); if (!c) return;
-    [523.25, 659.25, 783.99, 1046.5].forEach((fq, i) => {
-      const t = c.currentTime + i * 0.09, o = c.createOscillator(), g = c.createGain();
-      o.type = "triangle"; o.frequency.value = fq;
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.16, t + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-      o.connect(g).connect(out(c)); o.start(t); o.stop(t + 0.5);
+    const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3200; lp.connect(out(c));
+    let t = c.currentTime + 0.01;
+    seq.forEach(([fq, dur]) => {
+      if (fq) {
+        const o = c.createOscillator(), g = c.createGain();
+        o.type = "square"; o.frequency.value = fq;
+        g.gain.setValueAtTime(vol, t);
+        g.gain.setValueAtTime(vol, t + dur * 0.7);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g).connect(lp); o.start(t); o.stop(t + dur + 0.02);
+      }
+      t += dur;
     });
   }
+  // Drill passed: classic two-note coin
+  const coin = () => notes([[987.77, 0.07], [1318.51, 0.28]], 0.07);
+  // Challenge repaired: rising level-up jingle
+  const levelUp = () => notes([[523.25, 0.08], [659.25, 0.08], [783.99, 0.08], [1046.5, 0.08], [0, 0.04], [783.99, 0.08], [1046.5, 0.32]], 0.065);
+  // Achievement unlocked: short sparkle
+  const sparkle = () => notes([[1567.98, 0.06], [2093, 0.06], [2637.02, 0.18]], 0.045);
   function set(v) { on = v; try { localStorage.setItem("jsq-sound", v ? "on" : "off"); } catch (_) {} }
-  return { key, pop, chime, set, get on() { return on; } };
+  return { key, pop, coin, levelUp, sparkle, chime: levelUp, set, get on() { return on; } };
 })();
 
 /* ================= Confetti ================= */
 function celebrate() {
-  Sound.chime();
+  Sound.levelUp();
   let reduce = false;
   try { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (_) {}
   if (reduce) return;
@@ -667,7 +697,7 @@ document.addEventListener("keydown", e => {
 }, true);
 document.addEventListener("click", e => {
   const b = e.target.closest && e.target.closest("button");
-  if (b && !b.disabled && b.id !== "sound-btn") Sound.pop();
+  if (b && !b.disabled && b.id !== "sound-btn") { if (b.classList.contains("sym")) Sound.key(false); else Sound.pop(); }
 }, true);
 (function () {
   const b = $("#sound-btn");
@@ -781,9 +811,19 @@ function explainError(err) {
 }
 
 /* ================= Code editor ================= */
+// Symbols that are awkward to reach on a phone keyboard. Shown above each editor on touch / narrow screens.
+const SYMBOLS = [["{", "opening brace"], ["}", "closing brace"], ["(", "opening bracket"], [")", "closing bracket"], ["[", "opening square bracket"], ["]", "closing square bracket"],
+  [";", "semicolon"], ['"', "quote"], ["=", "equals"], ["<", "less than"], [">", "greater than"], ["+", "plus"], ["-", "minus"], ["*", "times"], [".", "dot"], [",", "comma"], ["!", "not"], ["&", "ampersand"], ["|", "bar"], ["  ", "indent", "⇥"]];
 function createEditor(host, { value = "", minLines = 6, id, onRun, onChange }) {
-  host.innerHTML = '<div class="editor"><div class="gutter" aria-hidden="true"></div><div class="ed-wrap"><pre class="ed-hl" aria-hidden="true"></pre><textarea class="ed-ta" id="' + id + '" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Code editor. Press Control Enter to run."></textarea></div></div>';
+  host.innerHTML = '<div class="symbar" role="toolbar" aria-label="Insert a symbol">' + SYMBOLS.map(s => '<button type="button" class="sym" data-ins="' + esc(s[0]) + '" aria-label="Insert ' + s[1] + '">' + esc(s[2] || s[0]) + "</button>").join("") + "</div>" +
+    '<div class="editor"><div class="gutter" aria-hidden="true"></div><div class="ed-wrap"><pre class="ed-hl" aria-hidden="true"></pre><textarea class="ed-ta" id="' + id + '" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Code editor. Press Control Enter to run."></textarea></div></div>';
   const ta = $("textarea", host), pre = $(".ed-hl", host), gut = $(".gutter", host);
+  // Keep the textarea focused (and the phone keyboard open) while tapping symbols
+  $$(".sym", host).forEach(b => {
+    b.addEventListener("pointerdown", e => e.preventDefault());
+    b.addEventListener("mousedown", e => e.preventDefault());
+    b.addEventListener("click", () => insert(b.dataset.ins));
+  });
   let errLine = null;
   function render() {
     const v = ta.value;
@@ -1680,14 +1720,72 @@ const DRILLS = {
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
 
 /* ================= Progress store ================= */
+const APP_VERSION = "1.4.0";
 const STORE_KEY = "js-quest-v1";
-let store = { done: {}, drafts: {}, sess: {}, drills: {} };
-try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(store, s); } catch (_) {}
+// done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
+// ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
+const freshStore = () => ({ done: {}, drafts: {}, sess: {}, drills: {}, ach: {}, stats: {}, seenIntro: false });
+let store = freshStore();
+try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(freshStore(), s); } catch (_) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (_) {} }
+
+/* ---- Save codes: back up progress as text and restore it anywhere ---- */
+const SAVE_PREFIX = "JSQ1";
+function hashStr(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+function b64encode(str) { const bytes = new TextEncoder().encode(str); let bin = ""; for (const b of bytes) bin += String.fromCharCode(b); return btoa(bin); }
+function b64decode(b) { const bin = atob(b); return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))); }
+function makeSaveCode(st) {
+  const body = b64encode(JSON.stringify({ v: 1, done: st.done, drills: st.drills, drafts: st.drafts, ach: st.ach, stats: st.stats, seenIntro: st.seenIntro }));
+  return SAVE_PREFIX + "." + body + "." + hashStr(body);
+}
+// Only known lessons, drills, achievements and sane value types survive a load
+function sanitizeStore(d) {
+  const out = freshStore();
+  const ids = new Map(LESSONS.map(l => [l.id, l]));
+  const str = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
+  const count = v => Number.isFinite(+v) ? Math.max(0, Math.min(1e6, Math.floor(+v))) : 0;
+  for (const [id, r] of Object.entries(d.done || {})) {
+    if (!ids.has(id) || !r || typeof r !== "object") continue;
+    out.done[id] = { stars: Math.max(1, Math.min(3, Math.round(+r.stars) || 1)), code: str(r.code, 20000), hints: count(r.hints), attempts: count(r.attempts), revealed: r.revealed === true, reviewed: r.reviewed === true, at: count(r.at) };
+  }
+  for (const [id, arr] of Object.entries(d.drills || {})) {
+    if (!ids.has(id) || !Array.isArray(arr)) continue;
+    out.drills[id] = arr.slice(0, (ids.get(id).drills || []).length).map(v => v === true);
+  }
+  for (const [k, v] of Object.entries(d.drafts || {})) {
+    const m = /^([a-z0-9]+):(p|c|d\d|r)$/.exec(k);
+    if (m && ids.has(m[1]) && typeof v === "string") out.drafts[k] = v.slice(0, 20000);
+  }
+  const achIds = new Set((typeof ACHIEVEMENTS !== "undefined" ? ACHIEVEMENTS : []).map(a => a.id));
+  for (const [k, v] of Object.entries(d.ach || {})) if (achIds.has(k)) out.ach[k] = count(v) || 1;
+  for (const [k, v] of Object.entries(d.stats || {})) if (/^[a-zA-Z]{1,24}$/.test(k)) out.stats[k] = count(v);
+  out.seenIntro = d.seenIntro === true;
+  return out;
+}
+function readSaveCode(code) {
+  const parts = String(code || "").replace(/\s+/g, "").split(".");
+  if (parts.length !== 3 || parts[0] !== SAVE_PREFIX) return { ok: false, error: "This doesn't look like a JavaScript Quest save code. Save codes start with <code>JSQ1.</code>" };
+  if (hashStr(parts[1]) !== parts[2]) return { ok: false, error: "This save code is incomplete or has been changed. Copy the whole code again, from <code>JSQ1.</code> to the very end." };
+  let data;
+  try { data = JSON.parse(b64decode(parts[1])); } catch (_) { return { ok: false, error: "This save code couldn't be read. Copy the whole code again." }; }
+  if (!data || typeof data !== "object" || data.v !== 1) return { ok: false, error: "This save code comes from a different version of the game and can't be loaded." };
+  return { ok: true, store: sanitizeStore(data) };
+}
+
+/* ---- Toasts: small pixel pop-ups for unlocks and saves ---- */
+function toast(html, opts) {
+  const host = $("#toasts"); if (!host || !host.appendChild) return;
+  const t = document.createElement("div");
+  t.className = "toast" + (opts && opts.kind ? " " + opts.kind : "");
+  t.innerHTML = html;
+  host.appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 400); }, (opts && opts.ms) || 3800);
+}
 const xp = () => Object.values(store.done).reduce((a, d) => a + 100 + 25 * d.stars, 0);
 const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"]];
 function rankInfo() { const x = xp(); let i = 0; RANKS.forEach((r, k) => { if (x >= r[0]) i = k; }); const next = RANKS[i + 1]; return { x, name: RANKS[i][1], next, pct: next ? (x - RANKS[i][0]) / (next[0] - RANKS[i][0]) : 1 }; }
-const unlocked = i => i === 0 || !!store.done[LESSONS[i - 1].id];
+// A lesson is open when the one before it is repaired, or when it was repaired already (so new lessons never lock old progress)
+const unlocked = i => i === 0 || !!store.done[LESSONS[i - 1].id] || !!store.done[LESSONS[i].id];
 const sess = id => (store.sess[id] = store.sess[id] || { attempts: 0, hints: 0, revealed: false, fails: 0 });
 const HINT_BUDGET = i => LESSONS[i].challenge.hints.length;
 
@@ -1728,15 +1826,43 @@ function renderMap() {
     });
     h += "</div></section>";
   });
-  h += '<p class="muted small" style="margin-top:20px"><span class="reset-confirm" id="reset-area"><button class="btn small" id="reset">Reset progress</button></span></p>';
+  h += '<section class="panel savepanel" aria-labelledby="save-h"><h3 id="save-h">Save data</h3><p class="muted small">Your progress is stored in this browser only. Clearing your browsing data erases it. Copy a save code to keep a backup, or to carry on in another browser or device.</p>' +
+    '<div class="toolbar"><button class="btn" id="save-copy">Copy save code</button><button class="btn" id="save-open">Load a save code</button><span class="reset-confirm" id="reset-area"><button class="btn small" id="reset">Reset progress</button></span></div>' +
+    '<div id="save-msg" aria-live="polite"></div>' +
+    '<div id="save-load" hidden><label class="label" for="save-in" style="margin-top:14px">Paste your save code</label><textarea id="save-in" class="savebox" spellcheck="false" autocapitalize="off" placeholder="JSQ1.…"></textarea><div class="toolbar"><button class="btn primary" id="save-check">Check code</button><button class="btn small" id="save-cancel">Cancel</button></div><div id="save-confirm" style="margin-top:12px"></div></div></section>';
   app.innerHTML = h;
   try { drawHeroScene($("#hero-px")); } catch (_) {}
   $$(".node", app).forEach(b => b.onclick = () => { const i = +b.dataset.i; if (unlocked(i)) go({ name: "lesson", i, stage: 0 }); });
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
+  wireSavePanel();
   $("#reset").onclick = () => {
     $("#reset-area").innerHTML = '<span>Erase all stars, XP and saved code?</span><button class="btn small" id="reset-yes" style="border-color:var(--bad);color:var(--bad)">Erase progress</button><button class="btn small" id="reset-no">Keep it</button>';
-    $("#reset-yes").onclick = () => { store = { done: {}, drafts: {}, sess: {}, drills: {} }; save(); render(); };
+    $("#reset-yes").onclick = () => { const seen = store.seenIntro; store = freshStore(); store.seenIntro = seen; save(); render(); };
     $("#reset-no").onclick = render;
+  };
+}
+const summary = st => { const n = Object.keys(st.done).length, s = Object.values(st.done).reduce((a, d) => a + d.stars, 0); return n + " repair" + (n === 1 ? "" : "s") + " and " + s + " star" + (s === 1 ? "" : "s"); };
+function wireSavePanel() {
+  const msg = (html, bad) => { $("#save-msg").innerHTML = '<div class="' + (bad ? "errbox" : "okbox") + '" style="margin-top:14px"><p>' + html + "</p></div>"; };
+  $("#save-copy").onclick = () => {
+    const code = makeSaveCode(store);
+    const fallback = () => {
+      msg('Your browser blocked automatic copying. The code is selected below: press <b>Ctrl + C</b> (or long-press and choose Copy).<textarea id="save-out" class="savebox" readonly style="margin-top:10px"></textarea>', true);
+      const o = $("#save-out"); o.value = code; o.focus(); o.select();
+    };
+    try {
+      navigator.clipboard.writeText(code).then(() => { msg("Save code copied (" + summary(store) + "). Paste it somewhere safe, like a note or an email to yourself."); toast("Save code copied"); }, fallback);
+    } catch (_) { fallback(); }
+  };
+  $("#save-open").onclick = () => { $("#save-load").hidden = false; $("#save-in").focus(); };
+  $("#save-cancel").onclick = () => { $("#save-load").hidden = true; $("#save-confirm").innerHTML = ""; $("#save-in").value = ""; };
+  $("#save-check").onclick = () => {
+    const res = readSaveCode($("#save-in").value);
+    if (!res.ok) { $("#save-confirm").innerHTML = '<div class="errbox"><p>' + res.error + "</p></div>"; return; }
+    $("#save-confirm").innerHTML = '<div class="okbox"><p>This save has <b>' + summary(res.store) + "</b>. Loading it replaces the progress in this browser (" + summary(store) + ").</p>" +
+      '<div class="toolbar"><button class="btn primary" id="save-apply">Replace my progress</button><button class="btn small" id="save-keep">Keep current progress</button></div></div>';
+    $("#save-apply").onclick = () => { store = res.store; save(); render(); toast("Save loaded: " + summary(store)); };
+    $("#save-keep").onclick = () => { $("#save-confirm").innerHTML = ""; };
   };
 }
 
@@ -1990,7 +2116,7 @@ function mountDrill(host, L, k, onPass) {
       const first = !drillDone(L, k);
       (store.drills[L.id] = store.drills[L.id] || [])[k] = true; save();
       q("data-feed").innerHTML = '<div class="okbox"><h4>Drill passed</h4><p>' + (D.cases.length > 1 ? "All " + D.cases.length + " tests pass. " : "") + (k < n - 1 ? "On to the next drill." : "Every drill is done, so the challenge is unlocked.") + "</p></div>";
-      status(); if (first) Sound.chime(); onPass();
+      status(); if (first) Sound.coin(); onPass();
     } else {
       q("data-feed").innerHTML = '<div class="errbox"><p>' + failMessage(ev, D) + "</p>" + (hintsShown < D.hints.length ? '<p class="small">Stuck? Press "Show a hint".</p>' : "") + "</div>";
     }
@@ -2112,7 +2238,9 @@ function stageChallenge(host, L, idx) {
       const stars = S.revealed ? 1 : (S.hints === 0 && S.attempts <= 2) ? 3 : (S.hints <= 1 && S.attempts <= 4) ? 2 : 1;
       const prev = store.done[L.id];
       const best = Math.max(stars, prev ? prev.stars : 0);
-      store.done[L.id] = { stars: best, code };
+      // Keep the stats of the best run, so a weaker replay never hides earlier success (or struggle)
+      const run = { stars, code, hints: S.hints, attempts: S.attempts, revealed: S.revealed, at: Date.now() };
+      store.done[L.id] = !prev || stars >= prev.stars ? Object.assign({}, prev, run, { stars: best }) : Object.assign({}, prev, { stars: best });
       store.sess[L.id] = { attempts: 0, hints: 0, revealed: false, fails: 0 };
       Object.assign(S, store.sess[L.id]);
       save(); renderStatus(); celebrate();
@@ -2148,6 +2276,7 @@ function stageReview(host, L, idx) {
   const tn = $("#tonext", host); if (tn) tn.onclick = () => go({ name: "lesson", i: idx + 1, stage: 0 });
 }
 
+$("#ver").textContent = "Version " + APP_VERSION;
 render();
 </script>
 
