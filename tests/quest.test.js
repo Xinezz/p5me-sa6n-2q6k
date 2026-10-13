@@ -50,6 +50,22 @@ const tests = async () => {
     if (!isFinale(L)) ok(L.example.lines.length === L.example.code.split(NL).length, L.id + ": one explanation per example line");
     ok(Array.isArray(L.recap) && L.recap.length && Array.isArray(L.mistakes) && L.mistakes.length >= 2, L.id + ": has a recap and at least two common mistakes");
   }
+  // 1a. Reactive scenes: every test-rig challenge draws each case, before and after running real code
+  for (const L of LESSONS.filter(l => l.challenge.scene === "rig")) {
+    const C = L.challenge, vis = SCENES[L.id];
+    ok(!!vis, L.id + ": has a reactive rig scene");
+    if (!vis) continue;
+    ok(C.cases.every(c => c.in), L.id + ": every case carries its input data for the scene");
+    const ev = await evaluate(C.solution, C), bad = await evaluate(C.starter, C);
+    let drew = true, detail = "";
+    C.cases.forEach((c, i) => {
+      for (const r of [null, ev.runs[i], bad.runs[i].error ? null : bad.runs[i]]) {
+        try { const h = vis(c, r, r); if (typeof h !== "string" || !h.length || /undefined%|NaN%/.test(h)) { drew = false; detail = c.label + ": " + h.slice(0, 80); } }
+        catch (e) { drew = false; detail = c.label + ": " + e.message; }
+      }
+    });
+    ok(drew, L.id + ": scene draws every case (no crashes, no NaN sizes)", detail);
+  }
   // 1b. Finales: one per sector 1–5, placed last in their sector, only combining taught lessons
   const fins = LESSONS.filter(isFinale);
   ok(fins.length === 5 && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "each of sectors 1–5 ends with a finale");

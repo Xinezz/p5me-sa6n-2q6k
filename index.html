@@ -286,6 +286,72 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Step-through player controls */
+.st-ctrl .st-count { margin-inline: 0 0; margin-left: auto; }
+.st-speed { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted); }
+.st-speed select { font: inherit; font-size: .85rem; color: var(--ink); background: var(--panel); border: 2px solid var(--frame); padding: 3px 6px; }
+.st-code { max-height: 420px; overflow-y: auto; }
+/* Reactive test rigs (always on the dark scene, so they use the fixed sprite palette) */
+.rig-status { min-height: 0 !important; font-size: .82rem; padding: 8px 12px !important; }
+.rig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 8px; }
+.rig { border: 2px solid #2C3A46; background: #0F1720; display: flex; flex-direction: column; min-width: 0; }
+.rig.ok { border-color: #2E7D55; } .rig.bad { border-color: #A8352D; } .rig.ran { border-color: #2B6F7A; }
+.rig-h { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 8px; background: #16212B; font-family: var(--f-code); font-size: .68rem; color: #8A9AAB; }
+.rig-h span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rig-lamp { width: 8px; height: 8px; background: #4A5A6B; flex: none; }
+.rig.ok .rig-lamp { background: #5BC98B; box-shadow: 0 0 6px #5BC98B; } .rig.bad .rig-lamp { background: #F07B6F; box-shadow: 0 0 6px #F07B6F; } .rig.ran .rig-lamp { background: #5CC2CB; }
+.rig-b { padding: 8px; display: flex; flex-direction: column; gap: 6px; flex: 1; justify-content: space-between; }
+.rig-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rig-out { font-family: var(--f-code); font-size: .72rem; color: #CFE8D2; background: #071009; padding: 3px 6px; word-break: break-word; }
+.rig-out.bad, .rig-out.hot { color: #F07B6F; } .rig-out.warm { color: #F5CB74; } .rig-out.cool { color: #5BC98B; }
+.rig-big { font-family: var(--f-display); font-size: 1.3rem; color: #E8EEF2; }
+.rig-b small { color: #8A9AAB; font-size: .7rem; }
+.rig-arrow { color: #8A9AAB; }
+.rig-empty { font-family: var(--f-code); font-size: .72rem; color: #6C8195; padding: 8px 0; }
+.rig-sprite { width: 28px; height: auto; flex: none; }
+.rig-tags { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.rchip { display: inline-block; font-family: var(--f-code); font-size: .68rem; padding: 1px 5px; border: 1px solid #4A5A6B; color: #C9D4DD; margin: 1px 2px 1px 0; }
+.rchip.ok { border-color: #5BC98B; color: #5BC98B; } .rchip.bad { border-color: #F07B6F; color: #F07B6F; }
+.vbars { display: flex; gap: 4px; align-items: flex-end; }
+.vbar { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 16px; }
+.vbar-t { width: 14px; height: 54px; background: #16212B; border: 1px solid #2C3A46; display: flex; align-items: flex-end; }
+.vbar-t i { display: block; width: 100%; background: #F09F4E; transition: height .4s steps(6); }
+.vbar.alt .vbar-t i { background: #5CC2CB; } .vbar.hi .vbar-t i { background: #F07B6F; }
+.vbar small { font-family: var(--f-code); font-size: .6rem; color: #8A9AAB; line-height: 1; height: 10px; }
+.gate { display: flex; gap: 2px; width: 34px; height: 40px; border: 2px solid #4A5A6B; padding: 2px; margin-left: auto; overflow: hidden; }
+.gate i { flex: 1; background: repeating-linear-gradient(0deg, #4A5A6B 0 4px, #2C3A46 4px 8px); transition: transform .4s steps(4); }
+.gate.open { border-color: #5BC98B; } .gate.shut { border-color: #F07B6F; }
+.gate.open i:first-child { transform: translateX(-110%); } .gate.open i:last-child { transform: translateX(110%); }
+.thermo { width: 14px; height: 54px; border: 2px solid #4A5A6B; display: flex; align-items: flex-end; padding: 1px; }
+.thermo i { width: 100%; background: #5CC2CB; } .thermo.warm i { background: #F5CB74; } .thermo.hot i { background: #F07B6F; }
+.receipt { font-family: var(--f-code); font-size: .75rem; display: flex; flex-direction: column; gap: 2px; background: #E8EEF2; color: #15202B; padding: 6px 8px; }
+.receipt div { display: flex; justify-content: space-between; gap: 8px; } .receipt .tot { border-top: 1px dashed #4A5A6B; padding-top: 2px; font-weight: 600; }
+.crystals { display: flex; flex-wrap: wrap; gap: 4px; min-height: 26px; align-items: flex-end; padding-top: 4px; }
+.cry { width: 16px; height: 20px; background: var(--c); clip-path: polygon(50% 0, 100% 30%, 100% 70%, 50% 100%, 0 70%, 0 30%); }
+.cry.mark { transform: translateY(-4px); filter: brightness(1.3); }
+.profile { display: flex; gap: 8px; align-items: center; }
+.profile > div { flex: 1; min-width: 0; }
+.profile b { color: #E8EEF2; font-family: var(--f-display); font-weight: 600; }
+.pbar { height: 6px; background: #16212B; border: 1px solid #2C3A46; margin: 3px 0; min-width: 40px; }
+.pbar i { display: block; height: 100%; background: #5BC98B; max-width: 100%; }
+.screen { font-family: var(--f-code); font-size: .72rem; color: #7FE0A0; background: #071009; padding: 4px 6px; word-break: break-word; }
+.scan { position: relative; }
+.scan .thresh { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed #F07B6F; bottom: calc(12px + 54px * .7); }
+.tank { width: 26px; height: 54px; border: 2px solid #4A5A6B; position: relative; display: flex; align-items: flex-end; padding: 1px; }
+.tank i { width: 100%; background: #F09F4E; }
+.tank .reserve { position: absolute; left: -4px; right: -4px; height: 0; border-top: 2px dashed #F07B6F; }
+.gauge { position: relative; flex: 1; min-width: 70px; height: 12px; background: #16212B; border: 1px solid #2C3A46; }
+.gauge .safe { position: absolute; left: calc(95 / 140 * 100%); width: calc(10 / 140 * 100%); top: 0; bottom: 0; background: #2E7D55; }
+.gauge i { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; background: #F5CB74; }
+.airlock { display: flex; gap: 2px; height: 22px; border: 2px solid #4A5A6B; padding: 2px; overflow: hidden; }
+.airlock i { flex: 1; background: repeating-linear-gradient(90deg, #4A5A6B 0 4px, #2C3A46 4px 8px); transition: transform .4s steps(4); }
+.airlock.open i:first-child { transform: translateX(-105%); } .airlock.open i:last-child { transform: translateX(105%); }
+.shields { display: flex; gap: 3px; }
+.shields span { width: 22px; height: 24px; display: grid; place-items: center; font-family: var(--f-code); font-size: .65rem; color: #6C8195; background: #16212B; clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%); }
+.shields span.on { background: #5CC2CB; color: #0B1117; }
+.crew { display: flex; flex-direction: column; gap: 3px; }
+.crew > div { display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; font-family: var(--f-code); font-size: .68rem; color: #C9D4DD; }
+.crew > div.tired span { color: #F07B6F; } .crew .tired .pbar i { background: #F07B6F; }
 /* Mastery meters, finales, review queue, achievements */
 .node-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .node .stars { margin: 0; padding: 0; }
@@ -1105,7 +1171,7 @@ const LESSONS = [
     hints: ["Use the variable names, not numbers. The cell values change in every test.", "<code>let total = cellA + cellB + cellC;</code>", "<code>let perRobot = total / 2;</code> uses total, so it must come after the total line."],
     cases: [[12, 30, 8], [5, 5, 10], [7, 0, 14]].map(v => {
       const s = v[0] + v[1] + v[2];
-      return { label: "Cells " + v.join(", "), pre: "const cellA = " + v[0] + ", cellB = " + v[1] + ", cellC = " + v[2] + ";", expect: "total " + s + ", perRobot " + s / 2, post: grab("total", "perRobot"), check: r => {
+      return { in: { cells: v }, label: "Cells " + v.join(", "), pre: "const cellA = " + v[0] + ", cellB = " + v[1] + ", cellC = " + v[2] + ";", expect: "total " + s + ", perRobot " + s / 2, post: grab("total", "perRobot"), check: r => {
         const R = r.report;
         if (R.total === undefined) return fail("There is no variable called <code>total</code>.", "no total");
         if (typeof R.total === "string") return fail("total is the string " + q(show(R.total)) + ". Did you put quotes around something? Use the variable names without quotes.", show(R.total));
@@ -1153,7 +1219,7 @@ const LESSONS = [
     hints: ["\"3 or higher\" is written <code>level >= 3</code>.", "Both things must be true, so join them with <code>&&</code>.", "<code>const canEnter = hasBadge && level >= 3;</code>"],
     cases: [[true, 5], [true, 3], [true, 2], [false, 9]].map(([b, l]) => {
       const exp = b && l >= 3;
-      return { label: "Badge: " + b + ", level: " + l, pre: "const hasBadge = " + b + ", level = " + l + ";", expect: String(exp), post: grab("canEnter"), check: r => {
+      return { in: { badge: b, level: l }, label: "Badge: " + b + ", level: " + l, pre: "const hasBadge = " + b + ", level = " + l + ";", expect: String(exp), post: grab("canEnter"), check: r => {
         const R = r.report;
         if (R.canEnter === undefined) return fail("There is no variable called <code>canEnter</code>.", "no canEnter");
         if (typeof R.canEnter !== "boolean") return fail("canEnter should be true or false, but it is " + q(show(R.canEnter)) + ". A comparison like <code>level >= 3</code> produces a boolean.", show(R.canEnter));
@@ -1199,7 +1265,7 @@ const LESSONS = [
     hints: ["Continue the same chain: <code>} else if (temperature >= 60) {</code> and then <code>} else {</code>.", "Don't start a separate if for each case. A chain makes sure only one message prints."],
     cases: [95, 90, 60, 59, 12].map(t => {
       const w = t > 90 ? "OVERHEAT" : t >= 60 ? "WARM" : "COOL";
-      return { label: "temperature = " + t, pre: "const temperature = " + t + ";", expect: w, check: r => {
+      return { in: { t }, label: "temperature = " + t, pre: "const temperature = " + t + ";", expect: w, check: r => {
         if (r.logs.length > 1) return fail("Printed " + r.logs.length + " messages (" + esc(r.logs.join(", ")) + "). Only one should print. Join your checks with <code>else if</code> and <code>else</code>.", r.logs.join(", "));
         if (t === 90 && r.logs[0] === "OVERHEAT") return fail("At exactly 90 the coolant is WARM. \"Above 90\" means <code>> 90</code>, not <code>>= 90</code>.", "OVERHEAT");
         if (t === 60 && r.logs[0] === "COOL") return fail("60 counts as WARM. \"60 or more\" means <code>>= 60</code>.", "COOL");
@@ -1366,7 +1432,7 @@ const LESSONS = [
     starter: "function repairCost(parts) {\n  // work out the price and return it\n}\n\nconsole.log(repairCost(4)); // should print 60\n",
     hints: ["Store <code>parts * 15</code> in a variable, subtract 20 inside <code>if (parts > 10) { }</code>, then <code>return</code> the variable at the end."],
     cases: [[2, 30], [10, 150], [11, 145], [0, 0], [20, 280]].map(([p, exp]) => ({
-      label: "repairCost(" + p + ")", expect: String(exp), post: callPost("repairCost", [p]),
+      in: { parts: p }, label: "repairCost(" + p + ")", expect: String(exp), post: callPost("repairCost", [p]),
       check: r => callCheck(r.report, "repairCost", "repairCost(" + p + ")", exp, v => p === 10 && v === 130 ? "Exactly 10 parts gets no discount. \"More than 10\" means <code>> 10</code>." : p > 10 && v === p * 15 ? "Orders over 10 parts need 20 coins taken off." : "")
     })),
     solution: "function repairCost(parts) {\n  let cost = parts * 15;\n  if (parts > 10) {\n    cost = cost - 20;\n  }\n  return cost;\n}\n\nconsole.log(repairCost(4)); // should print 60",
@@ -1406,7 +1472,7 @@ const LESSONS = [
     starter: "// crystals already exists\n",
     hints: ["<code>crystals[0]</code>, <code>crystals[crystals.length - 1]</code>, <code>crystals.push(...)</code> and <code>crystals.length</code>. Read last before you push."],
     cases: [["ruby", "jade", "opal"], ["amber", "beryl", "coral", "diamond", "emerald"], ["quartz"]].map(arr => ({
-      label: show(arr), pre: "const crystals = " + JSON.stringify(arr) + ";", expect: "first " + show(arr[0]) + ", last " + show(arr[arr.length - 1]) + ", prints " + (arr.length + 1),
+      in: { arr }, label: show(arr), pre: "const crystals = " + JSON.stringify(arr) + ";", expect: "first " + show(arr[0]) + ", last " + show(arr[arr.length - 1]) + ", prints " + (arr.length + 1),
       post: grab("first", "last", "crystals"),
       check: r => {
         const R = r.report, L = arr[arr.length - 1];
@@ -1462,7 +1528,7 @@ const LESSONS = [
       ["countAbove", [[5, 10, 15], 8], 2], ["countAbove", [[3, 3, 3, 50], 3], 1], ["countAbove", [[], 10], 0]
     ].map(([fn, args, exp]) => {
       const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")";
-      return { label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
+      return { in: { fn, args }, label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
         if (typeof v === "number" && isNaN(v)) return "NaN means undefined got into the maths. Does your loop go one past the end with <code><=</code>?";
         if (fn === "totalEnergy" && args[0].length > 1 && v === args[0][0]) return "Only the first element was counted. Is the return inside the loop? Move it after the closing brace.";
         if (fn === "countAbove" && exp === 1 && v === 4) return "\"Greater than\" means <code>></code>. Numbers equal to the limit don't count.";
@@ -1504,7 +1570,7 @@ const LESSONS = [
     starter: "const bot = {\n  // name, battery, skills\n};\n\nfunction describe(robot) {\n  // return a sentence using robot.name and robot.battery\n}\n\nconsole.log(describe(bot));\n",
     hints: ["Build the sentence with +: <code>robot.name + \" has \" + robot.battery + \"% battery\"</code>. Use the parameter robot, not bot, inside the function."],
     cases: [
-      { label: "Your bot object", expect: "name, battery and skills set", post: grab("bot"), check: r => {
+      { in: { kind: "bot" }, label: "Your bot object", expect: "name, battery and skills set", post: grab("bot"), check: r => {
         const b = r.report.bot;
         if (!b || typeof b !== "object" || Array.isArray(b)) return fail("Create an object: <code>const bot = { ... };</code>", show(b));
         if (typeof b.name !== "string" || !b.name) return fail("bot needs a <code>name</code> property holding a string.", show(b));
@@ -1512,12 +1578,12 @@ const LESSONS = [
         if (!Array.isArray(b.skills) || b.skills.length < 2 || !b.skills.every(s => typeof s === "string")) return fail("bot.skills should be an array of at least 2 strings, like <code>[\"weld\", \"scan\"]</code>.", show(b));
         return pass(show(b));
       } },
-      { label: "describe(bot)", expect: "your bot's sentence", post: grab("bot") + " " + "__report.isFn = typeof describe === 'function'; if (__report.isFn && typeof bot !== 'undefined') __report.out = __call(describe, bot);", check: r => {
+      { in: { kind: "describe" }, label: "describe(bot)", expect: "your bot's sentence", post: grab("bot") + " " + "__report.isFn = typeof describe === 'function'; if (__report.isFn && typeof bot !== 'undefined') __report.out = __call(describe, bot);", check: r => {
         const b = r.report.bot || {};
         return callCheck(r.report, "describe", "describe(bot)", b.name + " has " + b.battery + "% battery", null);
       } },
       ...[{ name: "Zed", battery: 15 }, { name: "Mira", battery: 100 }].map(o => ({
-        label: "describe(" + show(o) + ")", expect: o.name + " has " + o.battery + "% battery", post: grab("bot") + " " + callPost("describe", [o]),
+        in: { kind: "describe", obj: o }, label: "describe(" + show(o) + ")", expect: o.name + " has " + o.battery + "% battery", post: grab("bot") + " " + callPost("describe", [o]),
         check: r => callCheck(r.report, "describe", "describe(" + show(o) + ")", o.name + " has " + o.battery + "% battery", v => {
           const b = r.report.bot;
           if (b && typeof v === "string" && b.name && v.indexOf(b.name) >= 0) return "The sentence mentions your bot, not the robot passed in. Inside describe, use the parameter <code>robot</code>, not <code>bot</code>.";
@@ -1565,7 +1631,7 @@ const LESSONS = [
     cases: [[40, 85, 72, 10], [90, 5], [3], [71, 71]].map(lv => {
       const exp = { highest: Math.max(...lv), alerts: lv.filter(x => x > 70).length, total: lv.reduce((a, b) => a + b, 0) };
       const txt = "scanReport(" + show(lv) + ")";
-      return { label: txt, expect: show(exp), post: callPost("scanReport", [lv]), check: r => callCheck(r.report, "scanReport", txt, exp, v => {
+      return { in: { lv }, label: txt, expect: show(exp), post: callPost("scanReport", [lv]), check: r => callCheck(r.report, "scanReport", txt, exp, v => {
         if (v && typeof v === "object") {
           if ("alert" in v && !("alerts" in v)) return "The object uses the key <code>alert</code>, but it should be <code>alerts</code>.";
           if (typeof v.total === "number" && isNaN(v.total)) return "total is NaN: the loop reads one element past the end. Check the loop condition.";
@@ -1775,7 +1841,7 @@ const FINALES = [
       hints: ["Work in two steps: first <code>usable</code>, then <code>minutes = usable / burnRate</code>.", "Print with <code>console.log(\"Fuel lasts \" + minutes + \" minutes\");</code>"],
       cases: [[130, 6], [50, 8], [10, 5], [74, 4]].map(([f, b]) => {
         const u = f - 10, m = u / b;
-        return { label: "fuel " + f + ", burnRate " + b, pre: "const fuel = " + f + ", burnRate = " + b + ";", expect: "Fuel lasts " + m + " minutes", post: grab("usable", "minutes"), check: r => {
+        return { in: { f, b }, label: "fuel " + f + ", burnRate " + b, pre: "const fuel = " + f + ", burnRate = " + b + ";", expect: "Fuel lasts " + m + " minutes", post: grab("usable", "minutes"), check: r => {
           const R = r.report;
           if (R.usable !== u) return fail("usable should be " + f + " − 10 = " + u + " but is " + q(show(R.usable)) + ".", "usable " + show(R.usable));
           if (R.minutes !== m) return fail("minutes should be " + u + " ÷ " + b + " = " + m + " but is " + q(show(R.minutes)) + (R.minutes === f - 10 / b ? ". Without brackets the division happens first. Divide <code>usable</code> instead." : "."), "minutes " + show(R.minutes));
@@ -1796,7 +1862,7 @@ const FINALES = [
       hints: ["Store the range check first: <code>const safe = pressure >= 95 && pressure <= 105;</code>", "Then: <code>if (!safe) { … DANGER } else if (doorLocked) { … LOCKED } else { … OPEN }</code>"],
       cases: [[100, false], [95, false], [105, true], [106, false], [40, true], [94, false]].map(([p, l]) => {
         const exp = (p < 95 || p > 105) ? "DANGER" : l ? "LOCKED" : "OPEN";
-        return { label: "pressure " + p + ", doorLocked " + l, pre: "const pressure = " + p + ", doorLocked = " + l + ";", expect: exp, check: r => {
+        return { in: { p, l }, label: "pressure " + p + ", doorLocked " + l, pre: "const pressure = " + p + ", doorLocked = " + l + ";", expect: exp, check: r => {
           if (r.logs.length > 1) return fail("Printed " + r.logs.length + " words (" + esc(r.logs.join(", ")) + "). Exactly one should print: chain the checks with <code>else if</code> and <code>else</code>.", r.logs.join(", "));
           if ((p === 95 || p === 105) && r.logs[0] === "DANGER") return fail(p + " is inside the safe range. \"95 to 105\" includes both ends, so use <code>>=</code> and <code><=</code>.", "DANGER");
           if (exp === "DANGER" && r.logs.length && r.logs[0] !== "DANGER") return fail("Pressure " + p + " is outside 95 to 105, so this must print DANGER whatever the door is doing. Check the danger case first.", r.logs[0]);
@@ -1832,7 +1898,7 @@ const FINALES = [
       src: [{ test: s => /function\s+canAfford\s*\([^)]*\)\s*\{[^}]*shieldCost\s*\(/.test(s), msg: "canAfford should call <code>shieldCost(level)</code>, so the price is worked out in one place only." }],
       cases: [["shieldCost", [1], 60], ["shieldCost", [5], 220], ["canAfford", [100, 2], true], ["canAfford", [99, 2], false], ["bestLevel", [150], 3], ["bestLevel", [30], 0], ["bestLevel", [1000], 5]].map(([fn, args, exp]) => {
         const txt = fn + "(" + args.join(", ") + ")";
-        return { label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
+        return { in: { fn, args }, label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
           if (fn === "shieldCost" && v === args[0] * 40) return "Don't forget the 20-coin fitting fee.";
           if (fn === "canAfford" && exp === true && v === false) return "Exactly enough coins is enough: use <code>>=</code>.";
           if (fn === "bestLevel" && typeof v === "number" && v > 0 && v < exp) return "Keep looping: higher levels may be affordable too. Don't return inside the loop.";
@@ -1855,7 +1921,7 @@ const FINALES = [
         const A = [{ name: "Ada", energy: 70 }, { name: "Bo", energy: 25 }, { name: "Cy", energy: 10 }], B = [], C = [{ name: "Dee", energy: 30 }, { name: "Eli", energy: 29 }];
         return [["teamEnergy", A, 105], ["teamEnergy", B, 0], ["teamEnergy", C, 59], ["tiredNames", A, ["Bo", "Cy"]], ["tiredNames", B, []], ["tiredNames", C, ["Eli"]]].map(([fn, crew, exp]) => {
           const txt = fn + "(" + crewText(crew) + ")";
-          return { label: txt, expect: show(exp), post: callPost(fn, [crew]), check: r => callCheck(r.report, fn, txt, exp, v => {
+          return { in: { fn, crew }, label: txt, expect: show(exp), post: callPost(fn, [crew]), check: r => callCheck(r.report, fn, txt, exp, v => {
             if (Array.isArray(v) && v.some(x => x && typeof x === "object")) return "Push each member's <code>name</code>, not the whole object.";
             if (Array.isArray(v) && v.indexOf("Dee") >= 0) return "Energy of exactly 30 isn't below 30: use <code><</code>.";
             if (typeof v === "number" && isNaN(v)) return "NaN means something that isn't a number got added. Add <code>member.energy</code>, not <code>member</code>.";
@@ -1981,7 +2047,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "1.5.0";
+const APP_VERSION = "1.6.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -2282,26 +2348,75 @@ function stageVisual(host, L) {
   mountStepper($("#stepper", host), L.trace);
   wireGoto(host);
 }
-function mountStepper(host, tr) {
-  let k = 0;
-  const lines = tr.code.split("\n");
-  host.innerHTML = '<div class="stepper"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side"><div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
-    '<div class="st-ctrl"><button class="btn small" data-a="reset">Restart</button><button class="btn small" data-a="prev">← Back</button><span class="st-count tnum"></span><button class="btn primary small" data-a="next">Step →</button></div></div>';
+// Step-through player. tr = { code, steps: [{ l: line index, v: changed vars | vars: full snapshot, o: output line(s), n: note }] }
+// Controls: Restart, Back, Play/Pause (with speed), Step. Arrow keys step, Space plays/pauses.
+function mountStepper(host, tr, opts) {
+  opts = opts || {};
+  const lines = tr.code.split("\n"), N = tr.steps.length;
+  let k = 0, timer = null;
+  // Work out variables and console output at every step once, up front
+  const states = [];
+  { let vars = {}, out = [];
+    tr.steps.forEach((s, i) => {
+      if (s.vars) vars = Object.assign({}, s.vars); else if (s.v) vars = Object.assign({}, vars, s.v);
+      const o = s.o === undefined ? [] : Array.isArray(s.o) ? s.o : [s.o];
+      out = out.concat(o.map(x => [x, i]));
+      states.push({ vars, out, newOut: o });
+    }); }
+  host.innerHTML = '<div class="stepper" tabindex="-1"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side"><div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
+    '<div class="st-ctrl"><button class="btn small" data-a="reset">Restart</button><button class="btn small" data-a="prev" aria-label="Step back">←</button><button class="btn small signal" data-a="play">▶ Play</button><button class="btn primary small" data-a="next">Step →</button>' +
+    '<label class="st-speed">Speed <select data-a="speed" aria-label="Playback speed"><option value="1400">Slow</option><option value="800" selected>Normal</option><option value="350">Fast</option></select></label><span class="st-count tnum"></span></div></div>';
+  const speedSel = $('[data-a="speed"]', host), playBtn = $('[data-a="play"]', host);
   function draw() {
-    const vars = {}, out = []; let changed = {};
-    for (let i = 0; i <= k; i++) { const s = tr.steps[i]; if (s.v) { Object.assign(vars, s.v); if (i === k) changed = s.v; } if (s.o !== undefined) out.push([s.o, i === k]); }
-    const s = tr.steps[k];
-    $(".st-code", host).innerHTML = lines.map((ln, i) => '<div class="ln' + (i === s.l ? " cur" : "") + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(ln) || " ") + "</span></div>").join("");
-    $(".st-note", host).innerHTML = s.n ? esc(s.n) : (s.o !== undefined ? "Prints " + esc(s.o) + "." : "Next line.");
-    const keys = Object.keys(vars);
-    $(".vt", host).innerHTML = keys.length ? keys.map(n => '<div class="vbox' + (n in changed ? " changed" : "") + '"><div class="vn">' + esc(n) + '</div><div class="vv">' + esc(vars[n]) + "</div></div>").join("") : '<span class="muted small">None yet</span>';
-    $(".console", host).innerHTML = out.length ? out.map(o => '<span class="' + (o[1] ? "new" : "") + '">' + esc(o[0]) + "</span>").join("\n") : '<span class="muted">(empty)</span>';
-    $(".st-count", host).textContent = "Step " + (k + 1) + " of " + tr.steps.length;
+    const s = tr.steps[k], st = states[k], prev = k ? states[k - 1].vars : {};
+    const changed = Object.keys(st.vars).filter(n => prev[n] !== st.vars[n]);
+    const code = $(".st-code", host);
+    code.innerHTML = lines.map((ln, i) => '<div class="ln' + (i === s.l ? " cur" : "") + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(ln) || " ") + "</span></div>").join("");
+    const cur = $(".ln.cur", code); if (cur && code.scrollHeight > code.clientHeight) cur.scrollIntoView({ block: "nearest" });
+    let note = s.n;
+    if (!note && st.newOut.length) note = "Prints " + st.newOut.join(", ") + ".";
+    if (!note && changed.length) note = changed.map(n => n + (n in prev ? ": " + prev[n] + " → " + st.vars[n] : " is created: " + st.vars[n])).join(" · ");
+    if (!note) note = s.l >= 0 ? "Line " + (s.l + 1) + " runs." : "Done.";
+    $(".st-note", host).textContent = note;
+    const keys = Object.keys(st.vars);
+    $(".vt", host).innerHTML = keys.length ? keys.map(n => '<div class="vbox' + (changed.indexOf(n) >= 0 ? " changed" : "") + '"><div class="vn">' + esc(n) + '</div><div class="vv">' + esc(st.vars[n]) + "</div></div>").join("") : '<span class="muted small">None yet</span>';
+    $(".console", host).innerHTML = st.out.length ? st.out.map(o => '<span class="' + (o[1] === k ? "new" : "") + '">' + esc(o[0]) + "</span>").join("\n") : '<span class="muted">(empty)</span>';
+    $(".st-count", host).textContent = "Step " + (k + 1) + " of " + N;
     $('[data-a="prev"]', host).disabled = k === 0;
-    $('[data-a="next"]', host).disabled = k === tr.steps.length - 1;
+    $('[data-a="next"]', host).disabled = k === N - 1;
   }
-  host.addEventListener("click", e => { const a = e.target.closest("[data-a]"); if (!a) return; if (a.dataset.a === "next" && k < tr.steps.length - 1) k++; if (a.dataset.a === "prev" && k > 0) k--; if (a.dataset.a === "reset") k = 0; draw(); });
-  draw();
+  function updatePlay() { playBtn.textContent = timer ? "❚❚ Pause" : (k >= N - 1 ? "↻ Replay" : "▶ Play"); playBtn.setAttribute("aria-pressed", timer ? "true" : "false"); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } updatePlay(); }
+  function play() {
+    if (k >= N - 1) k = 0;
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if (!host.isConnected) return stop();
+      if (k < N - 1) { k++; draw(); }
+      if (k >= N - 1) stop();
+    }, +speedSel.value);
+    draw(); updatePlay();
+  }
+  host.addEventListener("click", e => {
+    const a = e.target.closest("[data-a]"); if (!a || a.tagName === "SELECT") return;
+    const act = a.dataset.a;
+    if (act === "play") { timer ? stop() : play(); return; }
+    stop();
+    if (act === "next" && k < N - 1) k++;
+    if (act === "prev" && k > 0) k--;
+    if (act === "reset") k = 0;
+    draw(); updatePlay();
+  });
+  speedSel.addEventListener("change", () => { if (timer) play(); });
+  host.addEventListener("keydown", e => {
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight" && k < N - 1) { stop(); k++; draw(); e.preventDefault(); }
+    else if (e.key === "ArrowLeft" && k > 0) { stop(); k--; draw(); e.preventDefault(); }
+    else if (e.key === " " && e.target.tagName !== "BUTTON") { timer ? stop() : play(); e.preventDefault(); }
+  });
+  draw(); updatePlay();
+  if (opts.autoplay) play();
+  return { stop };
 }
 
 /* ---- Widgets ---- */
@@ -2545,6 +2660,46 @@ function stagePractise(host, L) {
   gate();
 }
 
+/* ---- Reactive test rigs: every test case draws a small piece of the machine from your code's real results ---- */
+const pctOf = (v, max) => typeof v === "number" && isFinite(v) && max > 0 ? Math.max(0, Math.min(100, v / max * 100)) : 0;
+const vbars = (items, max) => '<div class="vbars">' + items.map(([v, label, cls]) => '<div class="vbar' + (cls ? " " + cls : "") + '"><div class="vbar-t"><i style="height:' + pctOf(v, max) + '%"></i></div><small>' + esc(label) + "</small></div>").join("") + "</div>";
+const rigOut = (txt, cls) => '<div class="rig-out' + (cls ? " " + cls : "") + '">' + esc(txt) + "</div>";
+const chip = (txt, cls) => '<span class="rchip' + (cls ? " " + cls : "") + '">' + esc(txt) + "</span>";
+const rv = (r, k) => r && r.report ? r.report[k] : undefined;
+const retv = r => r && r.report && r.report.out ? r.report.out.v : undefined;
+const said = r => r ? (r.logs.length ? r.logs.join(" ") : "(nothing printed)") : "?";
+const CRYSTAL_COLS = ["#F07B6F", "#5BC98B", "#5CC2CB", "#F5CB74", "#E39BC4", "#9FE3F0", "#F09F4E"];
+const crystalCol = name => CRYSTAL_COLS[[...String(name)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % CRYSTAL_COLS.length];
+// (case, run without error or null, raw run) → HTML. The case's `in` holds its inputs.
+const SCENES = {
+  math: (c, r) => { const [a, b, d] = c.in.cells, per = rv(r, "perRobot"), tot = rv(r, "total");
+    return '<div class="rig-row">' + vbars([[a, "A"], [b, "B"], [d, "C"]], 30) + '<span class="rig-arrow">→</span>' + vbars([[per, "bot 1", "alt"], [per, "bot 2", "alt"]], 25) + "</div>" + rigOut(r ? "total " + show(tot) + " · each " + show(per) : "cells waiting"); },
+  bool: (c, r) => { const g = rv(r, "canEnter");
+    return '<div class="rig-row">' + pxImg("pilot", "rig-sprite") + '<div class="rig-tags">' + chip(c.in.badge ? "badge ✓" : "no badge", c.in.badge ? "ok" : "bad") + chip("level " + c.in.level) + '</div><div class="gate' + (g === true ? " open" : g === false ? " shut" : "") + '"><i></i><i></i></div></div>' + rigOut(!r ? "gate waiting" : g === true ? "gate opens" : g === false ? "gate stays shut" : "canEnter = " + show(g)); },
+  if: (c, r) => { const w = r ? r.logs[0] : null;
+    return '<div class="rig-row"><div class="thermo' + (c.in.t > 90 ? " hot" : c.in.t >= 60 ? " warm" : "") + '"><i style="height:' + pctOf(c.in.t, 100) + '%"></i></div><div class="rig-big">' + c.in.t + "°</div></div>" + rigOut(r ? said(r) : "alarm waiting", w === "OVERHEAT" ? "hot" : w === "WARM" ? "warm" : w === "COOL" ? "cool" : ""); },
+  return: (c, r) => '<div class="receipt"><div><span>parts</span><b>' + c.in.parts + '</b></div><div class="tot"><span>price</span><b>' + (r ? esc(show(retv(r))) : "?") + "</b></div></div>",
+  arrays: (c, r) => { const rack = r && Array.isArray(rv(r, "crystals")) ? rv(r, "crystals") : c.in.arr, f = rv(r, "first"), l = rv(r, "last");
+    return '<div class="crystals">' + rack.map((n, i) => '<span class="cry' + (r && i === 0 && n === f ? " mark" : "") + (r && i === c.in.arr.length - 1 && n === l ? " mark" : "") + '" title="' + esc(String(n)) + '" style="--c:' + crystalCol(n) + '"></span>').join("") + "</div>" + rigOut(r ? "first " + show(f) + " · last " + show(l) + " · printed " + said(r) : rack.length + " on the rack"); },
+  arrloop: (c, r) => { const arr = c.in.args[0], lim = c.in.args[1], max = Math.max(1, ...arr);
+    return (arr.length ? vbars(arr.map(v => [v, String(v), lim !== undefined && v > lim ? "hi" : ""]), max) : '<div class="rig-empty">empty array</div>') + rigOut(c.in.fn + " → " + (r ? show(retv(r)) : "?")); },
+  objects: (c, r) => {
+    if (c.in.kind === "bot") { const b = rv(r, "bot");
+      if (!b || typeof b !== "object") return '<div class="profile">' + pxImg("robot", "rig-sprite") + '<div class="rig-empty">' + (r ? "no bot object yet" : "profile waiting") + "</div></div>";
+      return '<div class="profile">' + pxImg("robot", "rig-sprite") + "<div><b>" + esc(show(b.name, false)) + '</b><div class="pbar"><i style="width:' + pctOf(b.battery, 100) + '%"></i></div>' + (Array.isArray(b.skills) ? b.skills.slice(0, 4).map(s => chip(show(s, false))).join("") : "") + "</div></div>"; }
+    return '<div class="profile">' + pxImg("robot", "rig-sprite") + '<div class="screen">' + (r ? esc(show(retv(r), false)) : "…") + "</div></div>"; },
+  boss: (c, r) => '<div class="scan">' + vbars(c.in.lv.map(x => [x, String(x), x > 70 ? "hi" : ""]), 100) + '<div class="thresh" title="alert level 70"></div></div>' + rigOut(r ? show(retv(r)) : "scanner waiting"),
+  fin1: (c, r) => '<div class="rig-row"><div class="tank"><i style="height:' + pctOf(c.in.f, 130) + '%"></i><span class="reserve" style="bottom:' + pctOf(10, 130) + '%"></span></div><div><div class="rig-big">' + c.in.f + "L</div><small>burns " + c.in.b + "/min</small></div></div>" + rigOut(r ? said(r) : "gauge waiting"),
+  fin2: (c, r) => { const w = r ? r.logs[0] : null;
+    return '<div class="rig-row"><div class="gauge" title="safe zone 95–105"><span class="safe"></span><i style="left:' + pctOf(c.in.p, 140) + '%"></i></div>' + chip(c.in.l ? "locked" : "unlocked") + '</div><div class="airlock' + (w === "OPEN" ? " open" : "") + '"><i></i><i></i></div>' + rigOut(r ? said(r) : "airlock waiting", w === "DANGER" ? "hot" : w === "OPEN" ? "cool" : w === "LOCKED" ? "warm" : ""); },
+  fin4: (c, r) => { const v = retv(r);
+    if (c.in.fn === "bestLevel") return '<div class="shields">' + [1, 2, 3, 4, 5].map(k => '<span class="' + (typeof v === "number" && k <= v ? "on" : "") + '">' + k + "</span>").join("") + "</div>" + rigOut(c.in.args[0] + " coins → level " + (r ? show(v) : "?"));
+    if (c.in.fn === "canAfford") return '<div class="rig-row">' + chip(c.in.args[0] + " coins") + chip("level " + c.in.args[1]) + "</div>" + rigOut(!r ? "?" : v === true ? "can afford ✓" : v === false ? "too expensive ✗" : show(v), v === true ? "cool" : v === false ? "hot" : "");
+    return '<div class="receipt"><div><span>level</span><b>' + c.in.args[0] + '</b></div><div class="tot"><span>cost</span><b>' + (r ? esc(show(v)) : "?") + "</b></div></div>"; },
+  fin5: (c, r) => { const v = retv(r), tired = Array.isArray(v) ? v : [];
+    return (c.in.crew.length ? '<div class="crew">' + c.in.crew.map(m => '<div class="' + (tired.indexOf(m.name) >= 0 ? "tired" : "") + '"><span>' + esc(m.name) + '</span><div class="pbar"><i style="width:' + m.energy + '%"></i></div></div>').join("") + "</div>" : '<div class="rig-empty">no crew</div>') + rigOut(c.in.fn + " → " + (r ? show(v) : "?")); }
+};
+
 /* ---- Stage 4: Challenge ---- */
 function stageChallenge(host, L, idx) {
   if (!drillsDone(L)) {
@@ -2572,7 +2727,15 @@ function stageChallenge(host, L, idx) {
     if (C.scene === "terminal") { const lines = state && state.logs && state.logs.length ? esc(state.logs.join("\n")) : '<span class="dim">_ waiting for output…</span>'; sceneHost.innerHTML = '<div class="crt">' + lines + (on ? '\n\n<span>&gt; ACCESS GRANTED</span>' : "") + "</div>"; return; }
     if (C.scene === "door") { const code = state && state.report && state.report.doorCode !== undefined ? show(state.report.doorCode) : "----"; sceneHost.innerHTML = '<div class="doorframe' + (on ? " open" : "") + '"><div class="behind">VAULT OPEN</div><div class="leaf l"></div><div class="leaf r"></div><div class="keypad">doorCode: ' + esc(code) + "</div></div>"; return; }
     const n = C.cases.length, p = state && state.passed !== undefined ? state.passed : 0;
-    sceneHost.innerHTML = '<div class="crt" style="min-height:0">' + (state ? (on ? "ALL " + n + " CHECKS PASSED\n&gt; machine restored" : p + " / " + n + " checks passing\n&gt; repair incomplete") : '<span class="dim">' + n + " test rigs connected. Run a check to power them.</span>") + "</div>";
+    const status = '<div class="crt rig-status">' + (state && state.results ? (on ? "ALL " + n + " CHECKS PASSED · machine restored" : p + " / " + n + " checks passing · repair incomplete") : state && state.runs ? "Test run on rig 1 · press Check solution to power every rig" : '<span class="dim">' + n + " test rig" + (n > 1 ? "s" : "") + " connected. Run a check to power them.</span>") + "</div>";
+    const vis = SCENES[L.id];
+    if (!vis) { sceneHost.innerHTML = status; return; }
+    // One mini scene per test case, drawn from that case's input and what your code produced
+    sceneHost.innerHTML = status + '<div class="rig-grid">' + C.cases.map((c, i) => {
+      const r = state && state.runs ? state.runs[i] : null, res = state && state.results ? state.results[i] : null;
+      let body; try { body = vis(c, r && !r.error ? r : null, r); } catch (_) { body = '<div class="rig-out">?</div>'; }
+      return '<div class="rig ' + (res ? (res.ok ? "ok" : "bad") : r ? "ran" : "idle") + '"><div class="rig-h"><span>' + esc(c.label) + '</span><i class="rig-lamp" aria-label="' + (res ? (res.ok ? "passed" : "failed") : "not checked") + '"></i></div><div class="rig-b">' + body + (r && r.error ? '<div class="rig-out bad">' + esc(r.error.name) + "</div>" : "") + "</div></div>";
+    }).join("") + "</div>";
   }
   function drawCases(results) {
     $("#cases", host).innerHTML = C.cases.map((c, i) => {
@@ -2595,10 +2758,11 @@ function stageChallenge(host, L, idx) {
   async function run() {
     const c = C.cases[0];
     $("#cout", host).innerHTML = '<p class="muted small">Running…</p>';
-    const r = await runOnce({ code: ed.get(), pre: c.pre || "", map: c.map || null, dir: c.dir });
+    const r = await runOnce({ code: ed.get(), pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir });
     renderResult($("#cout", host), r, ed);
     if (grid && r.robot) grid.play(r.robot.trace);
     if (C.scene === "terminal") drawScene({ logs: r.logs });
+    if (C.scene === "rig" || C.scene === "door") drawScene({ runs: [r], logs: r.logs, report: r.report });
   }
   async function check() {
     const code = ed.get();
@@ -2610,7 +2774,7 @@ function stageChallenge(host, L, idx) {
     if (C.cases.length > 1) $("#cout", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Showing output from test: <code>' + esc(C.cases[showIdx].label) + "</code></p>");
     if (grid) { grid = mountGrid(sceneHost, C.cases[showIdx].map, C.cases[showIdx].dir); if (runs[showIdx].robot) grid.play(runs[showIdx].robot.trace); }
     drawCases(results);
-    drawScene({ pass: allOk, logs: runs[0].logs, report: runs[0].report, passed });
+    drawScene({ pass: allOk, logs: runs[0].logs, report: runs[0].report, passed, runs, results });
     if (allOk) {
       const stars = S.revealed ? 1 : (S.hints === 0 && S.attempts <= 2) ? 3 : (S.hints <= 1 && S.attempts <= 4) ? 2 : 1;
       const prev = store.done[L.id];
