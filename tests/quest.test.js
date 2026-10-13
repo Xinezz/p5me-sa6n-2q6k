@@ -68,9 +68,9 @@ const tests = async () => {
   }
   // 1b. Finales: one per sector 1–5, placed last in their sector, only combining taught lessons
   const fins = LESSONS.filter(isFinale);
-  ok(fins.length === 5 && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "each of sectors 1–5 ends with a finale");
+  ok(fins.length === 6 && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "each of sectors 1–6 ends with a finale");
   ok(fins.every(F => F.combines.every(id => { const P = LESSON_BY_ID.get(id); return P && LESSONS.indexOf(P) < LESSONS.indexOf(F); })), "finales only combine lessons that come before them");
-  ok(LESSONS[LESSONS.length - 1].id === "boss" && lessonNo(LESSONS.length - 1) === 13, "the Glitch King is still lesson 13 and comes last");
+  ok(LESSONS[LESSONS.length - 1].id === "boss" && lessonNo(LESSONS.length - 1) === 16 && LESSONS[LESSONS.length - 1].world === WORLDS.length - 1, "the Glitch King is lesson 16, in the last sector, and comes last");
   // 1c. Review exercises: one per lesson, solutions pass, starters don't
   for (const L of LESSONS.filter(l => !isFinale(l))) {
     const R = REVIEWS[L.id];
@@ -113,9 +113,9 @@ const tests = async () => {
 
   // 3. Predictions and step-through traces match what the code really prints
   for (const L of LESSONS.filter(l => !isFinale(l))) {
-    const p = await runOnce({ code: L.predict.code });
+    const p = await runOnce({ code: L.predict.code, page: L.page || null });
     ok(p.logs.join(NL) === L.predict.answer, L.id + ": predict answer matches real output", JSON.stringify(p.logs));
-    const t = await runOnce({ code: L.trace.code });
+    const t = await runOnce({ code: L.trace.code, page: L.page || null });
     const tout = L.trace.steps.filter(s => s.o !== undefined).map(s => s.o);
     ok(t.logs.join(NL) === tout.join(NL), L.id + ": trace output matches real output", JSON.stringify(t.logs));
   }
@@ -123,22 +123,22 @@ const tests = async () => {
   const programs = [];
   for (const L of LESSONS) {
     const c0 = L.challenge.cases[0];
-    programs.push([L.id + " challenge solution", L.challenge.solution, c0.pre || "", c0.map, c0.dir]);
-    (L.drills || []).forEach((D, k) => programs.push([L.id + " drill " + (k + 1), D.solution, D.cases[0].pre || "", D.cases[0].map, D.cases[0].dir]));
-    if (REVIEWS[L.id]) programs.push([L.id + " review", REVIEWS[L.id].solution, REVIEWS[L.id].cases[0].pre || "", null]);
+    programs.push([L.id + " challenge solution", L.challenge.solution, c0.pre || "", c0.map, c0.dir, c0.page || L.challenge.page]);
+    (L.drills || []).forEach((D, k) => programs.push([L.id + " drill " + (k + 1), D.solution, D.cases[0].pre || "", D.cases[0].map, D.cases[0].dir, D.cases[0].page || D.page]));
+    if (REVIEWS[L.id]) programs.push([L.id + " review", REVIEWS[L.id].solution, REVIEWS[L.id].cases[0].pre || "", null, undefined, REVIEWS[L.id].page]);
     if (!isFinale(L)) {
-      programs.push([L.id + " example", L.example.code, "", null], [L.id + " trace code", L.trace.code, "", null]);
-      programs.push([L.id + " sandbox starter", L.practise.starter, "", L.practise.map || null, 1]);
+      programs.push([L.id + " example", L.example.code, "", null, undefined, L.page], [L.id + " trace code", L.trace.code, "", null, undefined, L.page]);
+      programs.push([L.id + " sandbox starter", L.practise.starter, "", L.practise.map || null, 1, L.practise.page]);
     }
   }
   let sameAll = true, traced = 0;
-  for (const [name, code, pre, map, dir] of programs) {
-    const a = await runOnce({ code, pre, map, dir }), b = await runOnce({ code, pre, map, dir, trace: true });
-    const sameOut = a.logs.join(NL) === b.logs.join(NL) && (a.error ? a.error.name : "") === (b.error ? b.error.name : "") && (!a.robot || a.robot.trace.length === b.robot.trace.length);
+  for (const [name, code, pre, map, dir, page] of programs) {
+    const a = await runOnce({ code, pre, map, dir, page: page || null }), b = await runOnce({ code, pre, map, dir, page: page || null, trace: true });
+    const sameOut = a.logs.join(NL) === b.logs.join(NL) && (a.error ? a.error.name : "") === (b.error ? b.error.name : "") && (!a.robot || a.robot.trace.length === b.robot.trace.length) && JSON.stringify(a.dom) === JSON.stringify(b.dom);
     if (!sameOut) { sameAll = false; ok(false, "tracing changes behaviour: " + name, JSON.stringify([a.logs, b.logs, a.error, b.error])); }
     if (b.steps && b.steps.length > 1) traced++;
   }
-  ok(sameAll, "tracing never changes output, errors or robot moves (" + programs.length + " programs)");
+  ok(sameAll, "tracing never changes output, errors, robot moves or the practice page (" + programs.length + " programs)");
   ok(traced === programs.length, "every program produces a step-by-step trace", traced + " of " + programs.length);
   const t1 = await runOnce({ code: "let a = 1;\na = a + 2;\nconsole.log(a);", trace: true }), f1 = traceFrames(t1);
   ok(f1.map(f => f.l).join() === "0,1,2" && f1.map(f => f.vars.a).join() === "1,3,3" && f1[2].o.join() === "3", "trace frames show each line, the value after it ran, and its output", JSON.stringify(f1));
@@ -156,6 +156,34 @@ const tests = async () => {
   ok(f7.length > 10 && f7[f7.length - 1].rt === t7.robot.trace.length && f7.every((f, i) => !i || f.rt >= f7[i - 1].rt), "robot traces line up with B0-T's moves", f7.length + " frames");
   const t8 = await runOnce({ code: 'const bot = {\n  name: "Bolt",\n  battery: 100\n};\nbot.battery = 80;\nconsole.log(bot.battery);', trace: true }), f8 = traceFrames(t8);
   ok(f8.map(f => f.l).join() === "0,4,5" && f8[1].vars.bot === '{ name: "Bolt", battery: 80 }', "multi-line object literals are traced as one statement", JSON.stringify(f8.map(f => [f.l, f.vars.bot])));
+
+  // 3c. Control Room practice page
+  const P1 = [{ id: "screen", tag: "div", text: "OLD" }, { id: "go", tag: "button", text: "Go" }, { id: "n", tag: "input", value: "7" }];
+  const d1 = await runOnce({ code: 'const s = document.getElementById("screen");\ns.textContent = 5;\nconsole.log(typeof s.textContent, s.textContent);\nconsole.log(document.getElementById("nope"));\nconsole.log(s);', page: P1 });
+  ok(d1.logs.join("|") === 'string 5|null|<div id="screen">' && domEl(d1, "screen").text === "5", "practice page: text is stored as a string, missing ids give null, elements print readably", JSON.stringify(d1.logs));
+  const d2 = await runOnce({ code: 'document.getElementById("Screen").textContent = "x";', page: P1 });
+  ok(d2.error && /null/.test(d2.error.message) && /getElementById/.test(explainError(d2.error)) && d2.error.line === 1, "a wrong id is explained as getElementById finding nothing, on the right line", JSON.stringify(d2.error));
+  const d3 = await runOnce({ code: 'let c = 0;\ndocument.getElementById("go").addEventListener("click", function () {\n  c = c + Number(document.getElementById("n").value);\n  document.getElementById("screen").textContent = c;\n});', post: '__fire("go"); __type("n", "3"); __fire("go");', page: P1 });
+  ok(domEl(d3, "screen").text === "10", "click handlers run on each fired click and see typed values", domEl(d3, "screen").text);
+  const d4 = await runOnce({ code: 'document.getElementById("go").addEventListener("click", "oops");', page: P1 });
+  ok(d4.error && /needs a function/.test(d4.error.message), "passing a non-function to addEventListener is explained");
+  const d5 = await runOnce({ code: 'const s = document.getElementById("screen");\ns.style.background = "url(http://x)";\ns.style.color = "red";\ns.style.width = 50;', page: P1 });
+  const st5 = domEl(d5, "screen").style;
+  ok(st5.color === "red" && !safeCss(st5.background) && safeCss("40%") && safeCss("#0f0") && !safeCss("red;background:url(x)") && !safeCss("expression(alert(1))"), "unsafe style values are never applied to the preview", JSON.stringify(st5));
+  const d6 = await runOnce({ code: "console.log(typeof window, typeof document.cookie, typeof document.body, typeof localStorage);", page: P1 });
+  ok(d6.logs[0] === "undefined undefined undefined undefined", "the practice page exposes no real page, cookies or storage", d6.logs[0]);
+  // Live sessions: clicks reach the learner's handlers, and a runaway handler is stopped
+  const live = startLive({ code: 'let c = 0;\ndocument.getElementById("go").addEventListener("click", function () {\n  c = c + 1;\n  document.getElementById("screen").textContent = "clicks " + c;\n  console.log(c);\n});', page: P1 });
+  const l0 = await live.first, l1 = await live.event("go", "click", {}), l2 = await live.event("go", "click", {});
+  ok(l0.dom && !l0.error && l2.logs.join() === "2" && domEl(l2, "screen").text === "clicks 2", "live preview: each click runs the handler and updates the panel", JSON.stringify([l1.logs, l2.logs]));
+  live.stop();
+  const hang = startLive({ code: 'document.getElementById("go").addEventListener("click", function () {\n  while (true) {}\n});', page: P1 });
+  await hang.first;
+  const h1 = await hang.event("go", "click", {});
+  ok(h1.error && h1.error.name === "Timeout" && h1.dead, "an infinite loop inside a click handler is stopped by the 2-second kill switch");
+  hang.stop();
+  const t9 = await runOnce({ code: 'const s = document.getElementById("screen");\ns.textContent = "NEW";', page: P1, trace: true }), f9 = traceFrames(t9);
+  ok(f9.length === 2 && f9[1].dom && f9[1].dom.find(e => e.id === "screen").text === "NEW", "tracing records the practice page after each line", JSON.stringify(f9.map(f => f.dom && f.dom[0].text)));
 
   // 4. Sandbox safety and error reporting
   const inf = await runOnce({ code: "while (true) {}" });

@@ -286,6 +286,32 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Show code exactly as typed: no ligatures, so >= never turns into ≥ and beginners see the real characters */
+code, pre, textarea, .ed-hl, .ed-ta, .st-code, .gutter, .crt, .rig-out, .pv-box, .pv-in, .sym { font-variant-ligatures: none; font-feature-settings: "liga" 0, "calt" 0; }
+/* Practice page preview (Control Room) */
+.pv { display: flex; flex-direction: column; gap: 8px; background: #E8EEF2; color: #15202B; padding: 12px; border: 3px solid #3A4B5C; font-family: var(--f-body); }
+.pv-h { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; }
+.pv-field { display: flex; flex-direction: column; gap: 2px; }
+.pv-lab { font-family: var(--f-code); font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #53637A; }
+.pv-box { background: #FFFFFF; border: 2px solid #15202B; padding: 6px 10px; font-family: var(--f-code); font-size: .9rem; min-height: 2em; word-break: break-word; }
+.pv-btn { align-self: flex-start; font-family: var(--f-display); font-weight: 600; background: #F09F4E; color: #1A1006; border: 2px solid #15202B; box-shadow: 0 3px 0 #15202B; padding: 5px 14px; border-radius: 0; }
+.pv-btn:disabled { cursor: default; opacity: 1; }
+.pv.live .pv-btn { cursor: pointer; }
+.pv.live .pv-btn:active { transform: translateY(3px); box-shadow: none; }
+.pv-in { font: inherit; font-family: var(--f-code); font-size: .9rem; border: 2px solid #15202B; padding: 5px 8px; background: #FFFFFF; color: #15202B; width: 100%; max-width: 220px; border-radius: 0; }
+.pv-in:disabled { background: #F4F6F8; }
+.pv-track { background: #FFFFFF; border: 2px solid #15202B; height: 22px; }
+.pv-bar { height: 100%; background: #5CC2CB; width: 0; transition: width .3s steps(6); font-family: var(--f-code); font-size: .7rem; overflow: hidden; }
+.pvc-hidden { display: none; }
+.pvc-on, .pvc-ok { background: #5BC98B; } .pvc-warn { background: #F5CB74; } .pvc-off { opacity: .55; } .pvc-big { font-size: 1.3rem; }
+.pv-note { font-size: .8rem; color: var(--code-muted); margin-top: 8px; }
+.mini-pv .pv { padding: 6px; gap: 4px; border-width: 2px; font-size: .75rem; }
+.mini-pv .pv-h { font-size: .85rem; }
+.mini-pv .pv-box { padding: 2px 5px; font-size: .7rem; min-height: 0; }
+.mini-pv .pv-btn { padding: 2px 6px; font-size: .7rem; box-shadow: 0 2px 0 #15202B; }
+.mini-pv .pv-in { padding: 2px 4px; font-size: .7rem; }
+.mini-pv .pv-track { height: 12px; }
+.st-page { padding: 8px; }
 /* Welcome card and tour */
 .welcome { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; border-color: var(--accent); }
 .welcome > div:not(.toolbar) { flex: 1; min-width: 200px; }
@@ -644,13 +670,14 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  panel: { rows: ["kkkkkkkkkkkk", "kbbbbbbbbbbk", "kbnnnnnnnnbk", "kbnwnnnnnnbk", "kbnnnnnnnnbk", "kbbbbbbbbbbk", "kSSSSSSSSSSk", "kSrSgSySoSSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk"] },
   trophy: { rows: ["..kkkkkkkk..", "kkkyyyyyykkk", "kykywyyyykyk", "kykyyyyyykyk", ".kkyyyyyykk.", "...kyyyyk...", "....kyyk....", ".....kk.....", "....kyyk....", "...kOOOOk...", "...kkkkkk..."] },
   lock: { rows: ["..kkkk..", ".kk..kk.", ".k....k.", "kkkkkkkk", "kssssssk", "ksskkssk", "kssksssk", "kkkkkkkk"], raw: true },
   wall: { raw: true, rows: ["SSSSdSSS", "SSSSdSSS", "dddddddd", "SdSSSSSS", "SdSSSSSS", "dddddddd", "SSSSdSSS", "SSSSdSSS"] },
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
   exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
 };
-const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "skull"];
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull"];
 const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
 // Hand pixel tiles to CSS for the robot grid
 (function () { try { const r = document.documentElement.style; ["wall", "floor", "exit"].forEach(t => { const u = spriteURL(t); if (u) r.setProperty("--tile-" + t, "url(" + u + ")"); }); } catch (_) {} })();
@@ -843,6 +870,8 @@ function workerMain() {
     if (v === undefined) return "undefined";
     if (v === null) return "null";
     if (typeof v === "function") return "[Function: " + (v.name || "anonymous") + "]";
+    if (typeof v === "object" && v.__el) return "<" + v.__el + ' id="' + v.id + '">';
+    if (typeof v === "object" && v.__doc) return "[document]";
     if (Array.isArray(v)) return d > 3 ? "[…]" : "[" + v.map(x => fmt(x, true, d + 1)).join(", ") + "]";
     if (typeof v === "object") { const ks = Object.keys(v); if (!ks.length) return "{}"; return d > 3 ? "{…}" : "{ " + ks.map(k => k + ": " + fmt(v[k], true, d + 1)).join(", ") + " }"; }
     return String(v);
@@ -864,8 +893,61 @@ function workerMain() {
     });
     return { api, traceLen: () => trace.length, state: () => ({ x, y, dir, atGoal: cell(x, y) === "G", trace, moves: trace.filter(t => t.ev === "move").length }) };
   }
+  // ---- A safe practice page for the Control Room sector. Learner code never touches the real page:
+  //      it gets this small model, which supports the DOM tools taught in the lessons. ----
+  const STYLE_PROPS = ["color", "background", "backgroundColor", "display", "width", "height", "fontSize", "fontWeight", "textAlign", "border", "opacity"];
+  function makeDom(spec) {
+    const els = new Map();
+    spec.forEach(s => {
+      const handlers = {}, cls = new Set(s.cls || []);
+      let text = s.text === undefined ? "" : String(s.text), value = s.value === undefined ? "" : String(s.value);
+      const el = { style: Object.assign({}, s.style || {}), onclick: null };
+      // Like the real DOM, text and values are always stored as strings
+      Object.defineProperty(el, "textContent", { enumerable: true, get: () => text, set: v => { text = v === null || v === undefined ? "" : String(v); } });
+      Object.defineProperty(el, "innerText", { get: () => text, set: v => { text = v === null || v === undefined ? "" : String(v); } });
+      Object.defineProperty(el, "value", { enumerable: true, get: () => value, set: v => { value = v === null || v === undefined ? "" : String(v); } });
+      Object.defineProperty(el, "id", { value: s.id });
+      Object.defineProperty(el, "tagName", { value: s.tag.toUpperCase() });
+      Object.defineProperty(el, "__el", { value: s.tag });
+      Object.defineProperty(el, "__cls", { value: cls });
+      Object.defineProperty(el, "__handlers", { value: handlers });
+      Object.defineProperty(el, "classList", { value: Object.freeze({ add: (...c) => c.forEach(x => cls.add(String(x))), remove: (...c) => c.forEach(x => cls.delete(String(x))), contains: c => cls.has(String(c)), toggle: c => { c = String(c); if (cls.has(c)) { cls.delete(c); return false; } cls.add(c); return true; } }) });
+      Object.defineProperty(el, "addEventListener", { value: (type, fn) => {
+        if (typeof fn !== "function") throw new TypeError("addEventListener needs a function as its second argument. If you wrote myFunction() with brackets, pass the function itself instead: myFunction");
+        (handlers[type] = handlers[type] || []).push(fn);
+      } });
+      els.set(s.id, el);
+    });
+    const document = Object.freeze({
+      __doc: true,
+      getElementById: id => els.get(String(id)) || null,
+      querySelector: sel => { const m = /^#([\w-]+)$/.exec(String(sel)); return m ? els.get(m[1]) || null : null; }
+    });
+    function fire(id, type) {
+      const el = els.get(String(id)); if (!el) return;
+      const ev = Object.freeze({ type, target: el, preventDefault() {} });
+      (el.__handlers[type] || []).forEach(fn => fn.call(el, ev));
+      if (type === "click" && typeof el.onclick === "function") el.onclick.call(el, ev);
+    }
+    function setValues(vals) { Object.keys(vals || {}).forEach(id => { const el = els.get(id); if (el) el.value = vals[id]; }); }
+    function state() {
+      return spec.map(s => {
+        const el = els.get(s.id), style = {};
+        STYLE_PROPS.forEach(p => { const v = el.style[p]; if (v !== undefined && v !== null && v !== "") style[p] = String(v); });
+        return { id: s.id, tag: s.tag, kind: s.kind, label: s.label, text: el.textContent, value: el.value, style, cls: [...el.__cls].slice(0, 8) };
+      });
+    }
+    return { document, fire, setValues, state };
+  }
+  function errInfo(err, nLines) {
+    const st = err && err.stack ? String(err.stack) : "";
+    const m = st.match(/(?:<anonymous>|Function):(\d+):\d+/);
+    let line = m ? +m[1] - 3 : null;
+    if (line !== null && (line < 1 || line > nLines)) line = null;
+    return { name: (err && err.name) || "Error", message: err && err.message !== undefined ? err.message : String(err), line };
+  }
   // ---- Trace mode: put a step marker in front of each statement (on the same line, so line numbers stay true) ----
-  const RESERVED = new Set("break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null return super switch this throw true try typeof var void while with yield undefined console robot of".split(" "));
+  const RESERVED = new Set("break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null return super switch this throw true try typeof var void while with yield undefined console robot document of".split(" "));
   function traceNames(pre, code) {
     const found = new Map(); // name → first position, so variables are listed in the order they appear
     const add = (n, at) => { if (/^[A-Za-z_$][\w$]*$/.test(n) && !/^__/.test(n) && !RESERVED.has(n) && (!found.has(n) || found.get(n) > at)) found.set(n, at); };
@@ -910,11 +992,23 @@ function workerMain() {
     }
     return lines.length;
   }
+  // A live session keeps one program (and its click handlers) alive between preview clicks
+  let session = null;
+  function onEvent(d) {
+    if (!session) { self.postMessage({ logs: [], error: { name: "Error", message: "Press Run first." }, dom: null }); return; }
+    const start = session.logs.length; session.setStart(start);
+    let error = null;
+    try { session.dom.setValues(d.values); session.dom.fire(d.id, d.ev || "click"); }
+    catch (err) { error = errInfo(err, session.nLines); }
+    self.postMessage({ logs: session.logs.slice(start), error, dom: session.dom.state() });
+  }
   self.onmessage = function (e) {
-    const { code, pre = "", post = "", map, dir, trace } = e.data;
+    if (e.data && e.data.type === "event") return onEvent(e.data);
+    const { code, pre = "", post = "", map, dir, trace, page, live } = e.data;
     const logs = [], report = {};
-    let error = null, robot = null, fn = null;
-    const log = (...a) => { if (logs.length >= 300) throw new Error("More than 300 lines were printed. A loop is probably running too many times."); logs.push(a.map(x => fmt(x, false, 0)).join(" ")); };
+    let error = null, robot = null, fn = null, logStart = 0;
+    const log = (...a) => { if (logs.length - logStart >= 300) throw new Error("More than 300 lines were printed. A loop is probably running too many times."); logs.push(a.map(x => fmt(x, false, 0)).join(" ")); };
+    const dom = page ? makeDom(page) : null;
     const con = Object.freeze({ log, info: log, warn: log, error: log });
     if (map) robot = makeRobot(map, dir === undefined ? 1 : dir, 400);
     const call = (f, ...args) => { try { return { v: f(...args) }; } catch (err) { return { err: String(err && err.message || err) }; } };
@@ -937,34 +1031,122 @@ function workerMain() {
           vars[n] = fmt(v, true, 0);
         } catch (_) { /* not in scope here */ }
       });
-      steps.push({ line, vars, logN: logs.length, rt: robot ? robot.traceLen() : 0 });
+      steps.push({ line, vars, logN: logs.length, rt: robot ? robot.traceLen() : 0, dom: dom ? dom.state() : undefined });
     };
-    try { fn = new Function("console", "robot", "__report", "__call", "__step", '"use strict"; ' + pre + "\n" + body + "\n;" + post + tail); }
+    // Test helpers for page challenges: click an element, type into an input, count printed lines
+    const fire = dom ? (id, type) => dom.fire(id, type || "click") : undefined;
+    const typeInto = dom ? (id, v) => dom.setValues({ [id]: v }) : undefined;
+    try { fn = new Function("console", "robot", "__report", "__call", "__step", "document", "__fire", "__type", "__nlogs", '"use strict"; ' + pre + "\n" + body + "\n;" + post + tail); }
     catch (err) { const pe = parseError(pre, code); error = { name: err.name, message: pe ? pe.message : err.message, line: findSyntaxLine(pre, code), syntax: true }; }
     if (fn) {
-      try { fn(con, robot ? robot.api : undefined, report, call, step); }
-      catch (err) {
-        const st = err && err.stack ? String(err.stack) : "";
-        const m = st.match(/(?:<anonymous>|Function):(\d+):\d+/);
-        let line = m ? +m[1] - 3 : null;
-        if (line !== null && (line < 1 || line > code.split("\n").length)) line = null;
-        error = { name: (err && err.name) || "Error", message: err && err.message !== undefined ? err.message : String(err), line };
-      }
+      try { fn(con, robot ? robot.api : undefined, report, call, step, dom ? dom.document : undefined, fire, typeInto, () => logs.length); }
+      catch (err) { error = errInfo(err, code.split("\n").length); }
     }
+    if (live && dom && !(error && error.syntax)) session = { dom, logs, nLines: code.split("\n").length, setStart: n => { logStart = n; } };
     let rep = {};
     try { rep = JSON.parse(JSON.stringify(report, (k, v) => v === undefined ? "__undefined__" : typeof v === "function" ? "__function__" : (typeof v === "number" && !isFinite(v)) ? "__" + String(v) + "__" : v)); } catch (_) { rep = {}; }
-    self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null, steps });
+    self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null, steps, dom: dom ? dom.state() : null });
   };
 }
 const WORKER_URL = URL.createObjectURL(new Blob(["(" + workerMain.toString() + ")()"], { type: "text/javascript" }));
-function runOnce({ code, pre = "", post = "", map = null, dir, trace = false }) {
+// A live run keeps the worker (and the learner's click handlers) alive so preview buttons work.
+// Each message still has a 2-second watchdog, and events are sent one at a time.
+const LIVE = new Set();
+function stopLive() { LIVE.forEach(s => s.stop()); LIVE.clear(); }
+function startLive({ code, pre = "", page }) {
+  let w;
+  try { w = new Worker(WORKER_URL); } catch (e) { const r = Promise.resolve({ logs: [], report: {}, error: { name: "Error", message: "The code runner could not start in this browser: " + e.message }, dead: true }); return { first: r, event: () => r, stop() {} }; }
+  let dead = false, chain = Promise.resolve();
+  const send = msg => new Promise(res => {
+    if (dead) return res({ logs: [], error: null, dom: null, dead: true });
+    const t = setTimeout(() => { dead = true; w.terminate(); res({ logs: [], report: {}, error: { name: "Timeout", message: "Your code ran for more than 2 seconds and was stopped." }, dead: true }); }, 2000);
+    w.onmessage = e => { clearTimeout(t); const d = e.data; d.report = restore(d.report || {}); res(d); };
+    w.onerror = e => { e.preventDefault(); clearTimeout(t); dead = true; w.terminate(); res({ logs: [], report: {}, error: { name: "Error", message: e.message || "Unknown error" }, dead: true }); };
+    w.postMessage(msg);
+  });
+  const first = send({ code, pre, page, live: true });
+  chain = first;
+  const s = {
+    first,
+    event: (id, ev, values) => (chain = chain.then(() => send({ type: "event", id, ev, values }))),
+    stop() { dead = true; try { w.terminate(); } catch (_) {} }
+  };
+  LIVE.add(s);
+  return s;
+}
+
+/* ---- Practice page preview (Control Room sector) ---- */
+const PV_STYLE_OK = new Set(["color", "background", "backgroundColor", "display", "width", "height", "fontSize", "fontWeight", "textAlign", "border", "opacity"]);
+// Only plain values like "red", "#0f0", "40%", "bold" are applied: no url(), no expressions, no extra declarations
+const safeCss = v => typeof v === "string" && v.length <= 40 && /^[#\w\s%.,()-]*$/.test(v) && !/url|expression|javascript|image|var\(/i.test(v);
+function pageHTML(dom, live) {
+  return '<div class="pv' + (live ? " live" : "") + '">' + dom.map(el => {
+    const id = esc(el.id), lab = el.label ? '<span class="pv-lab">' + esc(el.label) + "</span>" : "";
+    const cls = (el.cls || []).filter(c => /^(on|off|warn|ok|hidden|big)$/.test(c)).map(c => " pvc-" + c).join("");
+    if (el.tag === "button") return '<button type="button" class="pv-btn' + cls + '" data-pv="' + id + '"' + (live ? "" : " disabled") + ">" + esc(el.text) + "</button>";
+    if (el.tag === "input") return '<label class="pv-field">' + lab + '<input class="pv-in' + cls + '" data-pv="' + id + '" value="' + esc(el.value) + '" autocomplete="off"' + (live ? "" : " disabled") + "></label>";
+    if (el.tag === "h1") return '<div class="pv-h' + cls + '" data-pv="' + id + '">' + esc(el.text) + "</div>";
+    if (el.kind === "bar") return '<div class="pv-field">' + lab + '<div class="pv-track"><div class="pv-bar' + cls + '" data-pv="' + id + '">' + esc(el.text) + "</div></div></div>";
+    return '<div class="pv-field">' + lab + '<div class="pv-box' + cls + '" data-pv="' + id + '">' + esc(el.text) + "</div></div>";
+  }).join("") + "</div>";
+}
+function renderPage(host, dom, live) {
+  host.innerHTML = pageHTML(dom, live);
+  dom.forEach(el => {
+    const node = $$("[data-pv]", host).find(n => n.dataset.pv === el.id); if (!node) return;
+    Object.keys(el.style || {}).forEach(p => { if (PV_STYLE_OK.has(p) && safeCss(el.style[p])) node.style[p] = el.style[p]; });
+  });
+}
+// Apply hand-written step changes ({ id: { text, value, style } }) on top of a page spec
+function mergePage(dom, changes) {
+  return dom.map(el => {
+    const c = changes && changes[el.id]; if (!c) return el;
+    return Object.assign({}, el, c.text !== undefined ? { text: c.text } : {}, c.value !== undefined ? { value: c.value } : {}, c.style ? { style: Object.assign({}, el.style, c.style) } : {});
+  });
+}
+const domEl = (r, id) => ((r && r.dom) || []).find(e => e.id === id) || { text: "", value: "", style: {}, cls: [] };
+const pageWith = (page, changes) => mergePage(page, changes);
+// Live preview controller: Run starts a session, preview buttons send clicks to the learner's handlers
+function livePreview(pvHost, outHost, ed) {
+  let sess = null, logs = [];
+  function paint(dom, live) {
+    renderPage(pvHost, dom, live);
+    if (!live) return;
+    $$("button[data-pv]", pvHost).forEach(b => { b.onclick = async () => {
+      const values = {}; $$("input[data-pv]", pvHost).forEach(i => { values[i.dataset.pv] = i.value; });
+      const r = await sess.event(b.dataset.pv, "click", values);
+      logs = logs.concat(r.logs || []);
+      show(r);
+    }; });
+  }
+  function show(r) {
+    renderResult(outHost, { logs, error: r.error }, ed);
+    if (r.dom) paint(r.dom, !r.dead);
+    else if (r.dead) $$("button,input", pvHost).forEach(x => { x.disabled = true; });
+    if (r.dead && r.error) outHost.insertAdjacentHTML("beforeend", '<p class="muted small" style="margin-top:6px">The panel has stopped. Fix the code and press Run again.</p>');
+  }
+  return {
+    async start(code, pre, page) {
+      if (sess) { sess.stop(); LIVE.delete(sess); }
+      outHost.innerHTML = '<p class="muted small">Running…</p>';
+      sess = startLive({ code, pre, page });
+      const r = await sess.first;
+      logs = (r.logs || []).slice();
+      show(r);
+      if (r.dom && !r.error && page.some(e => e.tag === "button")) outHost.insertAdjacentHTML("beforeend", '<p class="muted small" style="margin-top:6px">The panel is live: click its buttons to run your handlers.</p>');
+      return r;
+    }
+  };
+}
+
+function runOnce({ code, pre = "", post = "", map = null, dir, trace = false, page = null }) {
   return new Promise(res => {
     let w;
     try { w = new Worker(WORKER_URL); } catch (e) { res({ logs: [], report: {}, error: { name: "Error", message: "The code runner could not start in this browser: " + e.message } }); return; }
     const t = setTimeout(() => { w.terminate(); res({ logs: [], report: {}, robot: null, error: { name: "Timeout", message: "Your code ran for more than 2 seconds and was stopped." } }); }, 2000);
     w.onmessage = e => { clearTimeout(t); w.terminate(); const d = e.data; d.report = restore(d.report); res(d); };
     w.onerror = e => { e.preventDefault(); clearTimeout(t); w.terminate(); res({ logs: [], report: {}, error: { name: "Error", message: e.message || "Unknown error" } }); };
-    w.postMessage({ code, pre, post, map, dir, trace });
+    w.postMessage({ code, pre, post, map, dir, trace, page });
   });
 }
 
@@ -987,6 +1169,7 @@ function explainError(err) {
   if (/Assignment to constant variable|invalid assignment to const/.test(m)) return "You tried to change a variable made with <code>const</code>. Use <code>let</code> if its value needs to change.";
   if (/before initialization|can't access lexical declaration/.test(m)) return "You used a variable before the line that creates it. Code runs top to bottom, so move the <code>let</code>/<code>const</code> line above.";
   if (/is not a function/.test(m)) return "You put <code>( )</code> after something that isn't a function. Check the spelling of the name, and that you defined the function.";
+  if (/propert(y|ies) of null/.test(m)) return "Something was <code>null</code>, which usually means <code>document.getElementById</code> found no element with that id. Check the id's spelling and capital letters, and that it's in quotes, exactly as it appears on the panel.";
   if (/Cannot read propert|Cannot set propert|is undefined|is null/.test(m)) return "You tried to look inside something that is <code>undefined</code>. This often happens when an array index is past the end, or a name is misspelled.";
   if (/More than 300 lines/.test(m)) return esc(m);
   return "Read the message above carefully: it names what went wrong. Then look at the line it points to and the line just before it.";
@@ -1137,6 +1320,7 @@ const WORLDS = [
   { name: "Loop Factory", blurb: "Repeat work without repeating code. Meet the robot B0-T." },
   { name: "Function Forge", blurb: "Package instructions into reusable machines." },
   { name: "Data Archive", blurb: "Store many values with arrays and objects." },
+  { name: "Control Room", blurb: "Make a web page react: change text and styles, read inputs, handle clicks." },
   { name: "Glitch Core", blurb: "Final boss. Find and fix the bugs." }
 ];
 
@@ -1682,9 +1866,153 @@ const LESSONS = [
   },
   recap: ["Objects group labelled values: <code>{ key: value }</code>.", "Read and change properties with a dot.", "Functions can take objects as parameters."]
 },
+/* ---------- Control Room: 1 ---------- */
+{
+  id: "dom", world: 5, title: "Control Panel", concept: "Finding elements and changing their text",
+  story: "The Control Room's screens are frozen on old messages. Every screen is an element on a web page, and JavaScript can rewrite any of them.",
+  page: [{ id: "title", tag: "h1", text: "Control Room" }, { id: "screen", tag: "div", label: "Main screen", text: "SHIELDS DOWN" }],
+  learn: [
+    ["Pages are made of elements", "A web page is built from <b>elements</b>: headings, boxes, buttons and input fields. An element can have an <b>id</b>, a unique name like <code>screen</code>, so your code can find exactly the one it wants."],
+    ["Finding an element", "<code>document</code> is an object that represents the whole page. <code>document.getElementById(\"screen\")</code> finds the element whose id is <code>screen</code> and hands it back. Store it in a variable so you can use it."],
+    ["Reading and changing text", "Every element has a <code>textContent</code> property: the text inside it. Read it like any other property. Assign to it with <code>=</code> and the page changes straight away."],
+    ["Your practice panel", "Each lesson in this sector comes with a station control panel to work on. It's a safe practice page that supports the real tools: <code>getElementById</code>, <code>textContent</code>, <code>style</code>, <code>value</code> and <code>addEventListener</code>. Code written this way works the same on a real website."]
+  ],
+  terms: [["element", "one piece of a page: a heading, box, button or input"], ["id", "an element's unique name"], ["document", "the object that represents the whole page"], ["textContent", "the text inside an element"]],
+  example: { code: 'const screen = document.getElementById("screen");\nconsole.log(screen.textContent);\nscreen.textContent = "SHIELDS UP";\nconsole.log(screen.textContent);', lines: ["Find the element with the id screen and store it in a variable.", "Read its text: prints SHIELDS DOWN.", "Change its text. The page updates immediately.", "Prints the new text: SHIELDS UP."] },
+  symbols: [["document", "the whole page"], ['getElementById("…")', "find the element with this id"], [".textContent", "the text inside an element"], ["=", "replace the text"]],
+  good: { code: 'const title = document.getElementById("title");\ntitle.textContent = "Online";', why: "The id is in quotes and spelled exactly as it is on the page." },
+  bad: { code: 'const title = document.getElementById("Title");\ntitle.textContent = "Online";', why: "Ids are case-sensitive. No element is called <code>Title</code>, so getElementById returns <code>null</code> and the second line fails." },
+  mistakes: ["Forgetting the quotes around the id.", "Getting the id's capitals wrong: <code>Screen</code> is not <code>screen</code>.", "Writing <code>getElementByID</code>. It's <code>getElementById</code>, with a lowercase d.", "Printing the element instead of its text. Use <code>screen.textContent</code>."],
+  trace: { code: 'const screen = document.getElementById("screen");\nconsole.log(screen.textContent);\nscreen.textContent = "SHIELDS UP";\nconsole.log(screen.textContent);', steps: [
+    { l: 0, v: { screen: '<div id="screen">' }, n: "getElementById finds the element. The variable now points at that box on the panel." },
+    { l: 1, o: "SHIELDS DOWN", n: "Reading textContent gives the text that's on the page right now." },
+    { l: 2, pv: { screen: { text: "SHIELDS UP" } }, n: "Assigning to textContent changes the page immediately. Look at the panel." },
+    { l: 3, o: "SHIELDS UP", n: "Reading it again gives the new text." }] },
+  practise: { page: [{ id: "title", tag: "h1", text: "Control Room" }, { id: "screen", tag: "div", label: "Main screen", text: "Waiting…" }, { id: "alert", tag: "div", label: "Alert strip", text: "All clear" }],
+    starter: 'const screen = document.getElementById("screen");\nscreen.textContent = "Hello from JavaScript";\n',
+    ideas: ["Change the title to your own station's name.", "Print the alert strip's text with console.log.", "Change the id to <code>\"Screen\"</code> and run it. Read the error.", "Put a number in a variable and show it: <code>screen.textContent = \"Crew: \" + crew;</code>"] },
+  predict: { code: 'const s = document.getElementById("screen");\ns.textContent = "A";\ns.textContent = s.textContent + "B";\nconsole.log(s.textContent);', answer: "AB", explain: "The text becomes A. The next line reads it back (A), adds B, and stores AB." },
+  challenge: {
+    scene: "page", title: "Reboot the status board",
+    page: [{ id: "status", tag: "div", label: "Status", text: "OFFLINE" }, { id: "crew", tag: "div", label: "Crew aboard", text: "0" }],
+    brief: "The status board shows old data. Change the text of <code>status</code> to <code>ONLINE</code>, and make <code>crew</code> show the value of <code>crewCount</code>. crewCount already exists and changes between tests.",
+    starter: "// crewCount already exists\n",
+    hints: ["Find each element with <code>document.getElementById(\"…\")</code> and store it in a variable.", "<code>status.textContent = \"ONLINE\";</code> and <code>crew.textContent = crewCount;</code>"],
+    cases: [4, 12].map(n => ({ in: { n }, label: "crewCount = " + n, pre: "const crewCount = " + n + ";", expect: "status ONLINE, crew " + n, check: r => {
+      const s = domEl(r, "status"), c = domEl(r, "crew");
+      if (s.text !== "ONLINE") return fail("The status board shows " + q(s.text) + ". Set its textContent to \"ONLINE\" (capitals matter).", "status " + s.text);
+      if (c.text !== String(n)) return fail(c.text === "4" && n !== 4 ? "crew shows 4 in every test. Use the crewCount variable instead of typing the number." : "crew should show " + n + " but shows " + q(c.text) + ".", "crew " + c.text);
+      return pass("ONLINE, crew " + n);
+    } })),
+    solution: 'const status = document.getElementById("status");\nconst crew = document.getElementById("crew");\nstatus.textContent = "ONLINE";\ncrew.textContent = crewCount;',
+    why: ["Find the status element by its id.", "Find the crew element.", "Replace the status text.", "Show the number. Like a real page, textContent turns it into text automatically."]
+  },
+  recap: ["<code>document.getElementById(\"id\")</code> finds an element.", "<code>.textContent</code> reads or changes its text.", "Ids are case-sensitive and go in quotes."]
+},
+/* ---------- Control Room: 2 ---------- */
+{
+  id: "style", world: 5, title: "Paint the Panel", concept: "Styles and reading input boxes",
+  story: "The Control Room's lamps are all grey and nobody can tell what the dials say. Make the panel show what's going on.",
+  page: [{ id: "lamp", tag: "div", label: "Power lamp", text: "Power ?" }, { id: "power", tag: "input", label: "Power level", value: "21" }],
+  learn: [
+    ["Changing how things look", "Every element has a <code>style</code> object with a property for each visual setting: <code>lamp.style.background = \"green\";</code> turns it green. Settings with two words use camelCase: <code>fontSize</code>, <code>backgroundColor</code>."],
+    ["Showing, hiding and sizing", "<code>el.style.display = \"none\"</code> hides an element, and <code>\"block\"</code> shows it again. A width can be a percentage like <code>\"40%\"</code>, which is perfect for bars and gauges."],
+    ["Reading an input box", "An input box has a <code>value</code> property: whatever is typed in it. It's always a <b>string</b>, even when it looks like a number."],
+    ["Turning text into numbers", "<code>Number(\"42\")</code> turns the text \"42\" into the number 42. Without it, <code>\"21\" + 5</code> joins into \"215\", just like in Lesson 3."]
+  ],
+  terms: [["style", "an element's visual settings"], ["value", "the text inside an input box"], ["Number(text)", "turns text into a number"]],
+  example: { code: 'const lamp = document.getElementById("lamp");\nconst power = document.getElementById("power");\nlamp.style.background = "lime";\nconst level = Number(power.value);\nlamp.textContent = "Power " + (level * 2);', lines: ["Find the lamp.", "Find the input box.", "Paint the lamp's background lime. The panel changes immediately.", "power.value is the text \"21\". Number() turns it into the number 21.", "21 × 2 = 42, joined onto the text and shown on the lamp."] },
+  symbols: [[".style.background", "the background colour"], [".style.width", "the width, such as \"40%\""], [".value", "what's typed in an input (a string)"], ["Number(…)", "turns text into a number"]],
+  good: { code: 'gauge.style.width = level + "%";', why: "Joining the number with \"%\" makes a size like \"40%\"." },
+  bad: { code: 'lamp.style.background-color = "red";', why: "The hyphen is read as a minus sign, so this code is broken. Use camelCase: <code>backgroundColor</code>." },
+  mistakes: ["Using hyphens in style names. Write <code>fontSize</code>, not <code>font-size</code>.", "Forgetting the quotes around colours: <code>\"red\"</code>.", "Treating <code>.value</code> as a number. <code>\"21\" + 5</code> is <code>\"215\"</code>. Use <code>Number()</code>.", "Leaving off units: a width of <code>40</code> does nothing. Use <code>\"40%\"</code>."],
+  trace: { code: 'const lamp = document.getElementById("lamp");\nconst power = document.getElementById("power");\nlamp.style.background = "lime";\nconst level = Number(power.value);\nlamp.textContent = "Power " + (level * 2);', steps: [
+    { l: 0, v: { lamp: '<div id="lamp">' }, n: "Find the lamp." },
+    { l: 1, v: { power: '<input id="power">' }, n: "Find the input box too." },
+    { l: 2, pv: { lamp: { style: { background: "lime" } } }, n: "Setting a style property repaints the element straight away." },
+    { l: 3, v: { level: "21" }, n: "power.value is the text \"21\". Number() turns it into the number 21." },
+    { l: 4, pv: { lamp: { text: "Power 42" } }, n: "21 × 2 = 42, joined onto the text." }] },
+  practise: { page: [{ id: "lamp", tag: "div", label: "Lamp", text: "Lamp" }, { id: "gauge", tag: "div", kind: "bar", label: "Gauge", text: "", style: { width: "10%" } }, { id: "level", tag: "input", label: "Level (0 to 100)", value: "60" }],
+    starter: 'const lamp = document.getElementById("lamp");\nconst gauge = document.getElementById("gauge");\nconst level = document.getElementById("level");\nlamp.style.background = "orange";\ngauge.style.width = level.value + "%";\n',
+    ideas: ["Change the lamp's colour to <code>\"deepskyblue\"</code>.", "Type a different number into the Level box, then press Run again.", "Hide the lamp with <code>lamp.style.display = \"none\";</code>", "Print <code>level.value + 1</code>, then <code>Number(level.value) + 1</code>. Spot the difference."] },
+  predict: { code: 'const power = document.getElementById("power");\nconsole.log(power.value + 1);\nconsole.log(Number(power.value) + 1);', answer: "211\n22", explain: "power.value is the text \"21\", so + joins and makes \"211\". Number() makes it 21 first, so the second line adds: 22." },
+  challenge: {
+    scene: "page", title: "Fix the fuel gauge",
+    page: [{ id: "fuel", tag: "input", label: "Fuel reading", value: "80" }, { id: "gauge", tag: "div", kind: "bar", label: "Gauge", text: "", style: { width: "0%" } }, { id: "label", tag: "div", label: "Status", text: "?" }],
+    brief: "Read the number typed in the <code>fuel</code> box (it changes between tests). Set the <code>gauge</code> bar's width to that many percent, like <code>\"80%\"</code>. Then set <code>label</code> to <code>LOW</code> if the fuel is below 25, otherwise <code>OK</code>, and when it's LOW make the label's text colour <code>red</code>.",
+    starter: 'const fuel = document.getElementById("fuel");\nconst gauge = document.getElementById("gauge");\nconst label = document.getElementById("label");\n',
+    hints: ["Turn the reading into a number with <code>Number(fuel.value)</code>, then <code>gauge.style.width = level + \"%\";</code>", "Use if/else: below 25 sets <code>label.textContent = \"LOW\"</code> and <code>label.style.color = \"red\"</code>; otherwise <code>\"OK\"</code>."],
+    cases: ["80", "10", "25"].map(v => {
+      const n = +v, want = n < 25 ? "LOW" : "OK";
+      return { in: { n }, label: "fuel reading " + v, page: [{ id: "fuel", tag: "input", label: "Fuel reading", value: v }, { id: "gauge", tag: "div", kind: "bar", label: "Gauge", text: "", style: { width: "0%" } }, { id: "label", tag: "div", label: "Status", text: "?" }],
+        expect: n + "% · " + want + (n < 25 ? " in red" : ""), check: r => {
+          const g = domEl(r, "gauge"), l = domEl(r, "label");
+          if (g.style.width !== n + "%") return fail("The gauge width should be " + q(n + "%") + " but is " + q(g.style.width || "(not set)") + ". Join the number with \"%\".", "width " + (g.style.width || "unset"));
+          if (l.text !== want) return fail("With fuel " + n + " the label should say " + want + " but says " + q(l.text) + (n === 25 ? ". 25 isn't below 25." : "."), "label " + l.text);
+          if (n < 25 && l.style.color !== "red") return fail("LOW should be shown in red: <code>label.style.color = \"red\";</code>", "colour " + (l.style.color || "unset"));
+          if (n >= 25 && l.style.color === "red") return fail("OK shouldn't be red. Only colour the label red in the LOW branch.", "colour red");
+          return pass(n + "% · " + want);
+        } };
+    }),
+    solution: 'const fuel = document.getElementById("fuel");\nconst gauge = document.getElementById("gauge");\nconst label = document.getElementById("label");\nconst level = Number(fuel.value);\ngauge.style.width = level + "%";\nif (level < 25) {\n  label.textContent = "LOW";\n  label.style.color = "red";\n} else {\n  label.textContent = "OK";\n}',
+    why: ["Find the input box.", "Find the gauge bar.", "Find the status label.", "The reading is text, so turn it into a number before comparing.", "Joining the number with \"%\" sets the bar's width.", "Below 25 counts as low.", "Show the warning…", "…in red.", "", "Otherwise everything is fine.", ""]
+  },
+  recap: ["<code>el.style.property = \"value\"</code> changes how an element looks.", "Input boxes have a <code>.value</code>, which is always text.", "<code>Number()</code> turns text into a number you can do maths with."]
+},
+/* ---------- Control Room: 3 ---------- */
+{
+  id: "events", world: 5, title: "Button Power", concept: "Events and click handlers",
+  story: "The Control Room's buttons aren't connected to anything. Pressing them does nothing at all. Wire them up.",
+  page: [{ id: "boost", tag: "button", text: "Boost" }, { id: "speed", tag: "div", label: "Speed", text: "0 km/s" }],
+  learn: [
+    ["Code that waits", "Until now, every program ran from top to bottom and finished. Real pages wait for the person using them. Something that happens on a page, like a click, is called an <b>event</b>."],
+    ["Listening for clicks", "<code>btn.addEventListener(\"click\", function () { … });</code> means: <i>whenever this button is clicked, run this function.</i> The function is called a <b>handler</b>. It doesn't run straight away. It runs on every click."],
+    ["Remembering between clicks", "A variable created <b>outside</b> the handler keeps its value from one click to the next. Create a counter with <code>let count = 0;</code> outside the handler, and add to it inside."],
+    ["Try the buttons", "In this sector the panel is live: press Run, then click the panel's buttons and watch your handler do its work."]
+  ],
+  terms: [["event", "something that happens on the page, like a click"], ["handler", "a function that runs when an event happens"], ["addEventListener", "connects an event to a handler"]],
+  example: { code: 'const btn = document.getElementById("boost");\nconst speed = document.getElementById("speed");\nlet kms = 0;\nbtn.addEventListener("click", function () {\n  kms = kms + 10;\n  speed.textContent = kms + " km/s";\n});', lines: ["Find the Boost button.", "Find the speed display.", "A counter that lives outside the handler, so it remembers between clicks.", "Connect a handler to the button's click event. Nothing inside runs yet.", "On each click: add 10 to the speed.", "Show the new speed on the panel.", "End of the handler and of the addEventListener call."] },
+  symbols: [["addEventListener", "connects an event to a handler"], ['"click"', "the name of the event"], ["function () { }", "the handler: runs on every click"]],
+  good: { code: 'btn.addEventListener("click", function () {\n  console.log("Clicked!");\n});', why: "The function is handed over, not run. It runs later, once per click." },
+  bad: { code: 'btn.addEventListener("click", function () {\n  let count = 0;\n  count = count + 1;\n});', why: "This creates a brand-new count of 0 on every click, so it never gets past 1. Create the counter outside the handler." },
+  mistakes: ["Creating the counter inside the handler, so it resets on every click.", "Misspelling the event name. <code>\"onclick\"</code> or <code>\"Click\"</code> never fires, and there's no error to warn you.", "Forgetting the closing <code>});</code> at the end.", "Expecting the handler to run straight away. It only runs when the event happens."],
+  trace: { code: 'const btn = document.getElementById("boost");\nconst speed = document.getElementById("speed");\nlet kms = 0;\nbtn.addEventListener("click", function () {\n  kms = kms + 10;\n  speed.textContent = kms + " km/s";\n});', steps: [
+    { l: 0, v: { btn: '<button id="boost">' } },
+    { l: 1, v: { speed: '<div id="speed">' } },
+    { l: 2, v: { kms: "0" }, n: "The counter lives outside the handler, so it survives between clicks." },
+    { l: 3, n: "The handler is connected. Nothing in it runs yet: the program now waits for a click." },
+    { l: 4, v: { kms: "10" }, n: "Click! The handler runs: kms goes from 0 to 10." },
+    { l: 5, pv: { speed: { text: "10 km/s" } }, n: "The panel shows the new speed." },
+    { l: 4, v: { kms: "20" }, n: "Another click runs the same handler again. kms remembered 10, so now it's 20." },
+    { l: 5, pv: { speed: { text: "20 km/s" } }, n: "Each click adds 10 more." }] },
+  practise: { page: [{ id: "ping", tag: "button", text: "Ping" }, { id: "add", tag: "button", text: "+1" }, { id: "count", tag: "div", label: "Count", text: "0" }],
+    starter: 'const ping = document.getElementById("ping");\nping.addEventListener("click", function () {\n  console.log("Pong!");\n});\n',
+    ideas: ["Press Run, then click Ping a few times.", "Wire up the +1 button so it increases the Count box.", "Move <code>let count = 0;</code> inside the handler and see what goes wrong.", "Make Ping change its own text: <code>ping.textContent = \"Pinged!\";</code>"] },
+  predict: { code: 'const btn = document.getElementById("boost");\nlet n = 0;\nbtn.addEventListener("click", function () {\n  n = n + 1;\n});\nconsole.log(n);', answer: "0", explain: "Connecting a handler doesn't run it. Nobody has clicked yet, so n is still 0 when console.log runs." },
+  challenge: {
+    scene: "page", title: "Wire the docking clamps",
+    page: [{ id: "lock", tag: "button", text: "Lock" }, { id: "release", tag: "button", text: "Release" }, { id: "clamps", tag: "div", label: "Clamps", text: "RELEASED" }, { id: "count", tag: "div", label: "Lock count", text: "Locks: 0" }],
+    brief: "Clicking <code>lock</code> should set <code>clamps</code> to <code>LOCKED</code> and add one to a counter shown in <code>count</code> as <code>Locks: 1</code>, <code>Locks: 2</code> and so on. Clicking <code>release</code> should set <code>clamps</code> back to <code>RELEASED</code>. The tests click the buttons in different orders.",
+    starter: 'const lock = document.getElementById("lock");\nconst release = document.getElementById("release");\nconst clamps = document.getElementById("clamps");\nconst count = document.getElementById("count");\n',
+    hints: ["Create <code>let locks = 0;</code> outside the handlers. In the lock handler, add 1 and then set both texts.", "<code>lock.addEventListener(\"click\", function () { locks = locks + 1; clamps.textContent = \"LOCKED\"; count.textContent = \"Locks: \" + locks; });</code> and a similar handler for release."],
+    cases: [[], ["lock"], ["lock", "release"], ["lock", "lock", "release", "lock"]].map(seq => {
+      const locks = seq.filter(s => s === "lock").length, state = seq.length && seq[seq.length - 1] === "lock" ? "LOCKED" : "RELEASED";
+      return { in: { seq }, label: seq.length ? "Click " + seq.join(", ") : "Before any clicks", post: seq.map(s => '__fire("' + s + '");').join(" "), expect: state + " · Locks: " + locks, check: r => {
+        const c = domEl(r, "clamps"), n = domEl(r, "count");
+        if (!seq.length && c.text !== "RELEASED") return fail("Before anyone clicks, the clamps should still say RELEASED. Change the text inside the handlers, not at the top of your program.", c.text);
+        if (c.text !== state) return fail("After clicking " + seq.join(", ") + ", clamps should say " + state + " but says " + q(c.text) + "." + (seq[seq.length - 1] === "release" ? " Is the release button connected to a click handler?" : " Is the lock button connected to a click handler?"), c.text);
+        if (n.text !== "Locks: " + locks) return fail("count should say " + q("Locks: " + locks) + " but says " + q(n.text) + "." + (locks > 1 && n.text === "Locks: 1" ? " The counter resets on every click: create it outside the handler." : ""), n.text);
+        return pass(state + " · Locks: " + locks);
+      } };
+    }),
+    solution: 'const lock = document.getElementById("lock");\nconst release = document.getElementById("release");\nconst clamps = document.getElementById("clamps");\nconst count = document.getElementById("count");\nlet locks = 0;\nlock.addEventListener("click", function () {\n  locks = locks + 1;\n  clamps.textContent = "LOCKED";\n  count.textContent = "Locks: " + locks;\n});\nrelease.addEventListener("click", function () {\n  clamps.textContent = "RELEASED";\n});',
+    why: ["Find the lock button.", "Find the release button.", "Find the clamps display.", "Find the counter display.", "The counter lives outside both handlers, so it remembers every lock.", "Connect a handler to the lock button.", "Count this lock.", "Show the new state…", "…and the new total.", "End of the lock handler.", "Connect a second handler to the release button.", "Releasing only changes the clamps text.", "End of the release handler."]
+  },
+  recap: ["<code>addEventListener(\"click\", function () { … })</code> runs code on every click.", "Handlers run later, when the event happens, not straight away.", "Variables outside the handler remember values between clicks."]
+},
 /* ---------- 13 ---------- */
 {
-  id: "boss", world: 5, title: "The Glitch King", concept: "Debugging",
+  id: "boss", world: 6, title: "The Glitch King", concept: "Debugging",
   story: "The Glitch King has scrambled the station's main scanner. It's riddled with bugs, and there's no tutorial left to lean on. Use everything you've learned.",
   learn: [
     ["Every programmer writes bugs", "A <b>bug</b> is a mistake in code. Professional programmers spend a large part of their time <b>debugging</b>: finding and fixing them. It's a skill, and it gets faster with practice."],
@@ -1893,6 +2221,49 @@ const DRILLS = {
         check: r => !same(r.report.drone, { name: "Wisp", speed: 10 }) ? fail("drone should end as " + q('{ name: "Wisp", speed: 10 }') + " but is " + q(show(r.report.drone)) + ".", show(r.report.drone)) : expectLogs(r.logs, ["10"]) }],
       solution: 'const drone = {\n  name: "Wisp",\n  speed: 9\n};\ndrone.speed = drone.speed + 1;\nconsole.log(drone.speed);' }
   ],
+  dom: [
+    { title: "Read a screen", task: "Fill in the id so the code finds the element with the id <code>fuel</code>, then prints its text.",
+      page: [{ id: "fuel", tag: "div", label: "Fuel", text: "72%" }],
+      starter: "const gauge = document.getElementById(___);\nconsole.log(gauge.textContent);\n",
+      hints: ["The id is text, so it goes in quotes.", "<code>document.getElementById(\"fuel\")</code>"],
+      cases: [{ label: "Output", expect: "72%", check: r => expectLogs(r.logs, ["72%"]) }],
+      solution: 'const gauge = document.getElementById("fuel");\nconsole.log(gauge.textContent);' },
+    { title: "Open the door", task: "Change the text of the element with the id <code>door</code> to <code>OPEN</code>.",
+      page: [{ id: "door", tag: "div", label: "Door", text: "CLOSED" }],
+      starter: 'const door = document.getElementById("door");\n___\n',
+      hints: ["Assign a new string to the element's textContent property.", "<code>door.textContent = \"OPEN\";</code>"],
+      cases: [{ label: "Panel", expect: "door says OPEN", check: r => domEl(r, "door").text === "OPEN" ? pass("OPEN") : fail("The door says " + q(domEl(r, "door").text) + ". Set <code>door.textContent</code> to \"OPEN\".", domEl(r, "door").text) }],
+      solution: 'const door = document.getElementById("door");\ndoor.textContent = "OPEN";' }
+  ],
+  style: [
+    { title: "Red alert", task: "Turn the lamp red by setting its <code>background</code> style to <code>\"red\"</code>.",
+      page: [{ id: "lamp", tag: "div", label: "Lamp", text: "Alert" }],
+      starter: 'const lamp = document.getElementById("lamp");\nlamp.style.___ = "red";\n',
+      hints: ["The style setting for the fill colour is called background.", "<code>lamp.style.background = \"red\";</code>"],
+      cases: [{ label: "Panel", expect: "lamp background red", check: r => { const s = domEl(r, "lamp").style; return s.background === "red" || s.backgroundColor === "red" ? pass("red") : fail("The lamp's background isn't red yet. Set <code>lamp.style.background = \"red\";</code>", s.background || s.backgroundColor || "unset"); } }],
+      solution: 'const lamp = document.getElementById("lamp");\nlamp.style.background = "red";' },
+    { title: "Double it", task: "Read the number typed in <code>qty</code> (it changes between tests), double it, and show the result in <code>out</code>.",
+      page: [{ id: "qty", tag: "input", label: "Quantity", value: "4" }, { id: "out", tag: "div", label: "Doubled", text: "?" }],
+      starter: 'const qty = document.getElementById("qty");\nconst out = document.getElementById("out");\nout.textContent = ___;\n',
+      hints: ["qty.value is text. Turn it into a number before doing maths.", "<code>out.textContent = Number(qty.value) * 2;</code>"],
+      cases: ["4", "10"].map(v => ({ label: "qty = " + v, page: [{ id: "qty", tag: "input", label: "Quantity", value: v }, { id: "out", tag: "div", label: "Doubled", text: "?" }], expect: String(+v * 2),
+        check: r => { const t = domEl(r, "out").text; return t === String(+v * 2) ? pass(t) : fail("out shows " + q(t) + " but should show " + (+v * 2) + "." + (t === v + v ? " That's the text joined twice: use <code>Number(qty.value)</code>." : ""), t); } })),
+      solution: 'const qty = document.getElementById("qty");\nconst out = document.getElementById("out");\nout.textContent = Number(qty.value) * 2;' }
+  ],
+  events: [
+    { title: "Ring the bell", task: "Fill in the event name so that clicking the <code>bell</code> button prints <code>Ding!</code>.",
+      page: [{ id: "bell", tag: "button", text: "Bell" }],
+      starter: 'const bell = document.getElementById("bell");\nbell.addEventListener(___, function () {\n  console.log("Ding!");\n});\n',
+      hints: ["The event's name is a string, all lowercase.", "The blank is <code>\"click\"</code>."],
+      cases: [{ label: "Click the bell", post: "__report.before = __nlogs(); __fire(\"bell\");", expect: "Ding! after the click", check: r => r.report.before > 0 ? fail("Something printed before the bell was clicked. Only the handler should print.", r.logs.join(", ")) : expectLogs(r.logs, ["Ding!"]) }],
+      solution: 'const bell = document.getElementById("bell");\nbell.addEventListener("click", function () {\n  console.log("Ding!");\n});' },
+    { title: "Click counter", task: "Each click on <code>add</code> should add 1 to <code>count</code> and show it in <code>display</code>. Fill in the missing line.",
+      page: [{ id: "add", tag: "button", text: "+1" }, { id: "display", tag: "div", label: "Count", text: "0" }],
+      starter: 'const add = document.getElementById("add");\nconst display = document.getElementById("display");\nlet count = 0;\nadd.addEventListener("click", function () {\n  ___\n  display.textContent = count;\n});\n',
+      hints: ["The counter needs to grow by one on each click.", "<code>count = count + 1;</code>"],
+      cases: [{ label: "Click 3 times", post: '__fire("add"); __fire("add"); __fire("add");', expect: "display shows 3", check: r => { const t = domEl(r, "display").text; return t === "3" ? pass("3") : fail("After 3 clicks the display shows " + q(t) + " instead of 3.", t); } }],
+      solution: 'const add = document.getElementById("add");\nconst display = document.getElementById("display");\nlet count = 0;\nadd.addEventListener("click", function () {\n  count = count + 1;\n  display.textContent = count;\n});' }
+  ],
   boss: [
     { title: "One logic bug", task: "This code runs without an error but prints the wrong answer. Find the one bug so it prints <code>6</code>.",
       starter: "let total = 0;\nconst nums = [1, 2, 3];\nfor (let i = 0; i <= nums.length; i++) {\n  total = total + nums[i];\n}\nconsole.log(total);\n",
@@ -2018,6 +2389,32 @@ const FINALES = [
       why: ["Total energy of the whole crew.", "Accumulator starts at 0.", "Each round, member is one crew object.", "Read its energy property and add it.", "", "An empty crew skips the loop and returns 0.", "", "", "Names of tired crew members.", "Start with an empty array to collect results.", "Visit every member.", "Below 30, so 30 itself doesn't count.", "Add just the name to the results.", "", "", "Return the collected names.", ""]
     } }
 ];
+FINALES.push({ id: "fin6", world: 5, kind: "finale", title: "Launch Console", concept: "Sector finale: a page that reacts", combines: ["dom", "style", "events", "if"],
+  story: "The launch console is the last system between you and the Glitch King's core. Build its go/no-go check, so the station can launch.",
+  mistakes: ["Reading the input once at the top of the program instead of inside the click handler, so later clicks never see the new number.", "Forgetting <code>Number()</code>. Then \"4\" is text, and comparisons and maths don't behave."],
+  recap: ["Read inputs inside the handler, so every click sees the latest value.", "Events, if/else, <code>Number()</code> and styles together make an interactive page.", "This is how real web apps work: wait for an event, read the page, update the page."],
+  challenge: {
+    scene: "page", title: "Build the go/no-go check",
+    page: [{ id: "crew", tag: "input", label: "Crew aboard", value: "" }, { id: "check", tag: "button", text: "Check launch" }, { id: "verdict", tag: "div", label: "Verdict", text: "WAITING" }, { id: "meter", tag: "div", kind: "bar", label: "Load", text: "", style: { width: "0%" } }],
+    brief: "When <code>check</code> is clicked, read the number typed in <code>crew</code>. If it's from 3 to 6 (3 and 6 included), show <code>GO</code> in <code>verdict</code> in <code>green</code> text; otherwise show <code>NO GO</code> in <code>red</code> text. Also set the <code>meter</code> bar's width to the crew number × 10 percent (4 crew → <code>\"40%\"</code>). The tests type different numbers and click several times.",
+    starter: 'const crew = document.getElementById("crew");\nconst check = document.getElementById("check");\nconst verdict = document.getElementById("verdict");\nconst meter = document.getElementById("meter");\n',
+    hints: ["Everything happens inside <code>check.addEventListener(\"click\", function () { … });</code>. Read <code>Number(crew.value)</code> inside it, so each click sees the latest number, then use if/else for GO or NO GO."],
+    cases: [[], ["4"], ["2"], ["3"], ["7"], ["5", "9"]].map(seq => {
+      const n = seq.length ? +seq[seq.length - 1] : null, go = n !== null && n >= 3 && n <= 6;
+      return { in: { seq }, label: seq.length ? "Type " + seq.join(", then ") + ", clicking each time" : "Before any clicks", post: seq.map(v => '__type("crew", "' + v + '"); __fire("check");').join(" "),
+        expect: n === null ? "WAITING" : (go ? "GO (green)" : "NO GO (red)") + " · " + n * 10 + "%", check: r => {
+          const v = domEl(r, "verdict"), m = domEl(r, "meter");
+          if (n === null) return v.text === "WAITING" ? pass("WAITING") : fail("Before anyone clicks, the verdict should still say WAITING. Do the check inside the click handler.", v.text);
+          const want = go ? "GO" : "NO GO", col = go ? "green" : "red";
+          if (v.text !== want) return fail("With " + n + " crew the verdict should be " + want + " but is " + q(v.text) + "." + (n === 3 && v.text === "NO GO" ? " 3 counts: use <code>>=</code>." : seq.length > 1 && go === false && v.text === "GO" ? " Is crew.value read inside the handler, so it sees the newest number?" : v.text === "WAITING" ? " Is the check button connected to a click handler?" : ""), v.text);
+          if (v.style.color !== col) return fail(want + " should be shown in " + col + ": set <code>verdict.style.color</code>.", "colour " + (v.style.color || "unset"));
+          if (m.style.width !== n * 10 + "%") return fail("The meter should be " + q(n * 10 + "%") + " wide but is " + q(m.style.width || "(not set)") + ". Use <code>n * 10 + \"%\"</code>.", "width " + (m.style.width || "unset"));
+          return pass(want + " · " + n * 10 + "%");
+        } };
+    }),
+    solution: 'const crew = document.getElementById("crew");\nconst check = document.getElementById("check");\nconst verdict = document.getElementById("verdict");\nconst meter = document.getElementById("meter");\ncheck.addEventListener("click", function () {\n  const n = Number(crew.value);\n  meter.style.width = n * 10 + "%";\n  if (n >= 3 && n <= 6) {\n    verdict.textContent = "GO";\n    verdict.style.color = "green";\n  } else {\n    verdict.textContent = "NO GO";\n    verdict.style.color = "red";\n  }\n});',
+    why: ["Find the input box.", "Find the button.", "Find the verdict display.", "Find the meter bar.", "Everything below runs on each click, not straight away.", "Read the newest number every time the button is clicked.", "Multiplication happens first, then \"%\" is joined on.", "A range check: both ends included.", "Ready for launch…", "…in green.", "", "Anything else is unsafe…", "…in red.", "", "End of the handler."]
+  } });
 // Place each finale right after the last lesson of its sector
 FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
 const isFinale = L => L.kind === "finale";
@@ -2104,6 +2501,28 @@ const REVIEWS = {
       post: "__report.isFn = typeof refuel === 'function'; const __ship = " + JSON.stringify(s) + "; if (__report.isFn) __report.out = __call(refuel, __ship, " + a + "); __report.ship = __ship;",
       check: r => { const c = callCheck(r.report, "refuel", "refuel(" + show(s) + ", " + a + ")", s.fuel + a); if (!c.ok) return c; return r.report.ship.fuel !== s.fuel + a ? fail("It returned the right number, but the ship's fuel property wasn't changed. Update it with <code>ship.fuel = ship.fuel + amount;</code>", "ship.fuel " + show(r.report.ship.fuel)) : c; } })),
     solution: "function refuel(ship, amount) {\n  ship.fuel = ship.fuel + amount;\n  return ship.fuel;\n}" },
+  dom: { title: "Two screens", task: "Make the <code>left</code> screen show <code>PORT</code> and the <code>right</code> screen show <code>STARBOARD</code>.",
+    page: [{ id: "left", tag: "div", label: "Left screen", text: "?" }, { id: "right", tag: "div", label: "Right screen", text: "?" }],
+    starter: "// Find both screens, then change their text\n",
+    hints: ["You need getElementById twice, once for each id.", "<code>document.getElementById(\"left\").textContent = \"PORT\";</code> and the same for right."],
+    cases: [{ label: "Panel", expect: "PORT · STARBOARD", check: r => { const l = domEl(r, "left").text, rt = domEl(r, "right").text; return l === "PORT" && rt === "STARBOARD" ? pass("PORT · STARBOARD") : fail("The screens show " + q(l) + " and " + q(rt) + ". Left should be PORT and right should be STARBOARD.", l + " · " + rt); } }],
+    solution: 'const left = document.getElementById("left");\nconst right = document.getElementById("right");\nleft.textContent = "PORT";\nright.textContent = "STARBOARD";' },
+  style: { title: "All clear", task: "Hide the <code>warning</code> element, and give the <code>status</code> element a <code>green</code> background.",
+    page: [{ id: "warning", tag: "div", label: "Warning", text: "HULL BREACH" }, { id: "status", tag: "div", label: "Status", text: "Repaired" }],
+    starter: 'const warning = document.getElementById("warning");\nconst status = document.getElementById("status");\n',
+    hints: ["Hiding uses the display style.", "<code>warning.style.display = \"none\";</code> and <code>status.style.background = \"green\";</code>"],
+    cases: [{ label: "Panel", expect: "warning hidden · status green", check: r => {
+      const w = domEl(r, "warning").style, s = domEl(r, "status").style;
+      if (w.display !== "none") return fail("The warning is still showing. Hide it with <code>warning.style.display = \"none\";</code>", "display " + (w.display || "unset"));
+      return s.background === "green" || s.backgroundColor === "green" ? pass("hidden · green") : fail("The status background isn't green yet.", s.background || s.backgroundColor || "unset");
+    } }],
+    solution: 'const warning = document.getElementById("warning");\nconst status = document.getElementById("status");\nwarning.style.display = "none";\nstatus.style.background = "green";' },
+  events: { title: "Light switch", task: "Each click on <code>toggle</code> should flip <code>light</code> between <code>ON</code> and <code>OFF</code>. It starts as OFF.",
+    page: [{ id: "toggle", tag: "button", text: "Toggle" }, { id: "light", tag: "div", label: "Light", text: "OFF" }],
+    starter: 'const toggle = document.getElementById("toggle");\nconst light = document.getElementById("light");\n',
+    hints: ["Inside the click handler, check the current text with if/else and set the opposite.", "<code>if (light.textContent === \"OFF\") { light.textContent = \"ON\"; } else { light.textContent = \"OFF\"; }</code>"],
+    cases: [1, 2, 3].map(n => ({ label: "Click " + n + "×", post: '__fire("toggle"); '.repeat(n), expect: n % 2 ? "ON" : "OFF", check: r => { const t = domEl(r, "light").text, want = n % 2 ? "ON" : "OFF"; return t === want ? pass(t) : fail("After " + n + " click" + (n > 1 ? "s" : "") + " the light should be " + want + " but is " + q(t) + ".", t); } })),
+    solution: 'const toggle = document.getElementById("toggle");\nconst light = document.getElementById("light");\ntoggle.addEventListener("click", function () {\n  if (light.textContent === "OFF") {\n    light.textContent = "ON";\n  } else {\n    light.textContent = "OFF";\n  }\n});' },
   boss: { title: "Biggest reading", task: "This function should return the biggest number in any array, but it passes some tests and fails others. Find the bug and fix it.",
     starter: "function maxOf(nums) {\n  let best = 0;\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[i] > best) {\n      best = nums[i];\n    }\n  }\n  return best;\n}\n",
     hints: ["Try the array <code>[-5, -2, -9]</code> in your head. What is best at the start, and does any element beat it?", "Start with the first element instead of 0: <code>let best = nums[0];</code>"],
@@ -2127,12 +2546,13 @@ const ACHIEVEMENTS = [
   { id: "review", title: "Second Look", desc: "Complete a review exercise.", icon: "bolt", test: s => Object.values(s.done).some(d => d.reviewed) },
   { id: "halfway", title: "Halfway There", desc: "Complete 9 repairs.", icon: "gear", test: s => Object.keys(s.done).length >= 9 },
   { id: "perfect", title: "Perfectionist", desc: "Earn 3 stars on every repair in one sector.", icon: "star", test: s => WORLDS.some((_, w) => LESSONS.filter(L => L.world === w).every(L => s.done[L.id] && s.done[L.id].stars === 3)) },
+  { id: "web", title: "Web Wizard", desc: "Complete every repair in the Control Room, finale included.", icon: "panel", test: s => sectorDone(s, 5) },
   { id: "boss", title: "Glitch Slayer", desc: "Defeat the Glitch King.", icon: "skull", test: s => !!s.done.boss },
   { id: "all", title: "Station Restored", desc: "Repair every machine on the station.", icon: "trophy", test: s => LESSONS.every(L => s.done[L.id]) }
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "2.0.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -2253,7 +2673,7 @@ function renderStatus() {
 const app = $("#app");
 let view = { name: "map" };
 function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
-function render() { renderStatus(); if (view.name === "map") renderMap(); else if (view.name === "review") renderReview(); else renderLesson(); }
+function render() { stopLive(); renderStatus(); if (view.name === "map") renderMap(); else if (view.name === "review") renderReview(); else renderLesson(); }
 $("#logo-btn").onclick = () => go({ name: "map" });
 
 function renderMap() {
@@ -2262,7 +2682,7 @@ function renderMap() {
   const ni = nextIdx < 0 ? null : LESSONS[nextIdx];
   let h = '<canvas class="px hero-banner" id="hero-px" width="320" height="64" role="img" aria-label="Pixel scene: the pilot and robot B0-T on Station Nine\'s deck, with the Glitch King watching from space"></canvas>' +
     '<section class="hero"><div><p class="eyebrow">Station Nine · Maintenance log</p><h1>JavaScript Quest</h1>' +
-    '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across six sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
+    '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across seven sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
     (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
     '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
     '<div class="row"><span>concepts.mastered</span><span>' + LESSONS.filter(l => !isFinale(l) && masteryOf(l) === 4).length + " / " + LESSONS.filter(l => !isFinale(l)).length + '</span></div><div class="row"><span>badges</span><span>' + ACHIEVEMENTS.filter(a => store.ach[a.id]).length + " / " + ACHIEVEMENTS.length + "</span></div>" +
@@ -2409,7 +2829,7 @@ function stageLearn(host, L) {
   const pg = Math.min(view.page || 0, LEARN_PAGES.length - 1);
   let body = "";
   if (pg === 0) {
-    body += '<div class="brief dialog">' + pxImg(L.world === 5 ? "skull" : "pilot", "portrait") + '<div><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div></div>";
+    body += '<div class="brief dialog">' + pxImg(L.id === "boss" ? "skull" : "pilot", "portrait") + '<div><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div></div>";
     body += '<div class="prose">' + L.learn.map(s => "<section><h3>" + s[0] + "</h3><p>" + s[1] + "</p></section>").join("") + "</div>";
     body += '<div class="panel"><h3>Words to know</h3><dl class="terms">' + L.terms.map(t => "<dt>" + esc(t[0]) + "</dt><dd>" + esc(t[1]) + "</dd>").join("") + "</dl></div>";
   } else if (pg === 1) {
@@ -2433,7 +2853,7 @@ function stageVisual(host, L) {
   host.innerHTML = '<div class="stack">' + (L.widget ? '<div class="panel"><h3>Try it with the controls</h3><div id="widget"></div></div>' : "") +
     '<div class="panel"><h3>Step through the code</h3><p class="muted small" style="margin-bottom:12px">Press Step to run one moment at a time. The highlighted line is the one JavaScript is working on.</p><div id="stepper"></div></div></div>' + nextBtn("Practise", 2);
   if (L.widget) WIDGETS[L.widget]($("#widget", host));
-  mountStepper($("#stepper", host), L.trace);
+  mountStepper($("#stepper", host), L.trace, { page: L.page || null });
   wireGoto(host);
 }
 // Step-through player. tr = { code, steps: [{ l: line index, v: changed vars | vars: full snapshot, o: output line(s), n: note }] }
@@ -2444,14 +2864,15 @@ function mountStepper(host, tr, opts) {
   let k = 0, timer = null;
   // Work out variables and console output at every step once, up front
   const states = [];
-  { let vars = {}, out = [];
+  { let vars = {}, out = [], pg = opts.page ? opts.page.slice() : null;
     tr.steps.forEach((s, i) => {
       if (s.vars) vars = Object.assign({}, s.vars); else if (s.v) vars = Object.assign({}, vars, s.v);
       const o = s.o === undefined ? [] : Array.isArray(s.o) ? s.o : [s.o];
       out = out.concat(o.map(x => [x, i]));
-      states.push({ vars, out, newOut: o });
+      if (s.dom) pg = s.dom; else if (s.pv && pg) pg = mergePage(pg, s.pv);
+      states.push({ vars, out, newOut: o, page: pg });
     }); }
-  host.innerHTML = '<div class="stepper" tabindex="-1"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side">' + (opts.robot ? '<div class="scene st-grid"></div>' : "") + '<div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
+  host.innerHTML = '<div class="stepper" tabindex="-1"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side">' + (opts.robot ? '<div class="scene st-grid"></div>' : "") + (opts.page ? '<div class="scene st-page"><div class="scene-head"><span>Control panel</span></div><div class="st-pv"></div></div>' : "") + '<div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
     '<div class="st-ctrl"><button class="btn small" data-a="reset">Restart</button><button class="btn small" data-a="prev" aria-label="Step back">←</button><button class="btn small signal" data-a="play">▶ Play</button><button class="btn primary small" data-a="next">Step →</button>' +
     '<label class="st-speed">Speed <select data-a="speed" aria-label="Playback speed"><option value="1400">Slow</option><option value="800" selected>Normal</option><option value="350">Fast</option></select></label><span class="st-count tnum"></span></div></div>';
   const speedSel = $('[data-a="speed"]', host), playBtn = $('[data-a="play"]', host);
@@ -2459,6 +2880,7 @@ function mountStepper(host, tr, opts) {
   function draw() {
     const s = tr.steps[k], st = states[k], prev = k ? states[k - 1].vars : {};
     if (g) g.jump(opts.robot.trace, (s.rt || 1) - 1);
+    if (st.page) renderPage($(".st-pv", host), st.page, false);
     const changed = Object.keys(st.vars).filter(n => prev[n] !== st.vars[n]);
     const code = $(".st-code", host);
     code.innerHTML = lines.map((ln, i) => '<div class="ln' + (i === s.l ? " cur" : "") + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(ln) || " ") + "</span></div>").join("");
@@ -2516,12 +2938,12 @@ function traceFrames(res) {
   const st = res.steps || [], frames = [];
   // Values the challenge provides (e.g. cellA) exist before line 1 runs: show them as a starting frame
   const given = st.length ? Object.keys(st[0].vars) : [];
-  if (given.length) frames.push({ l: -1, vars: st[0].vars, o: [], rt: st[0].rt, n: "Before your code runs, these are already set for this test: " + given.map(n => n + " = " + st[0].vars[n]).join(", ") + "." });
+  if (given.length) frames.push({ l: -1, vars: st[0].vars, o: [], rt: st[0].rt, dom: st[0].dom, n: "Before your code runs, these are already set for this test: " + given.map(n => n + " = " + st[0].vars[n]).join(", ") + "." });
   for (let k = 0; k < st.length; k++) {
     const s = st[k];
     if (s.line < 0) continue;
     const nx = st[k + 1];
-    frames.push({ l: s.line, vars: nx ? nx.vars : s.vars, o: res.logs.slice(s.logN, nx ? nx.logN : res.logs.length), rt: nx ? nx.rt : (res.robot ? res.robot.trace.length : 0) });
+    frames.push({ l: s.line, vars: nx ? nx.vars : s.vars, o: res.logs.slice(s.logN, nx ? nx.logN : res.logs.length), rt: nx ? nx.rt : (res.robot ? res.robot.trace.length : 0), dom: nx ? nx.dom : (res.dom || s.dom) });
   }
   if (res.error && frames.length) {
     const last = frames[frames.length - 1];
@@ -2541,7 +2963,7 @@ async function showTrace(host, code, run) {
   if (!frames.length) { host.innerHTML = '<p class="muted small">Nothing to trace yet. Write some code first.</p>'; return res; }
   host.innerHTML = '<div class="trace-head"><h4>Your code, step by step</h4><p class="muted small">' + frames.length + " step" + (frames.length === 1 ? "" : "s") +
     (res.error && res.error.name === "TraceLimit" ? ". Stopped after 1000 steps: a loop may never end. Step back to see which values stop changing." : res.error ? ". The last step shows where the error happened." : ". Each step shows one line running and what it changed.") + '</p></div><div class="trace-player"></div>';
-  mountStepper($(".trace-player", host), { code, steps: frames }, { robot: res.robot && run.map ? { map: run.map, dir: run.dir === undefined ? 1 : run.dir, trace: res.robot.trace } : null });
+  mountStepper($(".trace-player", host), { code, steps: frames }, { robot: res.robot && run.map ? { map: run.map, dir: run.dir === undefined ? 1 : run.dir, trace: res.robot.trace } : null, page: run.page || null });
   return res;
 }
 
@@ -2663,7 +3085,7 @@ function renderResult(host, r, ed) {
 async function evaluate(code, spec) {
   const src = stripComments(code);
   const runs = [];
-  for (const c of spec.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir }));
+  for (const c of spec.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir, page: c.page || spec.page || null }));
   const results = runs.map((r, i) => r.error ? { ok: false, msg: null, got: r.error.name, err: r.error } : spec.cases[i].check(r, spec.cases[i], src));
   const firstErr = runs.findIndex(r => r.error);
   const showIdx = firstErr >= 0 ? firstErr : Math.max(0, results.findIndex(x => !x.ok));
@@ -2692,10 +3114,12 @@ function mountExercise(host, D, o) {
   host.innerHTML = '<div class="panel drill"><div class="drill-head"><div><p class="eyebrow">' + o.eyebrow + "</p><h3>" + esc(D.title) + '</h3></div><span class="pill" data-st></span></div>' +
     '<p class="drill-task">' + D.task + "</p>" +
     (D.cases[0].map ? '<div class="scene" style="margin-bottom:14px"><div class="scene-head"><span>B0-T practice floor</span></div><div data-grid></div></div>' : "") +
+    (D.page ? '<div class="scene" style="margin-bottom:14px"><div class="scene-head"><span>Practice panel</span><span>after your last check</span></div><div data-page></div></div>' : "") +
     '<div data-ed></div><div class="toolbar"><button class="btn primary" data-a="check">' + (o.checkLabel || "Check") + '</button><button class="btn small" data-a="hint">Show a hint</button><button class="btn small" data-a="reset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
     '<div class="hints" data-hints style="margin-top:12px"></div><div data-feed aria-live="polite" style="margin-top:12px"></div><div data-out style="margin-top:12px"></div></div>';
   const q = s => $("[" + s + "]", host);
   let grid = D.cases[0].map ? mountGrid(q("data-grid"), D.cases[0].map, D.cases[0].dir) : null;
+  if (D.page) renderPage(q("data-page"), D.cases[0].page || D.page, false);
   const ed = createEditor(q("data-ed"), { value: store.drafts[key] ?? D.starter, id: "ed-" + key.replace(":", "-"), minLines: 4, onRun: () => check(), onChange: v => { store.drafts[key] = v; save(); } });
   function status() { const ok = o.isDone(); const p = q("data-st"); p.className = "pill " + (ok ? "ok" : "go"); p.textContent = ok ? "Passed" : "To do"; }
   function drawHints() {
@@ -2719,6 +3143,7 @@ function mountExercise(host, D, o) {
     renderResult(q("data-out"), ev.runs[ev.showIdx], ed);
     if (D.cases.length > 1) q("data-out").insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Output from test: <code>' + esc(D.cases[ev.showIdx].label) + "</code></p>");
     if (grid) { grid = mountGrid(q("data-grid"), D.cases[ev.showIdx].map, D.cases[ev.showIdx].dir); if (ev.runs[ev.showIdx].robot) grid.play(ev.runs[ev.showIdx].robot.trace); }
+    if (D.page) renderPage(q("data-page"), ev.runs[ev.showIdx].dom || D.cases[ev.showIdx].page || D.page, false);
     if (ev.allOk) {
       const first = !o.isDone();
       o.markDone(); save();
@@ -2739,7 +3164,7 @@ function mountDrill(host, L, k, onPass) {
     key: L.id + ":d" + k, eyebrow: "Drill " + (k + 1) + " of " + n, checkLabel: "Check drill",
     isDone: () => drillDone(L, k),
     markDone: () => { (store.drills[L.id] = store.drills[L.id] || [])[k] = true; },
-    okText: () => k < n - 1 ? "On to the next drill." : "Every drill is done, so the challenge is unlocked.",
+    okText: () => drillsDone(L) ? "Every drill is done, so the challenge is unlocked." : (L.drills.some((_, j) => j > k && !drillDone(L, j)) ? "On to the next drill." : "Finish the other drill to unlock the challenge."),
     onPass: first => { onPass(); if (first) checkAchievements(); }
   });
 }
@@ -2752,7 +3177,8 @@ function stagePractise(host, L) {
   const nd = (L.drills || []).length;
   host.innerHTML = '<div class="stack-lg">' +
     (nd ? '<div class="prose"><h3>Guided practice</h3><p>Complete ' + (nd === 1 ? "this drill" : "these " + nd + " short drills") + ' to unlock the challenge. Each one practises exactly what you just learned. Hints are free here.</p></div><div class="stack" id="drills"></div>' : "") +
-    (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' : sandbox) + tracePanel +
+    (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' :
+      P.page ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>Control panel</span><span>live after Run</span></div><div id="ppage"></div></div></div>' : sandbox) + tracePanel +
     '<div class="cols"><div class="panel"><h3>Experiments to try</h3><ul class="ideas">' + P.ideas.map(i => "<li>" + i + "</li>").join("") + "</ul></div>" +
     '<div class="panel predict"><h3>Predict the output</h3><p class="muted small" style="margin-bottom:10px">Before running anything, write what you think this prints, one value per line.</p>' + codeBlock(L.predict.code) + '<label class="label" for="pred" style="margin-top:14px">Your prediction</label><textarea id="pred" spellcheck="false"></textarea><div class="toolbar"><button class="btn signal" id="pcheck">Check prediction</button></div><div id="pres" style="margin-top:12px"></div></div></div></div>' +
     '<div class="next-row" id="gate"></div>';
@@ -2770,7 +3196,10 @@ function stagePractise(host, L) {
   }
   const grid = P.map ? mountGrid($("#pgrid", host), P.map, 1) : null;
   const ed = createEditor($("#ped", host), { value: store.drafts[key] ?? P.starter, id: "ed-" + key.replace(":", "-"), minLines: 7, onRun: run, onChange: v => { store.drafts[key] = v; save(); } });
+  const live = P.page ? livePreview($("#ppage", host), $("#pout", host), ed) : null;
+  if (P.page) renderPage($("#ppage", host), P.page, false);
   async function run() {
+    if (live) { await live.start(ed.get(), "", P.page); return; }
     $("#pout", host).innerHTML = '<p class="muted small">Running…</p>';
     const r = await runOnce({ code: ed.get(), map: P.map || null, dir: 1 });
     renderResult($("#pout", host), r, ed);
@@ -2779,11 +3208,11 @@ function stagePractise(host, L) {
   $("#prun", host).onclick = run;
   $("#ptrace", host).onclick = async () => {
     $("#ptrace-panel", host).hidden = false;
-    const res = await showTrace($("#ptrace-out", host), ed.get(), { map: P.map || null, dir: 1 });
+    const res = await showTrace($("#ptrace-out", host), ed.get(), { map: P.map || null, dir: 1, page: P.page || null });
     renderResult($("#pout", host), res, ed);
     $("#ptrace-panel", host).scrollIntoView({ block: "nearest", behavior: "smooth" });
   };
-  $("#preset", host).onclick = () => { ed.set(P.starter); grid && grid.reset(); $("#pout", host).innerHTML = ""; $("#ptrace-panel", host).hidden = true; };
+  $("#preset", host).onclick = () => { stopLive(); ed.set(P.starter); grid && grid.reset(); if (P.page) renderPage($("#ppage", host), P.page, false); $("#pout", host).innerHTML = ""; $("#ptrace-panel", host).hidden = true; };
   $("#pcheck", host).onclick = () => {
     const norm = s => s.split("\n").map(x => x.trim()).filter(Boolean).join("\n");
     const ok = norm($("#pred", host).value) === norm(L.predict.answer);
@@ -2842,7 +3271,7 @@ function stageChallenge(host, L, idx) {
   const C = L.challenge, key = L.id + ":c", S = sess(L.id), done = store.done[L.id];
   const budget = HINT_BUDGET(idx);
   host.innerHTML = '<div class="stack-lg">' +
-    '<div class="cols"><div class="brief brief-lg dialog">' + pxImg(C.scene === "robot" ? "robot" : L.world === 5 ? "skull" : WORLD_ICONS[L.world], "portrait") + '<div><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div></div>" +
+    '<div class="cols"><div class="brief brief-lg dialog">' + pxImg(C.scene === "robot" ? "robot" : L.id === "boss" ? "skull" : WORLD_ICONS[L.world], "portrait") + '<div><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div></div>" +
     '<div class="scene"><div class="scene-head"><span>' + esc(C.title) + '</span><span class="state-lamp" id="lamp"><i></i><span>Offline</span></span></div><div id="scene"></div></div></div>' +
     '<div class="panel"><h3>Your code</h3><div id="ced"></div><div class="toolbar"><button class="btn" id="crun">Run ▶</button><button class="btn primary" id="ccheck">Check solution</button><button class="btn signal small" id="ctrace">Trace my code</button><button class="btn small" id="creset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
     '<div id="cfeed" aria-live="polite" style="margin-top:16px"></div><div id="cout" style="margin-top:16px"></div><div id="ctrace-out" style="margin-top:16px"></div></div>' +
@@ -2861,6 +3290,21 @@ function stageChallenge(host, L, idx) {
     if (C.scene === "door") { const code = state && state.report && state.report.doorCode !== undefined ? show(state.report.doorCode) : "----"; sceneHost.innerHTML = '<div class="doorframe' + (on ? " open" : "") + '"><div class="behind">VAULT OPEN</div><div class="leaf l"></div><div class="leaf r"></div><div class="keypad">doorCode: ' + esc(code) + "</div></div>"; return; }
     const n = C.cases.length, p = state && state.passed !== undefined ? state.passed : 0;
     const status = '<div class="crt rig-status">' + (state && state.results ? (on ? "ALL " + n + " CHECKS PASSED · machine restored" : p + " / " + n + " checks passing · repair incomplete") : state && state.runs ? "Test run on rig 1 · press Check solution to power every rig" : '<span class="dim">' + n + " test rig" + (n > 1 ? "s" : "") + " connected. Run a check to power them.</span>") + "</div>";
+    if (C.scene === "page") {
+      if (state && state.live) return; // the live preview is already on screen
+      if (state && state.results) {
+        // One small copy of the panel per test, showing exactly how your code left it
+        sceneHost.innerHTML = status + '<div class="rig-grid">' + C.cases.map((c, i) => {
+          const res = state.results[i], r = state.runs[i];
+          return '<div class="rig ' + (res.ok ? "ok" : "bad") + '"><div class="rig-h"><span>' + esc(c.label) + '</span><i class="rig-lamp" aria-label="' + (res.ok ? "passed" : "failed") + '"></i></div><div class="rig-b"><div class="mini-pv" data-case="' + i + '"></div>' + (r.error ? '<div class="rig-out bad">' + esc(r.error.name) + "</div>" : "") + "</div></div>";
+        }).join("") + "</div>";
+        C.cases.forEach((c, i) => { const h = $('.mini-pv[data-case="' + i + '"]', sceneHost); if (h) renderPage(h, state.runs[i].dom || c.page || C.page, false); });
+        return;
+      }
+      sceneHost.innerHTML = '<div class="pv-wrap"></div><p class="pv-note">' + (state && state.passed === n ? "Repaired. Press Run to play with your panel again." : "Press Run to try your code on this panel. Its buttons work after Run.") + "</p>";
+      renderPage($(".pv-wrap", sceneHost), C.cases[0].page || C.page, false);
+      return;
+    }
     const vis = SCENES[L.id];
     if (!vis) { sceneHost.innerHTML = status; return; }
     // One mini scene per test case, drawn from that case's input and what your code produced
@@ -2890,6 +3334,13 @@ function stageChallenge(host, L, idx) {
   $("#creset", host).onclick = () => { ed.set(C.starter); };
   async function run() {
     const c = C.cases[0];
+    if (C.scene === "page") {
+      // A live panel: the learner can click its buttons to try their handlers
+      sceneHost.innerHTML = '<div class="pv-wrap"></div><p class="pv-note">Live panel: click its buttons to test your handlers. Check solution runs the full tests.</p>';
+      drawScene({ live: true, pass: !!store.done[L.id] });
+      await livePreview($(".pv-wrap", sceneHost), $("#cout", host), ed).start(ed.get(), c.pre || "", c.page || C.page);
+      return;
+    }
     $("#cout", host).innerHTML = '<p class="muted small">Running…</p>';
     const r = await runOnce({ code: ed.get(), pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir });
     renderResult($("#cout", host), r, ed);
@@ -2934,7 +3385,7 @@ function stageChallenge(host, L, idx) {
   // Tracing uses the first test case's inputs, like Run. It never counts as an attempt.
   $("#ctrace", host).onclick = async () => {
     const c = C.cases[0];
-    const res = await showTrace($("#ctrace-out", host), ed.get(), { pre: c.pre || "", map: c.map || null, dir: c.dir });
+    const res = await showTrace($("#ctrace-out", host), ed.get(), { pre: c.pre || "", map: c.map || null, dir: c.dir, page: c.page || C.page || null });
     renderResult($("#cout", host), res, ed);
     if (C.cases.length > 1) $("#ctrace-out", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:6px">Tracing with the inputs of test <code>' + esc(c.label) + "</code>.</p>");
   };
