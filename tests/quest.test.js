@@ -47,7 +47,24 @@ const tests = async () => {
     const st = await evaluate(C.starter, C);
     ok(!st.allOk, L.id + ": challenge starter does not pass by itself");
     ok(C.why.length === C.solution.split(NL).length, L.id + ": one review explanation per solution line");
-    ok(L.example.lines.length === L.example.code.split(NL).length, L.id + ": one explanation per example line");
+    if (!isFinale(L)) ok(L.example.lines.length === L.example.code.split(NL).length, L.id + ": one explanation per example line");
+    ok(Array.isArray(L.recap) && L.recap.length && Array.isArray(L.mistakes) && L.mistakes.length >= 2, L.id + ": has a recap and at least two common mistakes");
+  }
+  // 1b. Finales: one per sector 1–5, placed last in their sector, only combining taught lessons
+  const fins = LESSONS.filter(isFinale);
+  ok(fins.length === 5 && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "each of sectors 1–5 ends with a finale");
+  ok(fins.every(F => F.combines.every(id => { const P = LESSON_BY_ID.get(id); return P && LESSONS.indexOf(P) < LESSONS.indexOf(F); })), "finales only combine lessons that come before them");
+  ok(LESSONS[LESSONS.length - 1].id === "boss" && lessonNo(LESSONS.length - 1) === 13, "the Glitch King is still lesson 13 and comes last");
+  // 1c. Review exercises: one per lesson, solutions pass, starters don't
+  for (const L of LESSONS.filter(l => !isFinale(l))) {
+    const R = REVIEWS[L.id];
+    ok(!!R, L.id + ": has a review exercise");
+    if (!R) continue;
+    const ev = await evaluate(R.solution, R);
+    ok(ev.allOk, L.id + " review: solution passes", ev.allOk ? "" : strip(failMessage(ev, R)));
+    const st = await evaluate(R.starter, R);
+    ok(!st.allOk, L.id + " review: starter does not pass by itself");
+    ok(R.hints.length >= 2, L.id + " review: at least two hints");
   }
   // 2. Every drill: solution passes, starter has blanks or fails, hints get more specific
   for (const L of LESSONS) {
@@ -79,7 +96,7 @@ const tests = async () => {
   ok(!constAssign.allOk && constAssign.firstErr >= 0 && /const/.test(explainError(constAssign.runs[constAssign.firstErr].error)), "if drill: = instead of === is caught and explained");
 
   // 3. Predictions and step-through traces match what the code really prints
-  for (const L of LESSONS) {
+  for (const L of LESSONS.filter(l => !isFinale(l))) {
     const p = await runOnce({ code: L.predict.code });
     ok(p.logs.join(NL) === L.predict.answer, L.id + ": predict answer matches real output", JSON.stringify(p.logs));
     const t = await runOnce({ code: L.trace.code });
@@ -116,6 +133,48 @@ const tests = async () => {
   store.drills = {}; store.done.vars = { stars: 2, code: "" };
   ok(drillsDone(LESSONS[1]), "lessons repaired before drills existed stay unlocked");
   ok(unlocked(2) && !unlocked(3), "next lesson unlocks only after the previous repair");
+
+  // 5a. Finale mistakes get specific messages
+  const fin = id => LESSON_BY_ID.get(id).challenge;
+  const finMistakes = [
+    ["fin1", 'const usable = fuel - 10;\nconst minutes = fuel - 10 / burnRate;\nconsole.log("Fuel lasts " + minutes + " minutes");', /division happens first/],
+    ["fin2", 'if (pressure > 95 && pressure < 105) {\n  if (doorLocked) { console.log("LOCKED"); } else { console.log("OPEN"); }\n} else {\n  console.log("DANGER");\n}', /includes both ends/],
+    ["fin4", "function shieldCost(level) { return level * 40; }\nfunction canAfford(coins, level) { return coins >= shieldCost(level); }\nfunction bestLevel(coins) { return 0; }", /fitting fee/],
+    ["fin5", "function teamEnergy(crew) { return 0; }\nfunction tiredNames(crew) { const n = []; for (const m of crew) { if (m.energy < 30) n.push(m); } return n; }", /teamEnergy|name/]
+  ];
+  for (const [id, code, re] of finMistakes) { const C = fin(id), ev = await evaluate(code, C), msg = strip(failMessage(ev, C)); ok(!ev.allOk && re.test(msg), id + ": common mistake gets a specific message", msg); }
+  const crash = await evaluate("while (!robot.atGoal()) {\n  robot.move();\n}", fin("fin3"));
+  ok(!crash.allOk && crash.runs[0].error && crash.runs[0].error.name === "RobotError", "fin3: moving without checking walls crashes B0-T with an explanation");
+
+  // 5c. Mastery, review queue, XP and achievements (on synthetic progress)
+  const real = store;
+  const S = freshStore();
+  store = S;
+  const lessonL = id => LESSON_BY_ID.get(id);
+  ok(masteryOf(lessonL("log")) === 0, "mastery starts at New");
+  S.drills.log = [true]; ok(masteryOf(lessonL("log")) === 1, "a passed drill means Practising");
+  S.done.log = { stars: 1, hints: 2, attempts: 3 }; ok(masteryOf(lessonL("log")) === 2, "1 star means Learned");
+  S.done.vars = { stars: 2, hints: 1, attempts: 2 }; ok(masteryOf(lessonL("vars")) === 3, "2 stars means Solid");
+  S.done.math = { stars: 3, hints: 0, attempts: 1 }; ok(masteryOf(lessonL("math")) === 4, "3 stars means Mastered");
+  S.done.bool = { stars: 3, hints: 0, attempts: 1, revealed: true }; ok(masteryOf(lessonL("bool")) === 2, "a revealed solution caps mastery at Learned");
+  ok(reviewQueue().map(l => l.id).join() === "log,bool", "review queue holds the struggled concepts, in lesson order", reviewQueue().map(l => l.id).join());
+  S.done.log.reviewed = true;
+  ok(masteryOf(lessonL("log")) === 4 && reviewQueue().map(l => l.id).join() === "bool", "a passed review raises mastery to Mastered and leaves the queue");
+  ok(xp() === (100 + 25) + (100 + 50) + (100 + 75) + (100 + 75), "XP adds 100 + 25 per star", String(xp()));
+  S.done.fin1 = { stars: 2 };
+  ok(xp() === 625 + (100 + 50) + 50, "a finale adds a 50 XP bonus", String(xp()));
+  const before = Object.keys(S.ach).length;
+  const got = checkAchievements(true).map(a => a.id).sort().join();
+  ok(got === "clean,finale,first,review,sector1", "achievements unlock from progress", got);
+  ok(checkAchievements(true).length === 0 && Object.keys(S.ach).length === before + 5, "achievements unlock only once");
+  ok(unlocked(LESSONS.indexOf(lessonL("fin1"))) && unlocked(LESSONS.indexOf(lessonL("if"))), "finale opens after its sector, and the next sector opens after the finale");
+  S.done = { log: { stars: 3 }, vars: { stars: 3 }, math: { stars: 3 } };
+  ok(!unlocked(LESSONS.indexOf(lessonL("bool"))), "sector 2 stays locked until the sector 1 finale is beaten");
+  S.done.bool = { stars: 2 };
+  ok(unlocked(LESSONS.indexOf(lessonL("bool"))) && unlocked(LESSONS.indexOf(lessonL("if"))), "players who passed sector 2 lessons before finales existed keep their access");
+  S.pred = { log: true, vars: true, math: true, bool: true, if: true };
+  ok(checkAchievements(true).some(a => a.id === "fortune"), "five correct predictions unlock Fortune Teller");
+  store = real;
 
   // 5b. Save codes
   const sample = freshStore();

@@ -286,6 +286,43 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Mastery meters, finales, review queue, achievements */
+.node-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.node .stars { margin: 0; padding: 0; }
+.meter { display: inline-flex; gap: 2px; vertical-align: middle; }
+.meter i { width: 9px; height: 9px; background: var(--panel-2); border: 2px solid var(--frame); }
+.meter.m1 i.on, .meter.m2 i.on { background: var(--accent); }
+.meter.m3 i.on { background: var(--signal); }
+.meter.m4 i.on { background: var(--ok); }
+.node.finale { border-width: 5px; border-style: double; }
+.node.finale .lv { color: var(--accent); display: inline-flex; gap: 5px; align-items: center; font-family: var(--f-display); }
+.stages.three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 620px; }
+.lesson-head .lh-text { flex: 1; min-width: 0; }
+.lh-mastery { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; align-self: center; }
+.lh-mastery .label { margin: 0; }
+.lh-mastery small { font-family: var(--f-display); color: var(--muted); }
+.reviewq { margin-bottom: 32px; }
+.rq-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.rq-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--panel-2); border: 2px solid var(--frame); }
+.rq-item > div { flex: 1; min-width: 0; }
+.rq-item b { display: block; font-family: var(--f-display); font-weight: 600; }
+.rq-item small { color: var(--muted); font-size: .85rem; }
+.rq-icon { width: 32px; height: auto; flex: none; }
+.achpanel { margin-top: 36px; }
+.achgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 10px; margin-top: 12px; }
+.ach { display: flex; gap: 10px; align-items: center; padding: 10px; border: 2px solid var(--line); background: var(--panel); opacity: .62; }
+.ach.got { opacity: 1; border-color: var(--accent); background: var(--accent-soft); }
+.ach b { display: block; font-family: var(--f-display); font-weight: 600; font-size: .95rem; }
+.ach small { color: var(--muted); font-size: .8rem; line-height: 1.35; display: block; }
+.ach.got small { color: var(--ink); }
+.ach-icon { width: 34px; height: auto; flex: none; }
+.ach:not(.got) .ach-icon { filter: grayscale(1); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.toast.ach { border-color: #F5CB74; }
+@media (max-width: 560px) {
+  .lh-mastery { align-items: flex-start; width: 100%; flex-direction: row; gap: 10px; }
+  .rq-item { flex-wrap: wrap; }
+}
 /* Symbol bar (phones and touch screens) */
 .symbar { display: none; }
 @media (pointer: coarse), (max-width: 700px) {
@@ -516,6 +553,7 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  trophy: { rows: ["..kkkkkkkk..", "kkkyyyyyykkk", "kykywyyyykyk", "kykyyyyyykyk", ".kkyyyyyykk.", "...kyyyyk...", "....kyyk....", ".....kk.....", "....kyyk....", "...kOOOOk...", "...kkkkkk..."] },
   lock: { rows: ["..kkkk..", ".kk..kk.", ".k....k.", "kkkkkkkk", "kssssssk", "ksskkssk", "kssksssk", "kkkkkkkk"], raw: true },
   wall: { raw: true, rows: ["SSSSdSSS", "SSSSdSSS", "dddddddd", "SdSSSSSS", "SdSSSSSS", "dddddddd", "SSSSdSSS", "SSSSdSSS"] },
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
@@ -1719,12 +1757,236 @@ const DRILLS = {
 };
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
 
+/* ================= Sector finales =================
+   One cumulative challenge at the end of Sectors 1–5. Each combines that sector's ideas
+   (and earlier ones), and must be beaten to open the next sector. */
+const SPIRAL_A = ["#########", "#R......#", "#######.#", "#.....#.#", "#.###G#.#", "#.#####.#", "#.......#", "#########"];
+const SPIRAL_B = ["###########", "#R........#", "#########.#", "#......G#.#", "#.#######.#", "#.........#", "###########"];
+const crewText = c => "[" + c.map(m => m.name + " " + m.energy).join(", ") + "]";
+const FINALES = [
+  { id: "fin1", world: 0, kind: "finale", title: "Fuel Report", concept: "Sector finale: printing, variables and arithmetic", combines: ["log", "vars", "math"],
+    story: "The Boot Sector is awake, but the station's fuel gauge is still dark. Bring it back using everything from this sector at once.",
+    mistakes: ["Forgetting brackets: <code>fuel - 10 / burnRate</code> divides before it subtracts.", "Typing numbers instead of using the variables, which change between tests."],
+    recap: ["Variables can store the results of calculations, step by step.", "Brackets, or a helper variable, control the order of operations.", "<code>+</code> joins text and numbers into one message."],
+    challenge: {
+      scene: "rig", title: "Restore the fuel gauge",
+      brief: "The tank holds <code>fuel</code> litres and burns <code>burnRate</code> litres per minute. Both already exist and change between tests. The last 10 litres are a reserve that must never be burned. Create <code>usable</code> (the fuel minus the reserve) and <code>minutes</code> (how long the usable fuel lasts). Then print a line like <code>Fuel lasts 20 minutes</code> with the real number.",
+      starter: "// fuel and burnRate already exist\n",
+      hints: ["Work in two steps: first <code>usable</code>, then <code>minutes = usable / burnRate</code>.", "Print with <code>console.log(\"Fuel lasts \" + minutes + \" minutes\");</code>"],
+      cases: [[130, 6], [50, 8], [10, 5], [74, 4]].map(([f, b]) => {
+        const u = f - 10, m = u / b;
+        return { label: "fuel " + f + ", burnRate " + b, pre: "const fuel = " + f + ", burnRate = " + b + ";", expect: "Fuel lasts " + m + " minutes", post: grab("usable", "minutes"), check: r => {
+          const R = r.report;
+          if (R.usable !== u) return fail("usable should be " + f + " − 10 = " + u + " but is " + q(show(R.usable)) + ".", "usable " + show(R.usable));
+          if (R.minutes !== m) return fail("minutes should be " + u + " ÷ " + b + " = " + m + " but is " + q(show(R.minutes)) + (R.minutes === f - 10 / b ? ". Without brackets the division happens first. Divide <code>usable</code> instead." : "."), "minutes " + show(R.minutes));
+          return expectLogs(r.logs, ["Fuel lasts " + m + " minutes"]);
+        } };
+      }),
+      solution: 'const usable = fuel - 10;\nconst minutes = usable / burnRate;\nconsole.log("Fuel lasts " + minutes + " minutes");',
+      why: ["Take off the reserve first and store the result, so the next line can use it.", "Divide the usable fuel by the burn rate. Using the usable variable sidesteps the order-of-operations trap.", "Join the text and the number into one message. The spaces inside the quotes keep the words apart."]
+    } },
+  { id: "fin2", world: 1, kind: "finale", title: "Airlock Controller", concept: "Sector finale: comparisons, booleans and if/else", combines: ["bool", "if"],
+    story: "The airlock between the Logic Gates and the Loop Factory keeps opening at the wrong moments. Teach it exactly when it's safe.",
+    mistakes: ["Using <code>></code> and <code><</code> when the edges of the range count as safe. Use <code>>=</code> and <code><=</code>.", "Writing separate ifs, so more than one word prints. Chain them with <code>else if</code> and <code>else</code>."],
+    recap: ["A range check needs two comparisons joined with <code>&&</code>.", "Storing a condition in a well-named variable makes the if easy to read.", "Check the most important case first: here, danger beats everything."],
+    challenge: {
+      scene: "rig", title: "Program the airlock",
+      brief: "The airlock reads <code>pressure</code> and <code>doorLocked</code> (true or false). Print exactly one word: <code>DANGER</code> if the pressure is outside 95 to 105 (95 and 105 are safe), otherwise <code>LOCKED</code> if the door is locked, otherwise <code>OPEN</code>.",
+      starter: "// pressure and doorLocked already exist\n",
+      hints: ["Store the range check first: <code>const safe = pressure >= 95 && pressure <= 105;</code>", "Then: <code>if (!safe) { … DANGER } else if (doorLocked) { … LOCKED } else { … OPEN }</code>"],
+      cases: [[100, false], [95, false], [105, true], [106, false], [40, true], [94, false]].map(([p, l]) => {
+        const exp = (p < 95 || p > 105) ? "DANGER" : l ? "LOCKED" : "OPEN";
+        return { label: "pressure " + p + ", doorLocked " + l, pre: "const pressure = " + p + ", doorLocked = " + l + ";", expect: exp, check: r => {
+          if (r.logs.length > 1) return fail("Printed " + r.logs.length + " words (" + esc(r.logs.join(", ")) + "). Exactly one should print: chain the checks with <code>else if</code> and <code>else</code>.", r.logs.join(", "));
+          if ((p === 95 || p === 105) && r.logs[0] === "DANGER") return fail(p + " is inside the safe range. \"95 to 105\" includes both ends, so use <code>>=</code> and <code><=</code>.", "DANGER");
+          if (exp === "DANGER" && r.logs.length && r.logs[0] !== "DANGER") return fail("Pressure " + p + " is outside 95 to 105, so this must print DANGER whatever the door is doing. Check the danger case first.", r.logs[0]);
+          return expectLogs(r.logs, [exp]);
+        } };
+      }),
+      solution: 'const safe = pressure >= 95 && pressure <= 105;\nif (!safe) {\n  console.log("DANGER");\n} else if (doorLocked) {\n  console.log("LOCKED");\n} else {\n  console.log("OPEN");\n}',
+      why: ["Both comparisons must be true for the pressure to be safe, so join them with &&. Naming the result makes the if below read like English.", "Danger comes first: ! flips safe, so this runs when the pressure is out of range.", "Raise the alarm.", "Only reached when the pressure is safe. Now check the door.", "Safe pressure, locked door.", "Safe pressure and an unlocked door…", "…so the airlock can open.", "Exactly one branch ran."]
+    } },
+  { id: "fin3", world: 2, kind: "finale", title: "Spiral Run", concept: "Sector finale: loops, sensors and decisions", combines: ["for", "while", "if"],
+    story: "The way into the Function Forge is a spiral service tunnel, and its layout changes every shift. B0-T needs one program that works for any spiral.",
+    mistakes: ["Moving without checking for a wall first, so B0-T crashes.", "Using a for loop with a fixed count. The tunnel length changes, so a while loop with a sensor is the right tool."],
+    recap: ["A while loop with a sensor keeps going for as long as the job needs.", "An if/else inside a loop lets the program decide something new every round.", "One small rule (turn at walls, otherwise move) can solve a whole family of mazes."],
+    challenge: {
+      scene: "robot", title: "Navigate the spiral",
+      brief: "Every turn in this tunnel is a right turn, but its size changes between tests. Keep going until B0-T is on the exit: if there's a wall ahead, turn right, otherwise move forward.",
+      starter: "// Sensors: robot.atGoal() and robot.wallAhead()\n",
+      hints: ["You need one while loop that runs until the exit, with an if/else inside it.", "<code>while (!robot.atGoal()) { if (robot.wallAhead()) { robot.turnRight(); } else { robot.move(); } }</code>"],
+      src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use a while loop: the tunnel's size changes between tests." }, { test: s => /\bif\s*\(/.test(s), msg: "Use an if inside the loop to decide between turning and moving." }],
+      cases: [{ label: "Small spiral", map: SPIRAL_A, dir: 1, expect: "on the exit", check: r => robotCheck(r) }, { label: "Wide spiral", map: SPIRAL_B, dir: 1, expect: "on the exit", check: r => robotCheck(r) }],
+      solution: "while (!robot.atGoal()) {\n  if (robot.wallAhead()) {\n    robot.turnRight();\n  } else {\n    robot.move();\n  }\n}",
+      why: ["Repeat until B0-T stands on the exit, however long that takes.", "Every round, look at the square ahead.", "A wall: turn to face the next corridor.", "No wall…", "…so step forward.", "End of the if/else.", "End of the loop. Because the rule doesn't depend on lengths, it works for any right-turning spiral."]
+    } },
+  { id: "fin4", world: 3, kind: "finale", title: "Shield Shop", concept: "Sector finale: functions that call functions", combines: ["func", "return", "for", "if"],
+    story: "The Function Forge sells hull shields, but its price terminal is blank. Build the pricing system from small functions that work together.",
+    mistakes: ["Copying the price formula into every function instead of calling shieldCost.", "Returning inside the loop of bestLevel, which stops at the first affordable level."],
+    recap: ["Small functions with clear names can be combined into bigger ones.", "Call a function inside another to reuse its answer.", "A loop plus an if can search for the best option."],
+    challenge: {
+      scene: "rig", title: "Price the shields",
+      brief: "Write three functions. <code>shieldCost(level)</code> returns level × 40 plus a 20-coin fitting fee. <code>canAfford(coins, level)</code> returns true when the coins cover that level's cost (use shieldCost). <code>bestLevel(coins)</code> returns the highest level from 1 to 5 that you can afford, or 0 if none.",
+      starter: "function shieldCost(level) {\n\n}\n\nfunction canAfford(coins, level) {\n\n}\n\nfunction bestLevel(coins) {\n\n}\n",
+      hints: ["bestLevel: start <code>let best = 0;</code>, loop level from 1 to 5, set <code>best = level</code> whenever <code>canAfford(coins, level)</code> is true, and return best after the loop."],
+      src: [{ test: s => /function\s+canAfford\s*\([^)]*\)\s*\{[^}]*shieldCost\s*\(/.test(s), msg: "canAfford should call <code>shieldCost(level)</code>, so the price is worked out in one place only." }],
+      cases: [["shieldCost", [1], 60], ["shieldCost", [5], 220], ["canAfford", [100, 2], true], ["canAfford", [99, 2], false], ["bestLevel", [150], 3], ["bestLevel", [30], 0], ["bestLevel", [1000], 5]].map(([fn, args, exp]) => {
+        const txt = fn + "(" + args.join(", ") + ")";
+        return { label: txt, expect: String(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, v => {
+          if (fn === "shieldCost" && v === args[0] * 40) return "Don't forget the 20-coin fitting fee.";
+          if (fn === "canAfford" && exp === true && v === false) return "Exactly enough coins is enough: use <code>>=</code>.";
+          if (fn === "bestLevel" && typeof v === "number" && v > 0 && v < exp) return "Keep looping: higher levels may be affordable too. Don't return inside the loop.";
+          return "";
+        }) };
+      }),
+      solution: "function shieldCost(level) {\n  return level * 40 + 20;\n}\n\nfunction canAfford(coins, level) {\n  return coins >= shieldCost(level);\n}\n\nfunction bestLevel(coins) {\n  let best = 0;\n  for (let level = 1; level <= 5; level++) {\n    if (canAfford(coins, level)) {\n      best = level;\n    }\n  }\n  return best;\n}",
+      why: ["The price of one level.", "Multiplication happens before the fee is added.", "", "", "Is there enough money?", "Calls shieldCost, so if prices ever change, only one line needs editing.", "", "", "Find the best level these coins can buy.", "The best level found so far. 0 means none.", "Try every level from 1 to 5.", "Ask the other function.", "Remember the highest affordable level. Later rounds overwrite earlier ones.", "", "", "Return only after checking every level.", ""]
+    } },
+  { id: "fin5", world: 4, kind: "finale", title: "Crew Manifest", concept: "Sector finale: arrays of objects", combines: ["arrays", "arrloop", "objects"],
+    story: "Before anyone faces the Glitch King, the crew manifest has to be sorted out. It's a list of crew records, which is exactly what arrays of objects are for.",
+    mistakes: ["Pushing the whole member object instead of <code>member.name</code>.", "Using <code><=</code> when the task says \"below\"."],
+    recap: ["An array can hold objects: one object per record.", "Loop through the array and read each object's properties with a dot.", "Build a new array of results with <code>push</code>."],
+    challenge: {
+      scene: "rig", title: "Sort the manifest",
+      brief: "<code>crew</code> is an array of objects like <code>{ name: \"Ada\", energy: 70 }</code>. Write <code>teamEnergy(crew)</code> that returns the total energy of everyone, and <code>tiredNames(crew)</code> that returns an array of the <b>names</b> of crew members whose energy is below 30.",
+      starter: "function teamEnergy(crew) {\n\n}\n\nfunction tiredNames(crew) {\n\n}\n",
+      hints: ["Both use a loop over crew. teamEnergy adds <code>member.energy</code> to a total; tiredNames starts with <code>const names = [];</code> and pushes <code>member.name</code> when the energy is below 30."],
+      cases: (() => {
+        const A = [{ name: "Ada", energy: 70 }, { name: "Bo", energy: 25 }, { name: "Cy", energy: 10 }], B = [], C = [{ name: "Dee", energy: 30 }, { name: "Eli", energy: 29 }];
+        return [["teamEnergy", A, 105], ["teamEnergy", B, 0], ["teamEnergy", C, 59], ["tiredNames", A, ["Bo", "Cy"]], ["tiredNames", B, []], ["tiredNames", C, ["Eli"]]].map(([fn, crew, exp]) => {
+          const txt = fn + "(" + crewText(crew) + ")";
+          return { label: txt, expect: show(exp), post: callPost(fn, [crew]), check: r => callCheck(r.report, fn, txt, exp, v => {
+            if (Array.isArray(v) && v.some(x => x && typeof x === "object")) return "Push each member's <code>name</code>, not the whole object.";
+            if (Array.isArray(v) && v.indexOf("Dee") >= 0) return "Energy of exactly 30 isn't below 30: use <code><</code>.";
+            if (typeof v === "number" && isNaN(v)) return "NaN means something that isn't a number got added. Add <code>member.energy</code>, not <code>member</code>.";
+            return "";
+          }) };
+        });
+      })(),
+      solution: "function teamEnergy(crew) {\n  let total = 0;\n  for (const member of crew) {\n    total = total + member.energy;\n  }\n  return total;\n}\n\nfunction tiredNames(crew) {\n  const names = [];\n  for (const member of crew) {\n    if (member.energy < 30) {\n      names.push(member.name);\n    }\n  }\n  return names;\n}",
+      why: ["Total energy of the whole crew.", "Accumulator starts at 0.", "Each round, member is one crew object.", "Read its energy property and add it.", "", "An empty crew skips the loop and returns 0.", "", "", "Names of tired crew members.", "Start with an empty array to collect results.", "Visit every member.", "Below 30, so 30 itself doesn't count.", "Add just the name to the results.", "", "", "Return the collected names.", ""]
+    } }
+];
+// Place each finale right after the last lesson of its sector
+FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
+const isFinale = L => L.kind === "finale";
+const LESSON_BY_ID = new Map(LESSONS.map(l => [l.id, l]));
+// "Lesson 7" numbering skips finales
+const lessonNo = i => LESSONS.slice(0, i + 1).filter(l => !isFinale(l)).length;
+
+/* ================= Review exercises =================
+   One fresh exercise per lesson, offered when a repair was a struggle (or any time from the Review stage).
+   Passing one raises that concept to "Mastered". */
+const REVIEWS = {
+  log: { title: "Systems check", task: "Print three lines in this order: <code>Systems check</code>, the number <code>3</code>, and <code>Complete</code>.",
+    starter: "// Print three lines\n",
+    hints: ["One console.log per line, in order. Text goes in quotes; the number doesn't.", "<code>console.log(\"Systems check\");</code> then <code>console.log(3);</code> then <code>console.log(\"Complete\");</code>"],
+    src: [{ test: s => /console\.log\(\s*3\s*\)/.test(s), msg: "Print 3 as a number, without quotes." }],
+    cases: [{ label: "Output", expect: "Systems check\n3\nComplete", check: r => expectLogs(r.logs, ["Systems check", "3", "Complete"]) }],
+    solution: 'console.log("Systems check");\nconsole.log(3);\nconsole.log("Complete");' },
+  vars: { title: "Crew change", task: "Create <code>let crew = 4;</code>. On the next line, change crew to 5 without using let again. Then print <code>Crew: 5</code>, built from the variable.",
+    starter: "// Create crew, change it, then print it\n",
+    hints: ["Change a variable by writing its name, then =, then the new value.", "<code>let crew = 4;</code> · <code>crew = 5;</code> · <code>console.log(\"Crew: \" + crew);</code>"],
+    src: [{ test: s => /\blet\s+crew\s*=\s*4\b/.test(s), msg: "Start with <code>let crew = 4;</code>" }, { test: s => /^\s*crew\s*=\s*5\b/m.test(s), msg: "Change it on its own line: <code>crew = 5;</code>" }, { test: s => /console\.log\([^)]*\bcrew\b/.test(s), msg: "Build the message from the variable: <code>\"Crew: \" + crew</code>." }],
+    cases: [{ label: "Output", expect: "Crew: 5", post: grab("crew"), check: r => r.report.crew !== 5 ? fail("crew should end as 5 but is " + q(show(r.report.crew)) + ".", show(r.report.crew)) : expectLogs(r.logs, ["Crew: 5"]) }],
+    solution: 'let crew = 4;\ncrew = 5;\nconsole.log("Crew: " + crew);' },
+  math: { title: "Supply order", task: "<code>price</code> and <code>qty</code> already exist and change between tests. Delivery always costs 5, once per order. Set <code>total</code> to price times qty plus delivery, and print it.",
+    starter: "// price and qty already exist\nlet total = 0; // replace 0 with a calculation\nconsole.log(total);\n",
+    hints: ["Multiplication happens before addition, so you don't need brackets here.", "<code>let total = price * qty + 5;</code>"],
+    cases: [[4, 3], [10, 1], [2, 0]].map(([p, n]) => ({ label: "price " + p + ", qty " + n, pre: "const price = " + p + ", qty = " + n + ";", expect: String(p * n + 5), post: grab("total"),
+      check: r => r.report.total !== p * n + 5 ? fail("total should be " + (p * n + 5) + " but is " + q(show(r.report.total)) + (r.report.total === p * (n + 5) ? ". Brackets around qty + 5 add delivery to every item. You only add it once." : "."), show(r.report.total)) : expectLogs(r.logs, [String(p * n + 5)]) })),
+    solution: "let total = price * qty + 5;\nconsole.log(total);" },
+  bool: { title: "Warning light", task: "<code>temp</code> and <code>alarmOn</code> already exist. Set <code>warning</code> to true if the temperature is above 80 <b>or</b> the alarm is on, then print it.",
+    starter: "// temp and alarmOn already exist\nconst warning = false; // replace false with an expression\nconsole.log(warning);\n",
+    hints: ["Either reason is enough, so you need OR.", "<code>const warning = temp > 80 || alarmOn;</code>"],
+    cases: [[90, false], [80, false], [20, true], [50, false]].map(([t, a]) => ({ label: "temp " + t + ", alarmOn " + a, pre: "const temp = " + t + ", alarmOn = " + a + ";", expect: String(t > 80 || a), post: grab("warning"),
+      check: r => r.report.warning !== (t > 80 || a) ? fail("With temp " + t + " and alarmOn " + a + ", warning should be " + (t > 80 || a) + " but is " + q(show(r.report.warning)) + "." + ((t > 80) !== a ? " Either reason alone is enough: use <code>||</code>." : ""), show(r.report.warning)) : expectLogs(r.logs, [String(t > 80 || a)]) })),
+    solution: "const warning = temp > 80 || alarmOn;\nconsole.log(warning);" },
+  if: { title: "Shift clock", task: "<code>hour</code> already exists (0 to 23). Print <code>MORNING</code> before 12, <code>AFTERNOON</code> from 12 up to (not including) 18, and <code>EVENING</code> otherwise.",
+    starter: "// hour already exists\n",
+    hints: ["Check the earliest time first, then use else if and else.", "<code>if (hour < 12) { … } else if (hour < 18) { … } else { … }</code>"],
+    cases: [[9, "MORNING"], [12, "AFTERNOON"], [17, "AFTERNOON"], [18, "EVENING"], [23, "EVENING"]].map(([h, w]) => ({ label: "hour = " + h, pre: "const hour = " + h + ";", expect: w,
+      check: r => r.logs.length > 1 ? fail("Printed " + r.logs.length + " words. Only one should print: chain with <code>else if</code>.", r.logs.join(", ")) : expectLogs(r.logs, [w]) })),
+    solution: 'if (hour < 12) {\n  console.log("MORNING");\n} else if (hour < 18) {\n  console.log("AFTERNOON");\n} else {\n  console.log("EVENING");\n}' },
+  for: { title: "Even steps", task: "Use a <code>for</code> loop to print 0, 2, 4, 6 and 8, one per line.",
+    starter: "// Print 0, 2, 4, 6 and 8 with a for loop\n",
+    hints: ["The update part of a for loop can add more than 1.", "<code>for (let i = 0; i <= 8; i = i + 2) { console.log(i); }</code>"],
+    src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a for loop rather than five console.log lines." }],
+    cases: [{ label: "Output", expect: "0 2 4 6 8", check: r => expectLogs(r.logs, ["0", "2", "4", "6", "8"]) }],
+    solution: "for (let i = 0; i <= 8; i = i + 2) {\n  console.log(i);\n}" },
+  while: { title: "Cargo trips", task: "<code>stock</code> already exists (made with let) and changes between tests. Each trip carries exactly 3 crates, and a trip only happens if at least 3 are left. Count the trips with a while loop and print the number.",
+    starter: "// stock already exists\nlet trips = 0;\n\nconsole.log(trips);\n",
+    hints: ["Loop while stock is at least 3. Inside, take 3 from stock and add 1 to trips.", "<code>while (stock >= 3) { stock = stock - 3; trips = trips + 1; }</code>"],
+    src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use a while loop: you don't know in advance how many trips there will be." }],
+    cases: [[10, 3], [2, 0], [9, 3], [15, 5]].map(([s, t]) => ({ label: "stock = " + s, pre: "let stock = " + s + ";", expect: String(t), check: r => expectLogs(r.logs, [String(t)]) })),
+    solution: "let trips = 0;\nwhile (stock >= 3) {\n  stock = stock - 3;\n  trips = trips + 1;\n}\nconsole.log(trips);" },
+  func: { title: "Warning system", task: "Write a function <code>warn(msg)</code> that prints <code>WARNING: </code> followed by the message. Call it twice: with <code>\"Low fuel\"</code>, then with <code>\"Hull breach\"</code>.",
+    starter: "// Define warn(msg), then call it twice\n",
+    hints: ["The function body uses the parameter inside console.log.", "<code>function warn(msg) { console.log(\"WARNING: \" + msg); }</code> then <code>warn(\"Low fuel\");</code> and <code>warn(\"Hull breach\");</code>"],
+    src: [{ test: s => /function\s+warn\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\{[^}]*console\.log\([^)]*\b\1\b/.test(s), msg: "Define warn with a parameter and use that parameter inside console.log, so one function can print any warning." }],
+    cases: [{ label: "Output", expect: "WARNING: Low fuel\nWARNING: Hull breach", check: r => r.logs.length === 0 ? fail("Nothing printed. Did you call the function?", "(nothing)") : expectLogs(r.logs, ["WARNING: Low fuel", "WARNING: Hull breach"]) }],
+    solution: 'function warn(msg) {\n  console.log("WARNING: " + msg);\n}\nwarn("Low fuel");\nwarn("Hull breach");' },
+  return: { title: "Sensor average", task: "Write <code>average(a, b)</code> that <b>returns</b> the average of two numbers: add them, then divide by 2.",
+    starter: "function average(a, b) {\n\n}\n",
+    hints: ["The addition must happen before the division. Brackets do that.", "<code>return (a + b) / 2;</code>"],
+    cases: [[4, 6, 5], [1, 2, 1.5], [0, 0, 0], [-4, 10, 3]].map(([a, b, e]) => ({ label: "average(" + a + ", " + b + ")", expect: String(e), post: callPost("average", [a, b]),
+      check: r => callCheck(r.report, "average", "average(" + a + ", " + b + ")", e, v => v === a + b / 2 ? "Division happens before addition. Put brackets around <code>a + b</code>." : "") })),
+    solution: "function average(a, b) {\n  return (a + b) / 2;\n}" },
+  arrays: { title: "Log summary", task: "<code>entries</code> already exists and changes between tests. Print three lines: the first entry, the last entry, and how many entries there are.",
+    starter: "// entries already exists\n",
+    hints: ["First is index 0. Last is <code>entries.length - 1</code>. The count is <code>entries.length</code>.", "<code>console.log(entries[0]);</code> · <code>console.log(entries[entries.length - 1]);</code> · <code>console.log(entries.length);</code>"],
+    cases: [["boot", "scan", "dock"], ["alpha"], ["a", "b", "c", "d", "e"]].map(a => ({ label: show(a), pre: "const entries = " + JSON.stringify(a) + ";", expect: a[0] + " / " + a[a.length - 1] + " / " + a.length,
+      check: r => r.logs[1] === "undefined" ? fail("The second line printed undefined: <code>entries[entries.length]</code> is one past the end. Use <code>entries.length - 1</code>.", r.logs.join(" / ")) : expectLogs(r.logs, [a[0], a[a.length - 1], String(a.length)]) })),
+    solution: "console.log(entries[0]);\nconsole.log(entries[entries.length - 1]);\nconsole.log(entries.length);" },
+  arrloop: { title: "Word counter", task: "Write <code>countWord(words, target)</code> that returns how many times <code>target</code> appears in the <code>words</code> array.",
+    starter: "function countWord(words, target) {\n\n}\n",
+    hints: ["Counting pattern: start at 0, loop through words, add 1 when the word <code>===</code> target, and return after the loop.", "Inside the loop: <code>if (w === target) { count = count + 1; }</code>"],
+    cases: [[["go", "stop", "go"], "go", 2], [[], "x", 0], [["a", "b"], "c", 0], [["x", "x", "x"], "x", 3]].map(([w, t, e]) => {
+      const txt = "countWord(" + show(w) + ", " + show(t) + ")";
+      return { label: txt, expect: String(e), post: callPost("countWord", [w, t]), check: r => callCheck(r.report, "countWord", txt, e, v => w.length > 1 && v === 1 && e > 1 ? "It stopped after the first match. Is <code>return</code> inside the loop?" : "") };
+    }),
+    solution: "function countWord(words, target) {\n  let count = 0;\n  for (const w of words) {\n    if (w === target) {\n      count = count + 1;\n    }\n  }\n  return count;\n}" },
+  objects: { title: "Refuel", task: "Write <code>refuel(ship, amount)</code> that adds <code>amount</code> to the ship's <code>fuel</code> property, then returns the new fuel level.",
+    starter: "function refuel(ship, amount) {\n\n}\n",
+    hints: ["Change the property with a dot, then return it.", "<code>ship.fuel = ship.fuel + amount;</code> then <code>return ship.fuel;</code>"],
+    cases: [[{ name: "Comet", fuel: 20 }, 15], [{ name: "Nova", fuel: 0 }, 50]].map(([s, a]) => ({ label: "refuel(" + show(s) + ", " + a + ")", expect: "returns " + (s.fuel + a) + ", ship.fuel " + (s.fuel + a),
+      post: "__report.isFn = typeof refuel === 'function'; const __ship = " + JSON.stringify(s) + "; if (__report.isFn) __report.out = __call(refuel, __ship, " + a + "); __report.ship = __ship;",
+      check: r => { const c = callCheck(r.report, "refuel", "refuel(" + show(s) + ", " + a + ")", s.fuel + a); if (!c.ok) return c; return r.report.ship.fuel !== s.fuel + a ? fail("It returned the right number, but the ship's fuel property wasn't changed. Update it with <code>ship.fuel = ship.fuel + amount;</code>", "ship.fuel " + show(r.report.ship.fuel)) : c; } })),
+    solution: "function refuel(ship, amount) {\n  ship.fuel = ship.fuel + amount;\n  return ship.fuel;\n}" },
+  boss: { title: "Biggest reading", task: "This function should return the biggest number in any array, but it passes some tests and fails others. Find the bug and fix it.",
+    starter: "function maxOf(nums) {\n  let best = 0;\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[i] > best) {\n      best = nums[i];\n    }\n  }\n  return best;\n}\n",
+    hints: ["Try the array <code>[-5, -2, -9]</code> in your head. What is best at the start, and does any element beat it?", "Start with the first element instead of 0: <code>let best = nums[0];</code>"],
+    cases: [[[3, 9, 2], 9], [[7, 1], 7], [[-5, -2, -9], -2]].map(([a, e]) => ({ label: "maxOf(" + show(a) + ")", expect: String(e), post: callPost("maxOf", [a]),
+      check: r => callCheck(r.report, "maxOf", "maxOf(" + show(a) + ")", e, v => v === 0 ? "best starts at 0, which is bigger than every negative number. Start with the first element instead." : v === a[1] && a.length === 2 ? "The first element is never compared. Where does best start, and where does the loop start?" : "") })),
+    solution: "function maxOf(nums) {\n  let best = nums[0];\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[i] > best) {\n      best = nums[i];\n    }\n  }\n  return best;\n}" }
+};
+
+/* ================= Achievements ================= */
+const sectorDone = (s, w) => LESSONS.filter(L => L.world === w).every(L => s.done[L.id]);
+const ACHIEVEMENTS = [
+  { id: "first", title: "Hello, Station", desc: "Complete your first repair.", icon: "terminal", test: s => Object.keys(s.done).length >= 1 },
+  { id: "clean", title: "Clean Code", desc: "Earn 3 stars on a repair.", icon: "star", test: s => Object.values(s.done).some(d => d.stars === 3) },
+  { id: "drills10", title: "Drill Sergeant", desc: "Pass 10 guided drills.", icon: "gear", test: s => Object.values(s.drills).reduce((a, arr) => a + arr.filter(Boolean).length, 0) >= 10 },
+  { id: "fortune", title: "Fortune Teller", desc: "Predict the output correctly in 5 lessons.", icon: "crystal", test: s => Object.keys(s.pred || {}).length >= 5 },
+  { id: "nopeek", title: "No Peeking", desc: "Finish 5 repairs without using a single hint.", icon: "pilot", test: s => Object.values(s.done).filter(d => d.hints === 0 && !d.revealed).length >= 5 },
+  { id: "comeback", title: "Never Give Up", desc: "Repair a machine after 3 or more failed checks.", icon: "anvil", test: s => (s.stats.comebacks || 0) >= 1 },
+  { id: "sector1", title: "Boot Sector Online", desc: "Complete every repair in Sector 1, finale included.", icon: "terminal", test: s => sectorDone(s, 0) },
+  { id: "finale", title: "Sector Champion", desc: "Beat any sector finale.", icon: "trophy", test: s => LESSONS.some(L => isFinale(L) && s.done[L.id]) },
+  { id: "robots", title: "Robot Whisperer", desc: "Complete every robot challenge.", icon: "robot", test: s => LESSONS.filter(L => L.challenge.scene === "robot").every(L => s.done[L.id]) },
+  { id: "review", title: "Second Look", desc: "Complete a review exercise.", icon: "bolt", test: s => Object.values(s.done).some(d => d.reviewed) },
+  { id: "halfway", title: "Halfway There", desc: "Complete 9 repairs.", icon: "gear", test: s => Object.keys(s.done).length >= 9 },
+  { id: "perfect", title: "Perfectionist", desc: "Earn 3 stars on every repair in one sector.", icon: "star", test: s => WORLDS.some((_, w) => LESSONS.filter(L => L.world === w).every(L => s.done[L.id] && s.done[L.id].stars === 3)) },
+  { id: "boss", title: "Glitch Slayer", desc: "Defeat the Glitch King.", icon: "skull", test: s => !!s.done.boss },
+  { id: "all", title: "Station Restored", desc: "Repair every machine on the station.", icon: "trophy", test: s => LESSONS.every(L => s.done[L.id]) }
+];
+
 /* ================= Progress store ================= */
-const APP_VERSION = "1.4.0";
+const APP_VERSION = "1.5.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
-const freshStore = () => ({ done: {}, drafts: {}, sess: {}, drills: {}, ach: {}, stats: {}, seenIntro: false });
+// pred: lessons whose "predict the output" was answered correctly
+const freshStore = () => ({ done: {}, drafts: {}, sess: {}, drills: {}, ach: {}, stats: {}, pred: {}, seenIntro: false });
 let store = freshStore();
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(freshStore(), s); } catch (_) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (_) {} }
@@ -1735,7 +1997,7 @@ function hashStr(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h <
 function b64encode(str) { const bytes = new TextEncoder().encode(str); let bin = ""; for (const b of bytes) bin += String.fromCharCode(b); return btoa(bin); }
 function b64decode(b) { const bin = atob(b); return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))); }
 function makeSaveCode(st) {
-  const body = b64encode(JSON.stringify({ v: 1, done: st.done, drills: st.drills, drafts: st.drafts, ach: st.ach, stats: st.stats, seenIntro: st.seenIntro }));
+  const body = b64encode(JSON.stringify({ v: 1, done: st.done, drills: st.drills, drafts: st.drafts, ach: st.ach, stats: st.stats, pred: st.pred, seenIntro: st.seenIntro }));
   return SAVE_PREFIX + "." + body + "." + hashStr(body);
 }
 // Only known lessons, drills, achievements and sane value types survive a load
@@ -1756,8 +2018,9 @@ function sanitizeStore(d) {
     const m = /^([a-z0-9]+):(p|c|d\d|r)$/.exec(k);
     if (m && ids.has(m[1]) && typeof v === "string") out.drafts[k] = v.slice(0, 20000);
   }
-  const achIds = new Set((typeof ACHIEVEMENTS !== "undefined" ? ACHIEVEMENTS : []).map(a => a.id));
+  const achIds = new Set(ACHIEVEMENTS.map(a => a.id));
   for (const [k, v] of Object.entries(d.ach || {})) if (achIds.has(k)) out.ach[k] = count(v) || 1;
+  for (const [k, v] of Object.entries(d.pred || {})) if (ids.has(k) && v === true) out.pred[k] = true;
   for (const [k, v] of Object.entries(d.stats || {})) if (/^[a-zA-Z]{1,24}$/.test(k)) out.stats[k] = count(v);
   out.seenIntro = d.seenIntro === true;
   return out;
@@ -1781,8 +2044,46 @@ function toast(html, opts) {
   host.appendChild(t);
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 400); }, (opts && opts.ms) || 3800);
 }
-const xp = () => Object.values(store.done).reduce((a, d) => a + 100 + 25 * d.stars, 0);
-const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"]];
+// XP per repair: 100 + 25 per star, plus 50 for beating a sector finale
+const repairXP = (L, d) => 100 + 25 * d.stars + (isFinale(L) ? 50 : 0);
+const xp = () => Object.entries(store.done).reduce((a, [id, d]) => a + (LESSON_BY_ID.has(id) ? repairXP(LESSON_BY_ID.get(id), d) : 0), 0);
+const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"], [3000, "Station Chief"]];
+
+/* ---- Concept mastery: New → Practising → Learned → Solid → Mastered ---- */
+const MASTERY = ["New", "Practising", "Learned", "Solid", "Mastered"];
+function masteryOf(L, s) {
+  s = s || store;
+  const d = s.done[L.id];
+  if (!d) return (s.drills[L.id] || []).some(Boolean) ? 1 : 0;
+  if (d.reviewed) return 4;
+  if (d.revealed || d.stars === 1) return 2;
+  return d.stars === 2 ? 3 : 4;
+}
+const meter = lvl => '<span class="meter m' + lvl + '" role="img" aria-label="Mastery: ' + MASTERY[lvl] + '" title="Mastery: ' + MASTERY[lvl] + '">' + [1, 2, 3, 4].map(k => "<i" + (k <= lvl ? ' class="on"' : "") + "></i>").join("") + "</span>";
+
+/* ---- Review queue: concepts that were a struggle ---- */
+function reviewReason(d) {
+  if (!d || d.reviewed) return null;
+  if (d.revealed) return "You used the worked solution";
+  if (d.attempts >= 5) return "It took " + d.attempts + " checks";
+  if (d.hints >= 2) return "You needed " + d.hints + " hints";
+  if (d.stars === 1) return "Repaired with 1 star";
+  return null;
+}
+const reviewQueue = s => LESSONS.filter(L => !isFinale(L) && REVIEWS[L.id] && reviewReason((s || store).done[L.id]));
+
+/* ---- Achievements: unlock, save and announce ---- */
+function checkAchievements(silent) {
+  const fresh = ACHIEVEMENTS.filter(a => !store.ach[a.id] && a.test(store));
+  if (!fresh.length) return fresh;
+  fresh.forEach(a => { store.ach[a.id] = Date.now(); });
+  save();
+  if (!silent) {
+    Sound.sparkle();
+    fresh.forEach((a, i) => setTimeout(() => toast(pxImg(a.icon) + "<div>Achievement unlocked: " + esc(a.title) + "<small>" + esc(a.desc) + "</small></div>", { kind: "ach", ms: 4500 }), i * 600));
+  }
+  return fresh;
+}
 function rankInfo() { const x = xp(); let i = 0; RANKS.forEach((r, k) => { if (x >= r[0]) i = k; }); const next = RANKS[i + 1]; return { x, name: RANKS[i][1], next, pct: next ? (x - RANKS[i][0]) / (next[0] - RANKS[i][0]) : 1 }; }
 // A lesson is open when the one before it is repaired, or when it was repaired already (so new lessons never lock old progress)
 const unlocked = i => i === 0 || !!store.done[LESSONS[i - 1].id] || !!store.done[LESSONS[i].id];
@@ -1801,7 +2102,7 @@ function renderStatus() {
 const app = $("#app");
 let view = { name: "map" };
 function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
-function render() { renderStatus(); if (view.name === "map") renderMap(); else renderLesson(); }
+function render() { renderStatus(); if (view.name === "map") renderMap(); else if (view.name === "review") renderReview(); else renderLesson(); }
 $("#logo-btn").onclick = () => go({ name: "map" });
 
 function renderMap() {
@@ -1813,19 +2114,28 @@ function renderMap() {
     '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across six sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
     (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
     '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
+    '<div class="row"><span>concepts.mastered</span><span>' + LESSONS.filter(l => !isFinale(l) && masteryOf(l) === 4).length + " / " + LESSONS.filter(l => !isFinale(l)).length + '</span></div><div class="row"><span>badges</span><span>' + ACHIEVEMENTS.filter(a => store.ach[a.id]).length + " / " + ACHIEVEMENTS.length + "</span></div>" +
     '<div style="margin-top:auto;color:var(--code-muted)">// stars: 3 = no hints and at most 2 checks</div></div></section>';
   h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Guided drills, then free play"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
+  const rq = reviewQueue();
+  if (rq.length) h += '<section class="panel reviewq" aria-labelledby="rq-h"><div class="drill-head"><div><p class="eyebrow">Review queue</p><h3 id="rq-h">Worth another look</h3></div><span class="pill go">' + rq.length + " to review</span></div>" +
+    '<p class="muted small">These concepts were a struggle the first time. One short, fresh exercise locks each one in and raises it to Mastered.</p><div class="rq-list">' +
+    rq.slice(0, 4).map(L => '<div class="rq-item">' + pxImg(WORLD_ICONS[L.world], "rq-icon") + "<div><b>" + esc(L.title) + "</b><small>" + esc(L.concept) + " · " + reviewReason(store.done[L.id]) + '</small></div><button class="btn small" data-review="' + LESSONS.indexOf(L) + '">Review</button></div>').join("") + "</div></section>";
   WORLDS.forEach((w, wi) => {
     h += '<section class="sector"><div class="sector-info">' + pxImg(WORLD_ICONS[wi], "sec-icon") + '<div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div></div><div class="nodes">';
     LESSONS.forEach((l, i) => {
       if (l.world !== wi) return;
-      const d = store.done[l.id], u = unlocked(i);
+      const d = store.done[l.id], u = unlocked(i), fin = isFinale(l);
       const cls = d ? "done" : u ? "available" : "locked";
-      h += '<button class="node ' + cls + '" data-i="' + i + '"' + (u ? "" : ' disabled aria-disabled="true"') + '><span class="lv">LESSON ' + String(i + 1).padStart(2, "0") + "</span><b>" + esc(l.title) + "</b><small>" + esc(l.concept) + "</small>" +
-        (d ? '<span class="stars">' + pxStars(d.stars) + "</span>" : u ? '<span class="pill go" style="margin-top:auto">Ready</span>' : '<span class="pill" style="margin-top:auto">' + pxImg("lock", "mini") + " Locked</span>") + "</button>";
+      const status = d ? '<span class="stars">' + pxStars(d.stars) + "</span>" : u ? '<span class="pill go">Ready</span>' : '<span class="pill">' + pxImg("lock", "mini") + " Locked</span>";
+      h += '<button class="node ' + cls + (fin ? " finale" : "") + '" data-i="' + i + '"' + (u ? "" : ' disabled aria-disabled="true"') + '><span class="lv">' + (fin ? pxImg("trophy", "mini") + " SECTOR FINALE" : "LESSON " + String(lessonNo(i)).padStart(2, "0")) + "</span><b>" + esc(l.title) + "</b><small>" + esc(l.concept) + "</small>" +
+        '<span class="node-foot">' + status + (fin ? "" : meter(masteryOf(l))) + "</span></button>";
     });
     h += "</div></section>";
   });
+  const got = ACHIEVEMENTS.filter(a => store.ach[a.id]).length;
+  h += '<section class="panel achpanel" aria-labelledby="ach-h"><p class="eyebrow">Achievements</p><h3 id="ach-h">' + got + " of " + ACHIEVEMENTS.length + ' unlocked</h3><div class="achgrid">' +
+    ACHIEVEMENTS.map(a => { const g = !!store.ach[a.id]; return '<div class="ach' + (g ? " got" : "") + '">' + pxImg(g ? a.icon : "lock", "ach-icon") + "<div><b>" + esc(a.title) + '<span class="sr"> (' + (g ? "unlocked" : "locked") + ")</span></b><small>" + esc(a.desc) + "</small></div></div>"; }).join("") + "</div></section>";
   h += '<section class="panel savepanel" aria-labelledby="save-h"><h3 id="save-h">Save data</h3><p class="muted small">Your progress is stored in this browser only. Clearing your browsing data erases it. Copy a save code to keep a backup, or to carry on in another browser or device.</p>' +
     '<div class="toolbar"><button class="btn" id="save-copy">Copy save code</button><button class="btn" id="save-open">Load a save code</button><span class="reset-confirm" id="reset-area"><button class="btn small" id="reset">Reset progress</button></span></div>' +
     '<div id="save-msg" aria-live="polite"></div>' +
@@ -1834,6 +2144,7 @@ function renderMap() {
   try { drawHeroScene($("#hero-px")); } catch (_) {}
   $$(".node", app).forEach(b => b.onclick = () => { const i = +b.dataset.i; if (unlocked(i)) go({ name: "lesson", i, stage: 0 }); });
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
+  $$("[data-review]", app).forEach(b => b.onclick = () => go({ name: "review", i: +b.dataset.review }));
   wireSavePanel();
   $("#reset").onclick = () => {
     $("#reset-area").innerHTML = '<span>Erase all stars, XP and saved code?</span><button class="btn small" id="reset-yes" style="border-color:var(--bad);color:var(--bad)">Erase progress</button><button class="btn small" id="reset-no">Keep it</button>';
@@ -1861,26 +2172,79 @@ function wireSavePanel() {
     if (!res.ok) { $("#save-confirm").innerHTML = '<div class="errbox"><p>' + res.error + "</p></div>"; return; }
     $("#save-confirm").innerHTML = '<div class="okbox"><p>This save has <b>' + summary(res.store) + "</b>. Loading it replaces the progress in this browser (" + summary(store) + ").</p>" +
       '<div class="toolbar"><button class="btn primary" id="save-apply">Replace my progress</button><button class="btn small" id="save-keep">Keep current progress</button></div></div>';
-    $("#save-apply").onclick = () => { store = res.store; save(); render(); toast("Save loaded: " + summary(store)); };
+    $("#save-apply").onclick = () => { store = res.store; checkAchievements(true); save(); render(); toast("Save loaded: " + summary(store)); };
     $("#save-keep").onclick = () => { $("#save-confirm").innerHTML = ""; };
   };
 }
 
 const STAGES = ["Learn", "Visualise", "Practise", "Challenge", "Review"];
+function lessonHead(L, i, prefix) {
+  const fin = isFinale(L), w = WORLDS[L.world];
+  return '<div class="lesson-head"><button class="btn small" id="back">← Map</button>' + pxImg(fin ? "trophy" : WORLD_ICONS[L.world], "head-icon") +
+    '<div class="lh-text"><p class="eyebrow">' + (prefix ? prefix + " · " : "") + "Sector " + (L.world + 1) + " · " + w.name + " · " + (fin ? "Finale" : "Lesson " + lessonNo(i)) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div>" +
+    (fin ? "" : '<div class="lh-mastery"><span class="label">Mastery</span>' + meter(masteryOf(L)) + "<small>" + MASTERY[masteryOf(L)] + "</small></div>") + "</div>";
+}
 function renderLesson() {
-  const L = LESSONS[view.i], d = store.done[L.id];
-  const w = WORLDS[L.world];
-  let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button>' + pxImg(WORLD_ICONS[L.world], "head-icon") + '<div><p class="eyebrow">Sector ' + (L.world + 1) + " · " + w.name + " · Lesson " + (view.i + 1) + "</p><h2>" + esc(L.title) + '</h2><p class="concept">' + esc(L.concept) + "</p></div></div>";
-  h += '<nav class="stages" aria-label="Lesson stages">' + STAGES.map((s, k) => {
+  const L = LESSONS[view.i], d = store.done[L.id], fin = isFinale(L);
+  // Finales skip Visualise and Practise: Briefing → Challenge → Review
+  const order = fin ? [0, 3, 4] : [0, 1, 2, 3, 4];
+  if (order.indexOf(view.stage) < 0) view.stage = 0;
+  let h = lessonHead(L, view.i);
+  h += '<nav class="stages' + (fin ? " three" : "") + '" aria-label="Lesson stages">' + order.map((k, pos) => {
     const dis = (k === 4 && !d) || (k === 3 && !drillsDone(L));
     const ok = (k === 3 && d) || (k === 2 && (L.drills || []).length && drillsDone(L));
-    return '<button class="stage-tab ' + (k === view.stage ? "active " : "") + (ok ? "ok" : "") + '"' + (dis && k === 3 ? ' title="Pass the drills in Practise to unlock"' : "") + ' data-k="' + k + '"' + (dis ? " disabled" : "") + (k === view.stage ? ' aria-current="step"' : "") + "><span>0" + (k + 1) + "</span><b>" + s + "</b></button>";
+    const label = fin && k === 0 ? "Briefing" : STAGES[k];
+    return '<button class="stage-tab ' + (k === view.stage ? "active " : "") + (ok ? "ok" : "") + '"' + (dis && k === 3 ? ' title="Pass the drills in Practise to unlock"' : "") + ' data-k="' + k + '"' + (dis ? " disabled" : "") + (k === view.stage ? ' aria-current="step"' : "") + "><span>0" + (pos + 1) + "</span><b>" + label + "</b></button>";
   }).join("") + "</nav><div id=\"stage\"></div>";
   app.innerHTML = h;
   $("#back").onclick = () => go({ name: "map" });
   $$(".stage-tab", app).forEach(b => b.onclick = () => { view.stage = +b.dataset.k; view.page = 0; render(); });
   const host = $("#stage");
-  [stageLearn, stageVisual, stagePractise, stageChallenge, stageReview][view.stage](host, L, view.i);
+  [fin ? stageBriefing : stageLearn, stageVisual, stagePractise, stageChallenge, stageReview][view.stage](host, L, view.i);
+}
+const stageTab = k => $('.stage-tab[data-k="' + k + '"]', app);
+
+/* ---- Finale briefing ---- */
+function stageBriefing(host, L) {
+  const parts = L.combines.map(id => LESSON_BY_ID.get(id)).filter(Boolean);
+  host.innerHTML = '<div class="reader">' +
+    '<div class="brief dialog">' + pxImg("pilot", "portrait") + '<div><p class="eyebrow">Mission log</p><p>' + L.story + "</p></div></div>" +
+    '<div class="panel"><h3>This finale combines</h3><div class="rq-list">' + parts.map(P => '<div class="rq-item">' + pxImg(WORLD_ICONS[P.world], "rq-icon") + "<div><b>" + esc(P.title) + "</b><small>" + esc(P.concept) + '</small></div><span class="rq-meter">' + meter(masteryOf(P)) + '</span><button class="btn small" data-open="' + LESSONS.indexOf(P) + '">Revisit</button></div>').join("") + "</div></div>" +
+    '<div class="panel"><h3>Finale rules</h3><ul class="mistakes"><li>No drills this time: you\'ll use everything from this sector at once.</li><li>' + L.challenge.hints.length + " hint" + (L.challenge.hints.length === 1 ? "" : "s") + " available, and the worked solution unlocks after 3 failed checks, as usual.</li><li>Beat it to open the next sector and earn a 50 XP finale bonus.</li></ul></div>" +
+    nextBtn("Start the finale", 3) + "</div>";
+  $$("[data-open]", host).forEach(b => b.onclick = () => go({ name: "lesson", i: +b.dataset.open, stage: 0 }));
+  wireGoto(host);
+}
+
+/* ---- Review screen: a fresh exercise for a concept that was a struggle ---- */
+function renderReview() {
+  const L = LESSONS[view.i], R = REVIEWS[L.id], d = store.done[L.id];
+  if (!R || !d) { go({ name: "map" }); return; }
+  app.innerHTML = lessonHead(L, view.i, "Review") +
+    '<div class="cols"><div class="stack"><div class="panel"><h3>Remember</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div>" +
+    '<div class="panel"><h3>The key example</h3>' + codeBlock(L.example.code) + '<p class="muted small" style="margin-top:10px">Need more? <button class="btn small" id="relearn">Reopen the lesson</button></p></div>' +
+    (reviewReason(d) ? '<div class="brief"><p class="eyebrow">Why this is in your queue</p><p>' + reviewReason(d) + ". That's normal for a new idea. Doing it once more, from scratch, is how it sticks.</p></div>" : "") +
+    '</div><div class="stack" id="rev-ex"></div></div><div class="next-row" id="rev-next"></div>';
+  $("#back").onclick = () => go({ name: "map" });
+  $("#relearn").onclick = () => go({ name: "lesson", i: view.i, stage: 0 });
+  const nextRow = () => {
+    const rest = reviewQueue().filter(x => x !== L);
+    $("#rev-next").innerHTML = '<button class="btn" id="rv-map">Station map</button>' + (rest.length ? '<button class="btn primary" id="rv-next">Next review: ' + esc(rest[0].title) + " →</button>" : "");
+    $("#rv-map").onclick = () => go({ name: "map" });
+    const n = $("#rv-next"); if (n) n.onclick = () => go({ name: "review", i: LESSONS.indexOf(rest[0]) });
+  };
+  mountExercise($("#rev-ex"), R, {
+    key: L.id + ":r", eyebrow: "Review exercise", checkLabel: "Check answer",
+    isDone: () => !!(store.done[L.id] && store.done[L.id].reviewed),
+    markDone: () => { store.done[L.id].reviewed = true; },
+    okText: () => "Concept reviewed. Mastery raised to <b>Mastered</b>.",
+    onPass: first => {
+      if (first) { toast(pxImg(WORLD_ICONS[L.world]) + "<div>" + esc(L.title) + " mastered<small>Review complete</small></div>"); checkAchievements(); }
+      const lm = $(".lh-mastery"); if (lm) lm.innerHTML = '<span class="label">Mastery</span>' + meter(masteryOf(L)) + "<small>" + MASTERY[masteryOf(L)] + "</small>";
+      renderStatus(); nextRow();
+    }
+  });
+  nextRow();
 }
 const nextBtn = (label, stage) => '<div class="next-row"><button class="btn primary" data-goto="' + stage + '">' + label + " →</button></div>";
 function wireGoto(host) { $$("[data-goto]", host).forEach(b => b.onclick = () => { view.stage = +b.dataset.goto; view.page = 0; render(); window.scrollTo({ top: 0 }); }); }
@@ -2079,18 +2443,20 @@ function failMessage(ev, spec) {
 const drillDone = (L, k) => !!(store.drills[L.id] && store.drills[L.id][k]);
 // A lesson's challenge unlocks once every drill passes. Lessons repaired before drills existed stay unlocked.
 const drillsDone = L => !!store.done[L.id] || (L.drills || []).every((_, k) => drillDone(L, k));
-function mountDrill(host, L, k, onPass) {
-  const D = L.drills[k], key = L.id + ":d" + k, n = L.drills.length;
+// A small graded exercise: task, editor, free hints, checks. Used for drills and review exercises.
+// o: { key (draft key "id:x"), eyebrow, checkLabel, isDone(), markDone(), okText(), onPass(first) }
+function mountExercise(host, D, o) {
+  const key = o.key;
   let hintsShown = 0;
-  host.innerHTML = '<div class="panel drill"><div class="drill-head"><div><p class="eyebrow">Drill ' + (k + 1) + " of " + n + "</p><h3>" + esc(D.title) + '</h3></div><span class="pill" data-st></span></div>' +
+  host.innerHTML = '<div class="panel drill"><div class="drill-head"><div><p class="eyebrow">' + o.eyebrow + "</p><h3>" + esc(D.title) + '</h3></div><span class="pill" data-st></span></div>' +
     '<p class="drill-task">' + D.task + "</p>" +
     (D.cases[0].map ? '<div class="scene" style="margin-bottom:14px"><div class="scene-head"><span>B0-T practice floor</span></div><div data-grid></div></div>' : "") +
-    '<div data-ed></div><div class="toolbar"><button class="btn primary" data-a="check">Check drill</button><button class="btn small" data-a="hint">Show a hint</button><button class="btn small" data-a="reset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
+    '<div data-ed></div><div class="toolbar"><button class="btn primary" data-a="check">' + (o.checkLabel || "Check") + '</button><button class="btn small" data-a="hint">Show a hint</button><button class="btn small" data-a="reset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
     '<div class="hints" data-hints style="margin-top:12px"></div><div data-feed aria-live="polite" style="margin-top:12px"></div><div data-out style="margin-top:12px"></div></div>';
   const q = s => $("[" + s + "]", host);
   let grid = D.cases[0].map ? mountGrid(q("data-grid"), D.cases[0].map, D.cases[0].dir) : null;
-  const ed = createEditor(q("data-ed"), { value: store.drafts[key] ?? D.starter, id: "ed-" + L.id + "-d" + k, minLines: 4, onRun: () => check(), onChange: v => { store.drafts[key] = v; save(); } });
-  function status() { const ok = drillDone(L, k); const p = q("data-st"); p.className = "pill " + (ok ? "ok" : "go"); p.textContent = ok ? "Passed" : "To do"; }
+  const ed = createEditor(q("data-ed"), { value: store.drafts[key] ?? D.starter, id: "ed-" + key.replace(":", "-"), minLines: 4, onRun: () => check(), onChange: v => { store.drafts[key] = v; save(); } });
+  function status() { const ok = o.isDone(); const p = q("data-st"); p.className = "pill " + (ok ? "ok" : "go"); p.textContent = ok ? "Passed" : "To do"; }
   function drawHints() {
     q("data-hints").innerHTML = D.hints.slice(0, hintsShown).map((t, i) => '<div class="hint"><b>Hint ' + (i + 1) + ".</b> " + t + "</div>").join("");
     const b = $('[data-a="hint"]', host);
@@ -2113,10 +2479,10 @@ function mountDrill(host, L, k, onPass) {
     if (D.cases.length > 1) q("data-out").insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:4px">Output from test: <code>' + esc(D.cases[ev.showIdx].label) + "</code></p>");
     if (grid) { grid = mountGrid(q("data-grid"), D.cases[ev.showIdx].map, D.cases[ev.showIdx].dir); if (ev.runs[ev.showIdx].robot) grid.play(ev.runs[ev.showIdx].robot.trace); }
     if (ev.allOk) {
-      const first = !drillDone(L, k);
-      (store.drills[L.id] = store.drills[L.id] || [])[k] = true; save();
-      q("data-feed").innerHTML = '<div class="okbox"><h4>Drill passed</h4><p>' + (D.cases.length > 1 ? "All " + D.cases.length + " tests pass. " : "") + (k < n - 1 ? "On to the next drill." : "Every drill is done, so the challenge is unlocked.") + "</p></div>";
-      status(); if (first) Sound.coin(); onPass();
+      const first = !o.isDone();
+      o.markDone(); save();
+      q("data-feed").innerHTML = '<div class="okbox"><h4>Passed</h4><p>' + (D.cases.length > 1 ? "All " + D.cases.length + " tests pass. " : "") + o.okText() + "</p></div>";
+      status(); if (first) Sound.coin(); o.onPass(first);
     } else {
       q("data-feed").innerHTML = '<div class="errbox"><p>' + failMessage(ev, D) + "</p>" + (hintsShown < D.hints.length ? '<p class="small">Stuck? Press "Show a hint".</p>' : "") + "</div>";
     }
@@ -2125,6 +2491,16 @@ function mountDrill(host, L, k, onPass) {
   $('[data-a="hint"]', host).onclick = () => { hintsShown++; drawHints(); };
   $('[data-a="reset"]', host).onclick = () => { ed.set(D.starter); q("data-feed").innerHTML = ""; q("data-out").innerHTML = ""; grid && grid.reset(); };
   status(); drawHints();
+}
+function mountDrill(host, L, k, onPass) {
+  const n = L.drills.length;
+  mountExercise(host, L.drills[k], {
+    key: L.id + ":d" + k, eyebrow: "Drill " + (k + 1) + " of " + n, checkLabel: "Check drill",
+    isDone: () => drillDone(L, k),
+    markDone: () => { (store.drills[L.id] = store.drills[L.id] || [])[k] = true; },
+    okText: () => k < n - 1 ? "On to the next drill." : "Every drill is done, so the challenge is unlocked.",
+    onPass: first => { onPass(); if (first) checkAchievements(); }
+  });
 }
 
 /* ---- Stage 3: Practise ---- */
@@ -2141,9 +2517,9 @@ function stagePractise(host, L) {
   function gate() {
     const open = drillsDone(L);
     $("#gate", host).innerHTML = open ? '<button class="btn primary" data-goto="3">Take on the challenge →</button>' : '<span class="muted small" style="align-self:center">Pass every drill to unlock the challenge.</span><button class="btn primary" disabled>Take on the challenge →</button>';
-    const tabs = $$(".stage-tab", app);
-    if (tabs[3]) tabs[3].disabled = !open;
-    if (tabs[2]) tabs[2].classList.toggle("ok", nd > 0 && open);
+    const t3 = stageTab(3), t2 = stageTab(2);
+    if (t3) t3.disabled = !open;
+    if (t2) t2.classList.toggle("ok", nd > 0 && open);
     wireGoto(host);
   }
   if (nd) {
@@ -2163,6 +2539,7 @@ function stagePractise(host, L) {
   $("#pcheck", host).onclick = () => {
     const norm = s => s.split("\n").map(x => x.trim()).filter(Boolean).join("\n");
     const ok = norm($("#pred", host).value) === norm(L.predict.answer);
+    if (ok && !store.pred[L.id]) { store.pred[L.id] = true; save(); checkAchievements(); }
     $("#pres", host).innerHTML = '<div class="' + (ok ? "okbox" : "errbox") + '"><b>' + (ok ? "Correct." : "Not quite. The output is:") + "</b>" + (ok ? "" : '<pre class="console">' + esc(L.predict.answer) + "</pre>") + "<p>" + esc(L.predict.explain) + "</p></div>";
   };
   gate();
@@ -2241,12 +2618,14 @@ function stageChallenge(host, L, idx) {
       // Keep the stats of the best run, so a weaker replay never hides earlier success (or struggle)
       const run = { stars, code, hints: S.hints, attempts: S.attempts, revealed: S.revealed, at: Date.now() };
       store.done[L.id] = !prev || stars >= prev.stars ? Object.assign({}, prev, run, { stars: best }) : Object.assign({}, prev, { stars: best });
+      if (S.fails >= 3) store.stats.comebacks = (store.stats.comebacks || 0) + 1;
       store.sess[L.id] = { attempts: 0, hints: 0, revealed: false, fails: 0 };
       Object.assign(S, store.sess[L.id]);
       save(); renderStatus(); celebrate();
+      setTimeout(() => checkAchievements(), 900);
       $("#cfeed", host).innerHTML = '<div class="okbox"><h4>Machine repaired</h4>' + pxStars(stars, true) + "<p>" + (stars === 3 ? "Clean repair: no hints and hardly any retries." : stars === 2 ? "Solid work. Solve it with no hints and at most 2 checks for 3 stars." : "Repaired. Replay later without hints to earn more stars.") + (prev && prev.stars > stars ? " Your best of " + prev.stars + " stars is kept." : "") + '</p><div class="toolbar"><button class="btn primary" id="toreview">See why it works →</button></div></div>';
       $("#toreview", host).onclick = () => { view.stage = 4; render(); window.scrollTo({ top: 0 }); };
-      $$('.stage-tab', app)[4].disabled = false; $$('.stage-tab', app)[3].classList.add("ok");
+      stageTab(4).disabled = false; stageTab(3).classList.add("ok");
     } else {
       S.fails++; save();
       $("#cfeed", host).innerHTML = '<div class="errbox"><p>' + failMessage(ev, C) + "</p>" + (S.fails >= 3 && !S.revealed ? '<p class="small">Stuck? You can reveal a worked solution in the hints panel.</p>' : "") + "</div>";
@@ -2266,7 +2645,9 @@ function stageReview(host, L, idx) {
   if (!d) { host.innerHTML = '<div class="panel"><p>Repair the machine in the Challenge stage to unlock the review.</p>' + nextBtn("Go to the challenge", 3) + "</div>"; wireGoto(host); return; }
   const next = LESSONS[idx + 1];
   const solLines = C.solution.split("\n");
-  host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4>' + pxStars(d.stars, true) + '<p>+' + (100 + 25 * d.stars) + ' XP toward your rank.</p></div>' +
+  const canReview = !isFinale(L) && REVIEWS[L.id];
+  host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4>' + pxStars(d.stars, true) + '<p>+' + repairXP(L, d) + " XP toward your rank" + (isFinale(L) ? ", including the 50 XP finale bonus" : "") + ".</p>" +
+    (canReview ? '<p class="small">Mastery: <b>' + MASTERY[masteryOf(L)] + "</b>" + (masteryOf(L) < 4 ? ". A short review exercise raises it to Mastered." : ".") + '</p><div class="toolbar" style="margin-top:4px"><button class="btn small" id="toreviewex">' + (d.reviewed ? "Practise it again" : "Take the review exercise") + "</button></div>" : "") + "</div>" +
     '<div class="panel"><h3>Your solution</h3>' + codeBlock(d.code) + '<p class="muted small" style="margin-top:8px">Your version doesn\'t have to match the model below. If every test passed, it works. Compare the two to see other ways of writing the same idea.</p></div>' +
     '<div class="panel"><h3>What you learned</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div></div>" +
     '<div class="stack"><div class="panel"><h3>Why the model solution works</h3><div class="scroll-x"><table class="explain"><tbody>' + solLines.map((ln, i) => "<tr><td>" + (hl(ln) || " ") + "</td><td>" + esc(C.why[i] || "") + "</td></tr>").join("") + "</tbody></table></div></div>" +
@@ -2274,10 +2655,16 @@ function stageReview(host, L, idx) {
     '<div class="next-row"><button class="btn" id="tomap">Station map</button>' + (next ? '<button class="btn primary" id="tonext">Next: ' + esc(next.title) + " →</button>" : '<span class="pill ok" style="align-self:center">Station fully repaired</span>') + "</div>";
   $("#tomap", host).onclick = () => go({ name: "map" });
   const tn = $("#tonext", host); if (tn) tn.onclick = () => go({ name: "lesson", i: idx + 1, stage: 0 });
+  const rv = $("#toreviewex", host); if (rv) rv.onclick = () => go({ name: "review", i: idx });
 }
 
 $("#ver").textContent = "Version " + APP_VERSION;
-render();
+// Award anything already earned by progress made before achievements existed (before the first render, so the map shows them)
+(function () {
+  const earned = checkAchievements(true);
+  render();
+  if (earned.length) setTimeout(() => toast(pxImg("trophy") + "<div>" + earned.length + " achievement" + (earned.length === 1 ? "" : "s") + " unlocked<small>Earned by your progress so far. See them on the station map.</small></div>", { kind: "ach", ms: 5000 }), 600);
+})();
 </script>
 
 </html>
