@@ -286,6 +286,11 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Trace my code */
+.trace-head { margin-bottom: 12px; }
+.trace-head h4 { font-size: 1.05rem; margin-bottom: 2px; }
+.st-grid { padding: 8px; }
+.st-grid .grid { width: min(100%, calc(var(--cols) * 30px)); }
 /* Step-through player controls */
 .st-ctrl .st-count { margin-inline: 0 0; margin-left: auto; }
 .st-speed { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted); }
@@ -837,7 +842,39 @@ function workerMain() {
       atGoal() { return cell(x, y) === "G"; },
       wallAhead() { return cell(x + DX[dir], y + DY[dir]) === "#"; }
     });
-    return { api, state: () => ({ x, y, dir, atGoal: cell(x, y) === "G", trace, moves: trace.filter(t => t.ev === "move").length }) };
+    return { api, traceLen: () => trace.length, state: () => ({ x, y, dir, atGoal: cell(x, y) === "G", trace, moves: trace.filter(t => t.ev === "move").length }) };
+  }
+  // ---- Trace mode: put a step marker in front of each statement (on the same line, so line numbers stay true) ----
+  const RESERVED = new Set("break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null return super switch this throw true try typeof var void while with yield undefined console robot of".split(" "));
+  function traceNames(pre, code) {
+    const found = new Map(); // name → first position, so variables are listed in the order they appear
+    const add = (n, at) => { if (/^[A-Za-z_$][\w$]*$/.test(n) && !/^__/.test(n) && !RESERVED.has(n) && (!found.has(n) || found.get(n) > at)) found.set(n, at); };
+    const src = (pre + "\n" + code).replace(/\/\/[^\n]*/g, "").replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, '""');
+    let m;
+    const decl = /\b(?:let|const|var)\s+([A-Za-z_$][\w$]*)/g; while ((m = decl.exec(src))) add(m[1], m.index);
+    const params = /function\s*[A-Za-z_$]*\s*\(([^)]*)\)/g; while ((m = params.exec(src))) m[1].split(",").forEach(p => add(p.trim(), m.index));
+    // Anything assigned to (over-collecting is harmless: names that aren't in scope are skipped when read)
+    const assign = /(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+=|-=|\*=|\/=|\+\+|--)/g; while ((m = assign.exec(src))) add(m[1], m.index);
+    return [...found.entries()].sort((a, b) => a[1] - b[1]).map(e => e[0]);
+  }
+  function instrument(pre, code, names) {
+    const lines = code.split("\n");
+    const getters = "[" + names.map(n => "() => " + n).join(", ") + "]";
+    const marked = lines.slice();
+    let prevCode = "";
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim();
+      const bare = t.replace(/\/\/[^"'`]*$/, "").trim();
+      if (!bare) continue;
+      const startsOk = !/^[}\])\.?:,+\-*\/&|=<>]/.test(bare) && !/^(else|catch|finally)\b/.test(bare);
+      const afterOk = !prevCode || /[;{}]\s*$/.test(prevCode);
+      if (startsOk && afterOk) {
+        const trial = marked.slice(); trial[i] = "__step(" + i + ", " + getters + "); " + lines[i];
+        if (!parseError(pre, trial.join("\n"))) marked[i] = trial[i];
+      }
+      prevCode = bare;
+    }
+    return { code: marked.join("\n"), getters };
   }
   // Parse (never run) as a plain script: the leading throw stops execution if parsing succeeds.
   // new Function wraps code in braces, which turns an unclosed { into a misleading error.
@@ -854,17 +891,38 @@ function workerMain() {
     return lines.length;
   }
   self.onmessage = function (e) {
-    const { code, pre = "", post = "", map, dir } = e.data;
+    const { code, pre = "", post = "", map, dir, trace } = e.data;
     const logs = [], report = {};
     let error = null, robot = null, fn = null;
     const log = (...a) => { if (logs.length >= 300) throw new Error("More than 300 lines were printed. A loop is probably running too many times."); logs.push(a.map(x => fmt(x, false, 0)).join(" ")); };
     const con = Object.freeze({ log, info: log, warn: log, error: log });
     if (map) robot = makeRobot(map, dir === undefined ? 1 : dir, 400);
     const call = (f, ...args) => { try { return { v: f(...args) }; } catch (err) { return { err: String(err && err.message || err) }; } };
-    try { fn = new Function("console", "robot", "__report", "__call", '"use strict"; ' + pre + "\n" + code + "\n;" + post); }
+    // Trace mode records a snapshot of every variable in scope each time a statement is about to run
+    let body = code, tail = "", names = [], steps = null;
+    if (trace && !parseError(pre, code)) {
+      names = traceNames(pre, code);
+      const ins = instrument(pre, code, names);
+      body = ins.code; tail = "\n;__step(-1, " + ins.getters + ");"; steps = [];
+    }
+    const step = (line, getters) => {
+      if (!steps) return;
+      if (steps.length >= 1000) { const err = new Error("Tracing stopped after 1000 steps. If a loop never ends, step back through the trace to see why."); err.name = "TraceLimit"; throw err; }
+      const vars = {};
+      getters.forEach((g, i) => {
+        try {
+          const v = g(), n = names[i];
+          if (typeof v === "function") return;
+          if (n in self && v === self[n]) return; // a worker global (like "name"), not the learner's variable
+          vars[n] = fmt(v, true, 0);
+        } catch (_) { /* not in scope here */ }
+      });
+      steps.push({ line, vars, logN: logs.length, rt: robot ? robot.traceLen() : 0 });
+    };
+    try { fn = new Function("console", "robot", "__report", "__call", "__step", '"use strict"; ' + pre + "\n" + body + "\n;" + post + tail); }
     catch (err) { const pe = parseError(pre, code); error = { name: err.name, message: pe ? pe.message : err.message, line: findSyntaxLine(pre, code), syntax: true }; }
     if (fn) {
-      try { fn(con, robot ? robot.api : undefined, report, call); }
+      try { fn(con, robot ? robot.api : undefined, report, call, step); }
       catch (err) {
         const st = err && err.stack ? String(err.stack) : "";
         const m = st.match(/(?:<anonymous>|Function):(\d+):\d+/);
@@ -875,18 +933,18 @@ function workerMain() {
     }
     let rep = {};
     try { rep = JSON.parse(JSON.stringify(report, (k, v) => v === undefined ? "__undefined__" : typeof v === "function" ? "__function__" : (typeof v === "number" && !isFinite(v)) ? "__" + String(v) + "__" : v)); } catch (_) { rep = {}; }
-    self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null });
+    self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null, steps });
   };
 }
 const WORKER_URL = URL.createObjectURL(new Blob(["(" + workerMain.toString() + ")()"], { type: "text/javascript" }));
-function runOnce({ code, pre = "", post = "", map = null, dir }) {
+function runOnce({ code, pre = "", post = "", map = null, dir, trace = false }) {
   return new Promise(res => {
     let w;
     try { w = new Worker(WORKER_URL); } catch (e) { res({ logs: [], report: {}, error: { name: "Error", message: "The code runner could not start in this browser: " + e.message } }); return; }
     const t = setTimeout(() => { w.terminate(); res({ logs: [], report: {}, robot: null, error: { name: "Timeout", message: "Your code ran for more than 2 seconds and was stopped." } }); }, 2000);
     w.onmessage = e => { clearTimeout(t); w.terminate(); const d = e.data; d.report = restore(d.report); res(d); };
     w.onerror = e => { e.preventDefault(); clearTimeout(t); w.terminate(); res({ logs: [], report: {}, error: { name: "Error", message: e.message || "Unknown error" } }); };
-    w.postMessage({ code, pre, post, map, dir });
+    w.postMessage({ code, pre, post, map, dir, trace });
   });
 }
 
@@ -990,6 +1048,13 @@ function mountGrid(host, map, dir = 1) {
   let sx = 0, sy = 0;
   map.forEach((r, y) => [...r].forEach((ch, x) => { if (ch === "R") { sx = x; sy = y; } }));
   function reset() { token++; angle = dir * 90; bot.classList.remove("crash"); place({ x: sx, y: sy }, true); }
+  // Show the robot exactly as it was at one point of a recorded trace (used by "Trace my code")
+  function jump(trace, idx) {
+    token++;
+    const t = trace[Math.max(0, Math.min(idx, trace.length - 1))];
+    if (!t) return reset();
+    angle = t.dir * 90; bot.classList.toggle("crash", t.ev === "crash"); place(t, true);
+  }
   reset();
   async function play(trace) {
     const my = ++token;
@@ -1005,7 +1070,7 @@ function mountGrid(host, map, dir = 1) {
       place(t);
     }
   }
-  return { play, reset };
+  return { play, reset, jump };
 }
 
 /* ================= Test helpers ================= */
@@ -2047,7 +2112,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -2363,12 +2428,14 @@ function mountStepper(host, tr, opts) {
       out = out.concat(o.map(x => [x, i]));
       states.push({ vars, out, newOut: o });
     }); }
-  host.innerHTML = '<div class="stepper" tabindex="-1"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side"><div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
+  host.innerHTML = '<div class="stepper" tabindex="-1"><div class="st-code" aria-label="Code being stepped through"></div><div class="st-side">' + (opts.robot ? '<div class="scene st-grid"></div>' : "") + '<div class="st-note" aria-live="polite"></div><div><span class="label">Variables</span><div class="vt"></div></div><div><span class="label">Console</span><pre class="console"></pre></div></div>' +
     '<div class="st-ctrl"><button class="btn small" data-a="reset">Restart</button><button class="btn small" data-a="prev" aria-label="Step back">←</button><button class="btn small signal" data-a="play">▶ Play</button><button class="btn primary small" data-a="next">Step →</button>' +
     '<label class="st-speed">Speed <select data-a="speed" aria-label="Playback speed"><option value="1400">Slow</option><option value="800" selected>Normal</option><option value="350">Fast</option></select></label><span class="st-count tnum"></span></div></div>';
   const speedSel = $('[data-a="speed"]', host), playBtn = $('[data-a="play"]', host);
+  const g = opts.robot ? mountGrid($(".st-grid", host), opts.robot.map, opts.robot.dir) : null;
   function draw() {
     const s = tr.steps[k], st = states[k], prev = k ? states[k - 1].vars : {};
+    if (g) g.jump(opts.robot.trace, (s.rt || 1) - 1);
     const changed = Object.keys(st.vars).filter(n => prev[n] !== st.vars[n]);
     const code = $(".st-code", host);
     code.innerHTML = lines.map((ln, i) => '<div class="ln' + (i === s.l ? " cur" : "") + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(ln) || " ") + "</span></div>").join("");
@@ -2417,6 +2484,42 @@ function mountStepper(host, tr, opts) {
   draw(); updatePlay();
   if (opts.autoplay) play();
   return { stop };
+}
+
+/* ---- Trace my code: turn the worker's step markers into step-through frames ---- */
+// The worker records a marker just before each statement runs. Frame k shows statement k highlighted
+// together with its effect: the variables at the next marker and anything printed in between.
+function traceFrames(res) {
+  const st = res.steps || [], frames = [];
+  // Values the challenge provides (e.g. cellA) exist before line 1 runs: show them as a starting frame
+  const given = st.length ? Object.keys(st[0].vars) : [];
+  if (given.length) frames.push({ l: -1, vars: st[0].vars, o: [], rt: st[0].rt, n: "Before your code runs, these are already set for this test: " + given.map(n => n + " = " + st[0].vars[n]).join(", ") + "." });
+  for (let k = 0; k < st.length; k++) {
+    const s = st[k];
+    if (s.line < 0) continue;
+    const nx = st[k + 1];
+    frames.push({ l: s.line, vars: nx ? nx.vars : s.vars, o: res.logs.slice(s.logN, nx ? nx.logN : res.logs.length), rt: nx ? nx.rt : (res.robot ? res.robot.trace.length : 0) });
+  }
+  if (res.error && frames.length) {
+    const last = frames[frames.length - 1];
+    last.n = (res.error.name === "TraceLimit" ? "" : "This line stopped the program: ") + res.error.name + ": " + res.error.message;
+    if (res.robot) last.rt = res.robot.trace.length;
+  }
+  return frames;
+}
+async function showTrace(host, code, run) {
+  host.innerHTML = '<p class="muted small">Tracing…</p>';
+  const res = await runOnce(Object.assign({}, run, { code, trace: true }));
+  if (!res.steps) {
+    host.innerHTML = '<div class="errbox"><p><b>Fix the error first.</b> Tracing needs code that JavaScript can read. ' + (res.error ? esc(res.error.name + ": " + res.error.message) + (res.error.line ? " (line " + res.error.line + ")" : "") : "") + "</p></div>";
+    return res;
+  }
+  const frames = traceFrames(res);
+  if (!frames.length) { host.innerHTML = '<p class="muted small">Nothing to trace yet. Write some code first.</p>'; return res; }
+  host.innerHTML = '<div class="trace-head"><h4>Your code, step by step</h4><p class="muted small">' + frames.length + " step" + (frames.length === 1 ? "" : "s") +
+    (res.error && res.error.name === "TraceLimit" ? ". Stopped after 1000 steps: a loop may never end. Step back to see which values stop changing." : res.error ? ". The last step shows where the error happened." : ". Each step shows one line running and what it changed.") + '</p></div><div class="trace-player"></div>';
+  mountStepper($(".trace-player", host), { code, steps: frames }, { robot: res.robot && run.map ? { map: run.map, dir: run.dir === undefined ? 1 : run.dir, trace: res.robot.trace } : null });
+  return res;
 }
 
 /* ---- Widgets ---- */
@@ -2621,11 +2724,12 @@ function mountDrill(host, L, k, onPass) {
 /* ---- Stage 3: Practise ---- */
 function stagePractise(host, L) {
   const P = L.practise, key = L.id + ":p";
-  const sandbox = '<div class="panel"><h3>Free sandbox</h3><p class="muted small" style="margin-bottom:14px">Nothing here is graded. Change the code, break it on purpose, and see what happens.</p><div id="ped"></div><div class="toolbar"><button class="btn primary" id="prun">Run ▶</button><button class="btn" id="preset">Reset code</button><span class="hint-k">Ctrl + Enter runs</span></div><div id="pout" style="margin-top:16px"></div></div>';
+  const sandbox = '<div class="panel"><h3>Free sandbox</h3><p class="muted small" style="margin-bottom:14px">Nothing here is graded. Change the code, break it on purpose, and see what happens.</p><div id="ped"></div><div class="toolbar"><button class="btn primary" id="prun">Run ▶</button><button class="btn signal" id="ptrace">Trace my code</button><button class="btn" id="preset">Reset code</button><span class="hint-k">Ctrl + Enter runs</span></div><div id="pout" style="margin-top:16px"></div></div>';
+  const tracePanel = '<div class="panel" id="ptrace-panel" hidden><div id="ptrace-out"></div></div>';
   const nd = (L.drills || []).length;
   host.innerHTML = '<div class="stack-lg">' +
     (nd ? '<div class="prose"><h3>Guided practice</h3><p>Complete ' + (nd === 1 ? "this drill" : "these " + nd + " short drills") + ' to unlock the challenge. Each one practises exactly what you just learned. Hints are free here.</p></div><div class="stack" id="drills"></div>' : "") +
-    (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' : sandbox) +
+    (P.map ? '<div class="cols">' + sandbox + '<div class="scene"><div class="scene-head"><span>B0-T test floor</span></div><div id="pgrid"></div></div></div>' : sandbox) + tracePanel +
     '<div class="cols"><div class="panel"><h3>Experiments to try</h3><ul class="ideas">' + P.ideas.map(i => "<li>" + i + "</li>").join("") + "</ul></div>" +
     '<div class="panel predict"><h3>Predict the output</h3><p class="muted small" style="margin-bottom:10px">Before running anything, write what you think this prints, one value per line.</p>' + codeBlock(L.predict.code) + '<label class="label" for="pred" style="margin-top:14px">Your prediction</label><textarea id="pred" spellcheck="false"></textarea><div class="toolbar"><button class="btn signal" id="pcheck">Check prediction</button></div><div id="pres" style="margin-top:12px"></div></div></div></div>' +
     '<div class="next-row" id="gate"></div>';
@@ -2650,7 +2754,13 @@ function stagePractise(host, L) {
     if (grid && r.robot) { grid.play(r.robot.trace); if (r.robot.atGoal) $("#pout", host).insertAdjacentHTML("beforeend", '<p class="small" style="color:var(--ok);margin-top:6px">B0-T reached the exit.</p>'); }
   }
   $("#prun", host).onclick = run;
-  $("#preset", host).onclick = () => { ed.set(P.starter); grid && grid.reset(); $("#pout", host).innerHTML = ""; };
+  $("#ptrace", host).onclick = async () => {
+    $("#ptrace-panel", host).hidden = false;
+    const res = await showTrace($("#ptrace-out", host), ed.get(), { map: P.map || null, dir: 1 });
+    renderResult($("#pout", host), res, ed);
+    $("#ptrace-panel", host).scrollIntoView({ block: "nearest", behavior: "smooth" });
+  };
+  $("#preset", host).onclick = () => { ed.set(P.starter); grid && grid.reset(); $("#pout", host).innerHTML = ""; $("#ptrace-panel", host).hidden = true; };
   $("#pcheck", host).onclick = () => {
     const norm = s => s.split("\n").map(x => x.trim()).filter(Boolean).join("\n");
     const ok = norm($("#pred", host).value) === norm(L.predict.answer);
@@ -2711,8 +2821,8 @@ function stageChallenge(host, L, idx) {
   host.innerHTML = '<div class="stack-lg">' +
     '<div class="cols"><div class="brief brief-lg dialog">' + pxImg(C.scene === "robot" ? "robot" : L.world === 5 ? "skull" : WORLD_ICONS[L.world], "portrait") + '<div><p class="eyebrow">Repair order</p><p>' + C.brief + "</p></div></div>" +
     '<div class="scene"><div class="scene-head"><span>' + esc(C.title) + '</span><span class="state-lamp" id="lamp"><i></i><span>Offline</span></span></div><div id="scene"></div></div></div>' +
-    '<div class="panel"><h3>Your code</h3><div id="ced"></div><div class="toolbar"><button class="btn" id="crun">Run ▶</button><button class="btn primary" id="ccheck">Check solution</button><button class="btn small" id="creset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
-    '<div id="cfeed" aria-live="polite" style="margin-top:16px"></div><div id="cout" style="margin-top:16px"></div></div>' +
+    '<div class="panel"><h3>Your code</h3><div id="ced"></div><div class="toolbar"><button class="btn" id="crun">Run ▶</button><button class="btn primary" id="ccheck">Check solution</button><button class="btn signal small" id="ctrace">Trace my code</button><button class="btn small" id="creset">Reset</button><span class="hint-k">Ctrl + Enter checks</span></div>' +
+    '<div id="cfeed" aria-live="polite" style="margin-top:16px"></div><div id="cout" style="margin-top:16px"></div><div id="ctrace-out" style="margin-top:16px"></div></div>' +
     '<div class="cols"><div class="panel"><h3>Test results</h3><div class="scroll-x"><table class="cases"><thead><tr><th>Test</th><th>Expected</th><th>Result</th></tr></thead><tbody id="cases"></tbody></table></div></div>' +
     '<div class="panel"><h3>Hints</h3><p class="muted small" style="margin-bottom:12px">' + budget + " hint" + (budget === 1 ? "" : "s") + " for this repair. Hints get scarcer as you go deeper into the station. Using one lowers the stars you can earn.</p><div class=\"hints\" id=\"hints\"></div><div class=\"toolbar\"><button class=\"btn small\" id=\"hintbtn\"></button><span id=\"revealwrap\"></span></div></div></div>" +
     "</div>";
@@ -2798,6 +2908,13 @@ function stageChallenge(host, L, idx) {
   }
   $("#crun", host).onclick = run;
   $("#ccheck", host).onclick = check;
+  // Tracing uses the first test case's inputs, like Run. It never counts as an attempt.
+  $("#ctrace", host).onclick = async () => {
+    const c = C.cases[0];
+    const res = await showTrace($("#ctrace-out", host), ed.get(), { pre: c.pre || "", map: c.map || null, dir: c.dir });
+    renderResult($("#cout", host), res, ed);
+    if (C.cases.length > 1) $("#ctrace-out", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:6px">Tracing with the inputs of test <code>' + esc(c.label) + "</code>.</p>");
+  };
   drawScene(done ? { pass: true, passed: C.cases.length, logs: [] } : null);
   drawCases(null); drawHints();
   if (done) $("#cfeed", host).innerHTML = '<div class="okbox"><p><b>Already repaired with ' + done.stars + " star" + (done.stars > 1 ? "s" : "") + ".</b> You can solve it again to improve your score, or continue to the review.</p></div>";

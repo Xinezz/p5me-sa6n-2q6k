@@ -119,6 +119,44 @@ const tests = async () => {
     const tout = L.trace.steps.filter(s => s.o !== undefined).map(s => s.o);
     ok(t.logs.join(NL) === tout.join(NL), L.id + ": trace output matches real output", JSON.stringify(t.logs));
   }
+  // 3b. Trace my code: tracing never changes what a program does
+  const programs = [];
+  for (const L of LESSONS) {
+    const c0 = L.challenge.cases[0];
+    programs.push([L.id + " challenge solution", L.challenge.solution, c0.pre || "", c0.map, c0.dir]);
+    (L.drills || []).forEach((D, k) => programs.push([L.id + " drill " + (k + 1), D.solution, D.cases[0].pre || "", D.cases[0].map, D.cases[0].dir]));
+    if (REVIEWS[L.id]) programs.push([L.id + " review", REVIEWS[L.id].solution, REVIEWS[L.id].cases[0].pre || "", null]);
+    if (!isFinale(L)) {
+      programs.push([L.id + " example", L.example.code, "", null], [L.id + " trace code", L.trace.code, "", null]);
+      programs.push([L.id + " sandbox starter", L.practise.starter, "", L.practise.map || null, 1]);
+    }
+  }
+  let sameAll = true, traced = 0;
+  for (const [name, code, pre, map, dir] of programs) {
+    const a = await runOnce({ code, pre, map, dir }), b = await runOnce({ code, pre, map, dir, trace: true });
+    const sameOut = a.logs.join(NL) === b.logs.join(NL) && (a.error ? a.error.name : "") === (b.error ? b.error.name : "") && (!a.robot || a.robot.trace.length === b.robot.trace.length);
+    if (!sameOut) { sameAll = false; ok(false, "tracing changes behaviour: " + name, JSON.stringify([a.logs, b.logs, a.error, b.error])); }
+    if (b.steps && b.steps.length > 1) traced++;
+  }
+  ok(sameAll, "tracing never changes output, errors or robot moves (" + programs.length + " programs)");
+  ok(traced === programs.length, "every program produces a step-by-step trace", traced + " of " + programs.length);
+  const t1 = await runOnce({ code: "let a = 1;\na = a + 2;\nconsole.log(a);", trace: true }), f1 = traceFrames(t1);
+  ok(f1.map(f => f.l).join() === "0,1,2" && f1.map(f => f.vars.a).join() === "1,3,3" && f1[2].o.join() === "3", "trace frames show each line, the value after it ran, and its output", JSON.stringify(f1));
+  const t2 = await runOnce({ code: "for (let i = 0; i < 3; i++) {\n  console.log(i);\n}", trace: true }), f2 = traceFrames(t2);
+  ok(f2.length === 4 && f2.filter(f => f.l === 1).map(f => f.o.join()).join("|") === "0|1|2", "loops produce one frame per round", JSON.stringify(f2));
+  const t3 = await runOnce({ code: 'function greet(name) {\n  console.log("Hi " + name);\n}\ngreet("Ada");', trace: true }), f3 = traceFrames(t3);
+  ok(f3.some(f => f.vars.name === '"Ada"') && !("name" in f3[f3.length - 1].vars), "parameters appear inside the function and disappear outside it", JSON.stringify(f3));
+  const t4 = await runOnce({ code: "let n = 0;\nwhile (true) {\n  n = n + 1;\n}", trace: true });
+  ok(t4.error && t4.error.name === "TraceLimit" && traceFrames(t4).length > 100, "a runaway loop is stopped at 1000 steps with a partial trace instead of a timeout", JSON.stringify(t4.error));
+  const t5 = await runOnce({ code: "let a = 1;\nconsole.log(b);", trace: true }), f5 = traceFrames(t5);
+  ok(f5[f5.length - 1].l === 1 && /ReferenceError/.test(f5[f5.length - 1].n), "the last frame points at the line that threw", JSON.stringify(f5));
+  const t6 = await runOnce({ code: 'console.log("oops);', trace: true });
+  ok(!t6.steps && t6.error && t6.error.syntax, "code with a syntax error isn't traced (the error is shown instead)");
+  const t7 = await runOnce({ code: LESSON_BY_ID.get("fin3").challenge.solution, map: SPIRAL_A, dir: 1, trace: true }), f7 = traceFrames(t7);
+  ok(f7.length > 10 && f7[f7.length - 1].rt === t7.robot.trace.length && f7.every((f, i) => !i || f.rt >= f7[i - 1].rt), "robot traces line up with B0-T's moves", f7.length + " frames");
+  const t8 = await runOnce({ code: 'const bot = {\n  name: "Bolt",\n  battery: 100\n};\nbot.battery = 80;\nconsole.log(bot.battery);', trace: true }), f8 = traceFrames(t8);
+  ok(f8.map(f => f.l).join() === "0,4,5" && f8[1].vars.bot === '{ name: "Bolt", battery: 80 }', "multi-line object literals are traced as one statement", JSON.stringify(f8.map(f => [f.l, f.vars.bot])));
+
   // 4. Sandbox safety and error reporting
   const inf = await runOnce({ code: "while (true) {}" });
   ok(inf.error && inf.error.name === "Timeout", "infinite loop is stopped by the 2-second kill switch");
