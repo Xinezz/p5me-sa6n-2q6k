@@ -250,6 +250,8 @@ const tests = async () => {
   ok(evil.ok && evil.store.done.log.stars === 3 && evil.store.done.log.code === "" && !evil.store.done.hacked && evil.store.drills.log.length === 2 && evil.store.drills.log[1] === false &&
     Object.keys(evil.store.drafts).join() === "log:p" && !("bad key!" in evil.store.stats), "loaded saves are cleaned: unknown lessons dropped, stars clamped, junk types removed", JSON.stringify(evil.store));
   ok(/^\d+\.\d+\.\d+$/.test(APP_VERSION), "app version is a semantic version number");
+  ok(TOUR.length >= 4 && TOUR.every(s => s.title && s.body && SPRITES[s.icon]), "the How to play tour has at least 4 complete slides");
+  ok(freshStore().seenIntro === false && sanitizeStore({ seenIntro: true }).seenIntro === true && sanitizeStore({ seenIntro: "yes" }).seenIntro === false, "the 'tour seen' flag saves and loads safely");
   ok(SYMBOLS.every(s => typeof s[0] === "string" && s[0].length && s[1]), "every symbol-bar button has text and a spoken label");
 
   // 6. Pixel sprites are well-formed

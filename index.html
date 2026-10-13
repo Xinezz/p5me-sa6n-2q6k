@@ -286,6 +286,25 @@ ul.mistakes, ul.ideas { gap: 10px; }
 .drill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
 .drill-head h3 { margin: 2px 0 0; }
 .drill-task { margin-bottom: 14px; max-width: 68ch; }
+/* Welcome card and tour */
+.welcome { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; border-color: var(--accent); }
+.welcome > div:not(.toolbar) { flex: 1; min-width: 200px; }
+.welcome .toolbar { margin-top: 0; }
+.welcome-icon { width: 48px; height: auto; }
+.tour-ov { position: fixed; inset: 0; z-index: 95; background: rgba(4, 8, 12, .72); display: grid; place-items: center; padding: 16px; }
+.tour { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--panel); color: var(--ink); border: 3px solid var(--frame); box-shadow: 8px 8px 0 var(--accent-deep); padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; animation: toast-in .2s steps(4); }
+.tour-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+.tour-head h2 { font-size: 1.5rem; }
+.tour-icon { width: 56px; height: auto; flex: none; background: var(--code-bg); border: 3px solid var(--frame); padding: 6px; }
+.tour-body p { line-height: 1.65; }
+.tour-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tour-dots { display: inline-flex; gap: 5px; margin-right: auto; margin-left: 8px; }
+.tour-dots i { width: 10px; height: 10px; background: var(--panel-2); border: 2px solid var(--frame); }
+.tour-dots i.on { background: var(--accent); }
+.tour-strip, .tour-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.tour-strip span { font-family: var(--f-display); font-size: .85rem; padding: 4px 8px; border: 2px solid var(--frame); background: var(--panel-2); }
+.tour-tools .btn { pointer-events: none; }
+.tour-stars { margin-top: 14px; }
 /* Trace my code */
 .trace-head { margin-bottom: 12px; }
 .trace-head h4 { font-size: 1.05rem; margin-bottom: 2px; }
@@ -508,6 +527,7 @@ footer { color: var(--muted); font-size: .85rem; padding-block: 24px; border-top
   <div class="wrap">
     <button class="logo" id="logo-btn" aria-label="Back to the station map"><span class="logo-mark">{ }</span><b>JavaScript Quest</b></button>
     <div class="status" id="status"></div>
+    <button class="btn small" id="help-btn">How to play</button>
     <button class="btn small" id="sound-btn" aria-pressed="true" title="Typing and button sounds">Sound: on</button>
   </div>
 </header>
@@ -2112,7 +2132,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -2248,6 +2268,7 @@ function renderMap() {
     '<div class="row"><span>concepts.mastered</span><span>' + LESSONS.filter(l => !isFinale(l) && masteryOf(l) === 4).length + " / " + LESSONS.filter(l => !isFinale(l)).length + '</span></div><div class="row"><span>badges</span><span>' + ACHIEVEMENTS.filter(a => store.ach[a.id]).length + " / " + ACHIEVEMENTS.length + "</span></div>" +
     '<div style="margin-top:auto;color:var(--code-muted)">// stars: 3 = no hints and at most 2 checks</div></div></section>';
   h += '<div class="loop-strip" aria-label="How each lesson works">' + [["Learn", "One idea in plain words"], ["Visualise", "Step through code line by line"], ["Practise", "Guided drills, then free play"], ["Challenge", "Repair a machine with code"], ["Review", "Why your solution works"]].map((s, i) => '<div><b>' + (i + 1) + ". " + s[0] + "</b><small>" + s[1] + "</small></div>").join("") + "</div>";
+  if (!store.seenIntro) h += '<section class="panel welcome" aria-labelledby="wel-h">' + pxImg("pilot", "welcome-icon") + '<div><h3 id="wel-h">New to JavaScript Quest?</h3><p class="muted small">Take the 60-second tour: how lessons work, how to run and check code, and how stars and hints work.</p></div><div class="toolbar"><button class="btn primary" id="tour-open">Take the tour</button><button class="btn small" id="tour-skip">No thanks</button></div></section>';
   const rq = reviewQueue();
   if (rq.length) h += '<section class="panel reviewq" aria-labelledby="rq-h"><div class="drill-head"><div><p class="eyebrow">Review queue</p><h3 id="rq-h">Worth another look</h3></div><span class="pill go">' + rq.length + " to review</span></div>" +
     '<p class="muted small">These concepts were a struggle the first time. One short, fresh exercise locks each one in and raises it to Mastered.</p><div class="rq-list">' +
@@ -2276,6 +2297,8 @@ function renderMap() {
   $$(".node", app).forEach(b => b.onclick = () => { const i = +b.dataset.i; if (unlocked(i)) go({ name: "lesson", i, stage: 0 }); });
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
   $$("[data-review]", app).forEach(b => b.onclick = () => go({ name: "review", i: +b.dataset.review }));
+  const to = $("#tour-open"); if (to) to.onclick = openTour;
+  const ts = $("#tour-skip"); if (ts) ts.onclick = () => { store.seenIntro = true; save(); render(); };
   wireSavePanel();
   $("#reset").onclick = () => {
     $("#reset-area").innerHTML = '<span>Erase all stars, XP and saved code?</span><button class="btn small" id="reset-yes" style="border-color:var(--bad);color:var(--bad)">Erase progress</button><button class="btn small" id="reset-no">Keep it</button>';
@@ -2938,6 +2961,61 @@ function stageReview(host, L, idx) {
   const tn = $("#tonext", host); if (tn) tn.onclick = () => go({ name: "lesson", i: idx + 1, stage: 0 });
   const rv = $("#toreviewex", host); if (rv) rv.onclick = () => go({ name: "review", i: idx });
 }
+
+/* ================= How to play: a short tour, opened from the welcome card or the top bar ================= */
+const TOUR = [
+  { icon: "pilot", title: "Welcome to Station Nine", body: "You're the station's new rookie programmer. Machines are failing, and every repair is a small JavaScript program you write yourself. No experience needed: each repair teaches exactly one new idea." },
+  { icon: "terminal", title: "Five stages per repair", body: "<b>Learn</b> the idea in plain words, <b>Visualise</b> it running line by line, <b>Practise</b> with guided drills, take on the <b>Challenge</b>, then <b>Review</b> why your solution works. Pass the drills to unlock the challenge.",
+    demo: '<div class="tour-strip">' + ["Learn", "Visualise", "Practise", "Challenge", "Review"].map((s, i) => "<span>" + (i + 1) + ". " + s + "</span>").join("") + "</div>" },
+  { icon: "robot", title: "Writing and running code", body: "Type in the dark code editor. <b>Run</b> shows what your code does. <b>Check</b> tests it against the repair order. <b>Trace my code</b> replays it one line at a time so you can watch every variable change. Errors are explained in plain English, with the line marked in red. On a phone, a row of symbol buttons sits above the editor.",
+    demo: '<div class="tour-tools" aria-hidden="true"><span class="btn">Run ▶</span><span class="btn primary">Check solution</span><span class="btn signal">Trace my code</span></div>' },
+  { icon: "star", title: "Stars, hints and help", body: "Repair a machine with no hints in two checks or fewer for 3 stars. Challenge hints cost stars, but drill hints are free. After 3 failed checks you can reveal a worked solution, then type it yourself. Every finished repair adds XP toward your next rank.",
+    demo: '<div class="tour-stars">' + pxStars(3, true) + "</div>" },
+  { icon: "trophy", title: "Your progress", body: "Progress saves automatically in this browser. Each sector ends with a finale that combines its ideas. Concepts you struggled with go into a review queue, and achievements mark your milestones. Use <b>Copy save code</b> at the bottom of the map to back everything up." }
+];
+function openTour() {
+  if ($(".tour-ov")) return;
+  const prevFocus = document.activeElement;
+  const ov = document.createElement("div");
+  ov.className = "tour-ov";
+  ov.innerHTML = '<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-body"></div><div class="tour-nav"><button class="btn small" data-t="skip">Close</button><span class="tour-dots" aria-hidden="true"></span><button class="btn small" data-t="back">← Back</button><button class="btn primary small" data-t="next">Next →</button></div></div>';
+  document.body.appendChild(ov);
+  let i = 0;
+  function draw() {
+    const s = TOUR[i];
+    $(".tour-body", ov).innerHTML = '<div class="tour-head">' + pxImg(s.icon, "tour-icon") + '<div><p class="eyebrow">How to play · ' + (i + 1) + " of " + TOUR.length + '</p><h2 id="tour-t">' + s.title + "</h2></div></div><p>" + s.body + "</p>" + (s.demo || "");
+    $(".tour-dots", ov).innerHTML = TOUR.map((_, k) => "<i" + (k === i ? ' class="on"' : "") + "></i>").join("");
+    $('[data-t="back"]', ov).disabled = i === 0;
+    $('[data-t="next"]', ov).textContent = i === TOUR.length - 1 ? (Object.keys(store.done).length ? "Back to the game" : "Start the first lesson →") : "Next →";
+    $('[data-t="next"]', ov).focus();
+  }
+  function close(startLesson) {
+    ov.remove();
+    if (!store.seenIntro) { store.seenIntro = true; save(); }
+    document.removeEventListener("keydown", onKey, true);
+    if (startLesson) go({ name: "lesson", i: 0, stage: 0 });
+    else { if (view.name === "map") render(); if (prevFocus && prevFocus.focus) prevFocus.focus(); }
+  }
+  function onKey(e) {
+    if (e.key === "Escape") { e.preventDefault(); close(false); return; }
+    if (e.key === "Tab") { // keep keyboard focus inside the dialog
+      const f = $$("button:not(:disabled)", ov); if (!f.length) return;
+      const at = f.indexOf(document.activeElement);
+      if (e.shiftKey && at <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && at === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  }
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("click", e => {
+    if (e.target === ov) return close(false);
+    const b = e.target.closest("[data-t]"); if (!b) return;
+    if (b.dataset.t === "skip") close(false);
+    else if (b.dataset.t === "back" && i > 0) { i--; draw(); }
+    else if (b.dataset.t === "next") { if (i < TOUR.length - 1) { i++; draw(); } else close(!Object.keys(store.done).length); }
+  });
+  draw();
+}
+$("#help-btn").onclick = openTour;
 
 $("#ver").textContent = "Version " + APP_VERSION;
 // Award anything already earned by progress made before achievements existed (before the first render, so the map shows them)
