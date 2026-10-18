@@ -312,6 +312,19 @@ code, pre, textarea, .ed-hl, .ed-ta, .st-code, .gutter, .crt, .rig-out, .pv-box,
 .mini-pv .pv-in { padding: 2px 4px; font-size: .7rem; }
 .mini-pv .pv-track { height: 12px; }
 .st-page { padding: 8px; }
+/* Training Deck */
+.arena-card { border-color: var(--signal); }
+.tier { display: inline-block; font-family: var(--f-display); font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 7px; border: 2px solid currentColor; }
+.tier.t-easy { color: var(--ok); } .tier.t-medium { color: var(--accent); } .tier.t-hard { color: var(--bad); }
+.tier.on { background: currentColor; } .tier.on, .tier.on * { color: var(--bg); }
+.tier.t-easy.on { background: var(--ok); } .tier.t-medium.on { background: var(--accent); } .tier.t-hard.on { background: var(--bad); }
+.eyebrow .tier { margin-right: 6px; vertical-align: 1px; }
+.tier-list { display: flex; flex-direction: column; gap: 8px; }
+.tier-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.tier-row .tier { text-align: center; }
+.tiers { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.tier-dot { width: 12px; height: 12px; border: 2px solid var(--frame); background: var(--panel-2); }
+.tier-dot.on.t-easy { background: var(--ok); } .tier-dot.on.t-medium { background: var(--accent); } .tier-dot.on.t-hard { background: var(--bad); }
 /* Welcome card and tour */
 .welcome { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; border-color: var(--accent); }
 .welcome > div:not(.toolbar) { flex: 1; min-width: 200px; }
@@ -2531,6 +2544,274 @@ const REVIEWS = {
     solution: "function maxOf(nums) {\n  let best = nums[0];\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[i] > best) {\n      best = nums[i];\n    }\n  }\n  return best;\n}" }
 };
 
+/* ================= Training Deck: extra missions per topic =================
+   Three per topic (Easy, Medium, Hard). They unlock once the topic's lesson is repaired,
+   use only ideas taught up to that lesson, and give bonus XP. Finishing all three masters the topic. */
+const MISSION_XP = { Easy: 15, Medium: 25, Hard: 40 };
+// A test case that checks printed output ([] means nothing should print)
+const outCase = (label, pre, lines, extra) => Object.assign({ label, pre, expect: lines.length ? lines.join("\n") : "(nothing printed)",
+  check: r => lines.length ? expectLogs(r.logs, lines) : (r.logs.length ? fail("Nothing should print here, but your code printed " + q(r.logs.join(", ")) + ".", r.logs.join(", ")) : pass("(nothing printed)")) }, extra || {});
+// A test case that calls one of the learner's functions and compares what it returns
+const fnCase = (fn, args, exp, tips) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return { label: txt, expect: show(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, tips) }; };
+const STAIRS = ["#######", "#R.####", "##..###", "###..##", "####.G#", "#######"];
+const LEFT_A = ["#######", "####G##", "####.##", "#R...##", "#######"];
+const LEFT_B = ["#########", "#######G#", "#######.#", "#######.#", "#R......#", "#########"];
+const MISSIONS = {
+  log: [
+    { tier: "Easy", title: "Station banner", task: "Print a three-line banner: <code>=====</code>, then <code>STATION NINE</code>, then <code>=====</code>.",
+      starter: "// Print the banner\n", hints: ["One console.log per line, in order.", "<code>console.log(\"=====\");</code> · <code>console.log(\"STATION NINE\");</code> · <code>console.log(\"=====\");</code>"],
+      cases: [outCase("Output", "", ["=====", "STATION NINE", "====="])], solution: 'console.log("=====");\nconsole.log("STATION NINE");\nconsole.log("=====");' },
+    { tier: "Medium", title: "Quote the captain", task: "Print exactly <code>She said \"Go!\"</code>, with the double quotes showing in the output.",
+      starter: "// The double quotes must appear in the output\n", hints: ["If the text contains double quotes, wrap the whole string in single quotes instead.", "<code>console.log('She said \"Go!\"');</code>"],
+      cases: [outCase("Output", "", ['She said "Go!"'])], solution: "console.log('She said \"Go!\"');" },
+    { tier: "Hard", title: "Mixed quotes", task: "Print <code>It's 3 o'clock</code> on the first line and <code>He said \"hi\"</code> on the second.",
+      starter: "// Each line needs a different kind of outer quote\n", hints: ["Line 1 contains an apostrophe ('), so wrap it in double quotes. Line 2 contains double quotes, so wrap it in single quotes.", "<code>console.log(\"It's 3 o'clock\");</code> and <code>console.log('He said \"hi\"');</code>"],
+      cases: [outCase("Output", "", ["It's 3 o'clock", 'He said "hi"'])], solution: "console.log(\"It's 3 o'clock\");\nconsole.log('He said \"hi\"');" }
+  ],
+  vars: [
+    { tier: "Easy", title: "Ship card", task: "Create <code>const shipName = \"Comet\"</code> and <code>let speed = 10</code>. Then print <code>Comet flies at 10</code>, built from both variables.",
+      starter: "// Create shipName and speed, then print the card\n", hints: ["Join text and variables with +, and remember the spaces inside the quotes.", "<code>console.log(shipName + \" flies at \" + speed);</code>"],
+      src: [{ test: s => /console\.log\([^)]*\bshipName\b[^)]*\bspeed\b/.test(s), msg: "Build the message from the variables: <code>shipName + \" flies at \" + speed</code>." }],
+      cases: [{ label: "Output", expect: "Comet flies at 10", post: grab("shipName", "speed"), check: r => r.report.shipName !== "Comet" || r.report.speed !== 10 ? fail("Expected shipName \"Comet\" and speed 10, but got " + q(show(r.report.shipName)) + " and " + q(show(r.report.speed)) + ".", "variables") : expectLogs(r.logs, ["Comet flies at 10"]) }],
+      solution: 'const shipName = "Comet";\nlet speed = 10;\nconsole.log(shipName + " flies at " + speed);' },
+    { tier: "Medium", title: "Full name", task: "<code>firstName</code> and <code>lastName</code> already exist and change between tests. Create <code>fullName</code>, the two names with a space between them, and print it.",
+      starter: "// firstName and lastName already exist\n", hints: ["Join three pieces: the first name, a space, and the last name.", "<code>const fullName = firstName + \" \" + lastName;</code>"],
+      cases: [["Ada", "Lovelace"], ["Grace", "Hopper"]].map(([a, b]) => Object.assign(outCase(a + " " + b, 'const firstName = "' + a + '", lastName = "' + b + '";', [a + " " + b]), { post: grab("fullName") })),
+      solution: 'const fullName = firstName + " " + lastName;\nconsole.log(fullName);' },
+    { tier: "Hard", title: "The swap", task: "<code>a</code> and <code>b</code> already exist (made with let) and change between tests. Swap their values, so <code>a</code> holds what <code>b</code> held and the other way round. Then print a, then b.",
+      starter: "// a and b already exist\n", hints: ["If you write a = b first, a's old value is lost. Save it in a third variable first.", "<code>const temp = a; a = b; b = temp;</code>"],
+      cases: [["left", "right"], ["up", "down"]].map(([x, y]) => Object.assign(outCase("a = " + x + ", b = " + y, 'let a = "' + x + '", b = "' + y + '";', [y, x]), { post: grab("a", "b") })),
+      solution: "const temp = a;\na = b;\nb = temp;\nconsole.log(a);\nconsole.log(b);" }
+  ],
+  math: [
+    { tier: "Easy", title: "Minutes to seconds", task: "<code>minutes</code> already exists and changes between tests. Set <code>seconds</code> to the same time in seconds, and print it.",
+      starter: "// minutes already exists\n", hints: ["There are 60 seconds in a minute.", "<code>const seconds = minutes * 60;</code>"],
+      cases: [2, 0, 15].map(m => outCase("minutes = " + m, "const minutes = " + m + ";", [String(m * 60)])), solution: "const seconds = minutes * 60;\nconsole.log(seconds);" },
+    { tier: "Medium", title: "Average score", task: "Three scores <code>a</code>, <code>b</code> and <code>c</code> already exist. Set <code>average</code> to their average and print it.",
+      starter: "// a, b and c already exist\n", hints: ["Add them up, then divide by 3. Division happens before addition unless you use brackets.", "<code>const average = (a + b + c) / 3;</code>"],
+      cases: [[10, 20, 30], [7, 8, 9], [1, 2, 6]].map(([a, b, c]) => outCase(a + ", " + b + ", " + c, "const a = " + a + ", b = " + b + ", c = " + c + ";", [String((a + b + c) / 3)])),
+      solution: "const average = (a + b + c) / 3;\nconsole.log(average);" },
+    { tier: "Hard", title: "Temperature converter", task: "<code>celsius</code> already exists. Convert it to Fahrenheit (multiply by 9, divide by 5, then add 32) and print a line like <code>100°C is 212°F</code>.",
+      starter: "// celsius already exists\n", hints: ["<code>const fahrenheit = celsius * 9 / 5 + 32;</code>", "<code>console.log(celsius + \"°C is \" + fahrenheit + \"°F\");</code>"],
+      cases: [0, 100, -40, 25].map(c => outCase("celsius = " + c, "const celsius = " + c + ";", [c + "°C is " + (c * 9 / 5 + 32) + "°F"])),
+      solution: 'const fahrenheit = celsius * 9 / 5 + 32;\nconsole.log(celsius + "°C is " + fahrenheit + "°F");' }
+  ],
+  bool: [
+    { tier: "Easy", title: "Adult check", task: "<code>age</code> already exists. Set <code>isAdult</code> to true when age is 18 or more, and print it.",
+      starter: "// age already exists\n", hints: ["\"18 or more\" uses >=.", "<code>const isAdult = age >= 18;</code>"],
+      cases: [18, 17, 40].map(a => outCase("age = " + a, "const age = " + a + ";", [String(a >= 18)])), solution: "const isAdult = age >= 18;\nconsole.log(isAdult);" },
+    { tier: "Medium", title: "Boarding pass", task: "<code>hasTicket</code>, <code>isVIP</code> and <code>queueLength</code> already exist. A passenger can board if they have a ticket <b>and</b> (they're a VIP <b>or</b> the queue is shorter than 10). Set <code>canBoard</code> and print it.",
+      starter: "// hasTicket, isVIP and queueLength already exist\n", hints: ["Brackets group the OR part, just like in maths.", "<code>const canBoard = hasTicket && (isVIP || queueLength < 10);</code>"],
+      cases: [[true, false, 5], [true, false, 12], [true, true, 50], [false, true, 0]].map(([t, v, n]) => outCase("ticket " + t + ", VIP " + v + ", queue " + n, "const hasTicket = " + t + ", isVIP = " + v + ", queueLength = " + n + ";", [String(t && (v || n < 10))])),
+      solution: "const canBoard = hasTicket && (isVIP || queueLength < 10);\nconsole.log(canBoard);" },
+    { tier: "Hard", title: "Leap year", task: "<code>year</code> already exists. A leap year divides by 4 but not by 100, unless it also divides by 400. Set <code>isLeap</code> and print it.",
+      starter: "// year already exists\n", hints: ["\"Divides by 4\" means <code>year % 4 === 0</code>.", "<code>const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;</code>"],
+      cases: [2024, 1900, 2000, 2023].map(y => outCase("year = " + y, "const year = " + y + ";", [String((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0)])),
+      solution: "const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;\nconsole.log(isLeap);" }
+  ],
+  if: [
+    { tier: "Easy", title: "Speed camera", task: "<code>speed</code> already exists. Print <code>SLOW DOWN</code> if it's above 120, otherwise print <code>OK</code>.",
+      starter: "// speed already exists\n", hints: ["One if and one else.", "<code>if (speed > 120) { … } else { … }</code>"],
+      cases: [130, 120, 80].map(s => outCase("speed = " + s, "const speed = " + s + ";", [s > 120 ? "SLOW DOWN" : "OK"])),
+      solution: 'if (speed > 120) {\n  console.log("SLOW DOWN");\n} else {\n  console.log("OK");\n}' },
+    { tier: "Medium", title: "Grade report", task: "<code>score</code> already exists. Print <code>A</code> for 90 or more, <code>B</code> for 80 or more, <code>C</code> for 70 or more, and <code>F</code> otherwise.",
+      starter: "// score already exists\n", hints: ["Check the highest grade first, then use else if for each lower one.", "<code>if (score >= 90) { … } else if (score >= 80) { … } else if (score >= 70) { … } else { … }</code>"],
+      cases: [[95, "A"], [90, "A"], [85, "B"], [70, "C"], [69, "F"]].map(([s, g]) => outCase("score = " + s, "const score = " + s + ";", [g])),
+      solution: 'if (score >= 90) {\n  console.log("A");\n} else if (score >= 80) {\n  console.log("B");\n} else if (score >= 70) {\n  console.log("C");\n} else {\n  console.log("F");\n}' },
+    { tier: "Hard", title: "FizzBuzz", task: "<code>n</code> already exists. Print <code>FizzBuzz</code> if it divides by both 3 and 5, <code>Fizz</code> if only by 3, <code>Buzz</code> if only by 5, and otherwise print the number itself.",
+      starter: "// n already exists\n", hints: ["\"Divides by 3\" is <code>n % 3 === 0</code>. Check the both-case first, or it never gets reached.", "<code>if (n % 3 === 0 && n % 5 === 0) { … } else if (n % 3 === 0) { … } else if (n % 5 === 0) { … } else { console.log(n); }</code>"],
+      cases: [[15, "FizzBuzz"], [9, "Fizz"], [10, "Buzz"], [7, "7"]].map(([n, w]) => {
+        const c = outCase("n = " + n, "const n = " + n + ";", [w]), base = c.check;
+        c.check = r => n === 15 && (r.logs[0] === "Fizz" || r.logs[0] === "Buzz") ? fail("15 divides by 3 <b>and</b> 5, but the " + r.logs[0] + " branch ran first and the rest were skipped. Put the FizzBuzz check at the top of the chain.", r.logs[0]) : base(r);
+        return c;
+      }),
+      solution: 'if (n % 3 === 0 && n % 5 === 0) {\n  console.log("FizzBuzz");\n} else if (n % 3 === 0) {\n  console.log("Fizz");\n} else if (n % 5 === 0) {\n  console.log("Buzz");\n} else {\n  console.log(n);\n}' }
+  ],
+  for: [
+    { tier: "Easy", title: "Count to ten", task: "Use a for loop to print the numbers 1 to 10, one per line.",
+      starter: "// Print 1 to 10 with a for loop\n", hints: ["Start i at 1, and keep going while i <= 10.", "<code>for (let i = 1; i <= 10; i++) { console.log(i); }</code>"],
+      src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a for loop rather than ten console.log lines." }],
+      cases: [outCase("Output", "", ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])], solution: "for (let i = 1; i <= 10; i++) {\n  console.log(i);\n}" },
+    { tier: "Medium", title: "Countdown", task: "Use a for loop to count down from 10 to 1, then print <code>Liftoff!</code>.",
+      starter: "// Count down from 10, then lift off\n", hints: ["A loop can count down: start at 10, keep going while i >= 1, and use i-- to subtract 1.", "<code>for (let i = 10; i >= 1; i--) { console.log(i); }</code> then <code>console.log(\"Liftoff!\");</code> after the loop."],
+      src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a for loop for the countdown." }],
+      cases: [outCase("Output", "", ["10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "Liftoff!"])], solution: 'for (let i = 10; i >= 1; i--) {\n  console.log(i);\n}\nconsole.log("Liftoff!");' },
+    { tier: "Hard", title: "Times table", task: "<code>n</code> already exists and changes between tests. Print its times table from 1 to 10, as lines like <code>3 x 1 = 3</code>.",
+      starter: "// n already exists\n", hints: ["Loop i from 1 to 10 and build each line with +.", "<code>console.log(n + \" x \" + i + \" = \" + n * i);</code>"],
+      src: [{ test: s => /\bfor\s*\(/.test(s), msg: "Use a for loop: n changes between tests." }],
+      cases: [3, 7].map(n => outCase("n = " + n, "const n = " + n + ";", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => n + " x " + i + " = " + n * i))),
+      solution: 'for (let i = 1; i <= 10; i++) {\n  console.log(n + " x " + i + " = " + n * i);\n}' }
+  ],
+  while: [
+    { tier: "Easy", title: "Halving", task: "<code>n</code> already exists (made with let). Keep halving it while it's bigger than 1, count how many halvings that takes, and print the count.",
+      starter: "// n already exists\nlet steps = 0;\n\nconsole.log(steps);\n", hints: ["Loop while n > 1. Inside, halve n and add 1 to steps.", "<code>while (n > 1) { n = n / 2; steps = steps + 1; }</code>"],
+      src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use a while loop: you don't know the number of halvings in advance." }],
+      cases: [[16, 4], [1, 0], [64, 6]].map(([n, s]) => outCase("n = " + n, "let n = " + n + ";", [String(s)])),
+      solution: "let steps = 0;\nwhile (n > 1) {\n  n = n / 2;\n  steps = steps + 1;\n}\nconsole.log(steps);" },
+    { tier: "Medium", title: "Left-hand tunnel", task: "Drive B0-T forward until it reaches a wall, turn <b>left</b>, then drive until it's on the exit. The tunnel's size changes between tests.",
+      starter: "// Sensors: robot.wallAhead() and robot.atGoal()\n", hints: ["Two while loops, with a turn between them.", "<code>while (!robot.wallAhead()) { robot.move(); }</code> · <code>robot.turnLeft();</code> · <code>while (!robot.atGoal()) { robot.move(); }</code>"],
+      src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use while loops: the tunnel's size changes between tests." }],
+      cases: [{ label: "Short tunnel", map: LEFT_A, dir: 1, expect: "on the exit", check: r => robotCheck(r) }, { label: "Long tunnel", map: LEFT_B, dir: 1, expect: "on the exit", check: r => robotCheck(r) }],
+      solution: "while (!robot.wallAhead()) {\n  robot.move();\n}\nrobot.turnLeft();\nwhile (!robot.atGoal()) {\n  robot.move();\n}" },
+    { tier: "Hard", title: "Hailstone numbers", task: "<code>n</code> already exists (made with let). Until n is 1: if it's even, halve it; if it's odd, set it to 3 × n + 1. Count the steps and print the count.",
+      starter: "// n already exists\nlet steps = 0;\n\nconsole.log(steps);\n", hints: ["Loop while <code>n !== 1</code>. Inside, use if/else with <code>n % 2 === 0</code> to test for even.", "<code>if (n % 2 === 0) { n = n / 2; } else { n = 3 * n + 1; }</code> then add 1 to steps."],
+      src: [{ test: s => /\bwhile\s*\(/.test(s), msg: "Use a while loop." }],
+      cases: [[6, 8], [1, 0], [7, 16]].map(([n, s]) => outCase("n = " + n, "let n = " + n + ";", [String(s)])),
+      solution: "let steps = 0;\nwhile (n !== 1) {\n  if (n % 2 === 0) {\n    n = n / 2;\n  } else {\n    n = 3 * n + 1;\n  }\n  steps = steps + 1;\n}\nconsole.log(steps);" }
+  ],
+  func: [
+    { tier: "Easy", title: "Cheerleader", task: "Write <code>function cheer(name)</code> that prints <code>Go, </code> then the name and <code>!</code>. Call it with <code>\"Ada\"</code> and then with <code>\"Bo\"</code>.",
+      starter: "// Define cheer, then call it twice\n", hints: ["Inside the function, build the message from the parameter.", "<code>function cheer(name) { console.log(\"Go, \" + name + \"!\"); }</code> then <code>cheer(\"Ada\");</code> and <code>cheer(\"Bo\");</code>"],
+      src: [{ test: s => /function\s+cheer\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\{[^}]*console\.log\([^)]*\b\1\b/.test(s), msg: "Use cheer's parameter inside console.log, so one function cheers for anyone." }],
+      cases: [outCase("Output", "", ["Go, Ada!", "Go, Bo!"])], solution: 'function cheer(name) {\n  console.log("Go, " + name + "!");\n}\ncheer("Ada");\ncheer("Bo");' },
+    { tier: "Medium", title: "Repeat after me", task: "Write <code>function repeatLine(text, times)</code> that prints <code>text</code> exactly <code>times</code> times, using a loop. Call <code>repeatLine(\"beep\", 3)</code>. The second test also calls it with other values.",
+      starter: "function repeatLine(text, times) {\n\n}\n\nrepeatLine(\"beep\", 3);\n", hints: ["Put a for loop inside the function that runs <code>times</code> times.", "<code>for (let i = 0; i < times; i++) { console.log(text); }</code>"],
+      cases: [outCase("repeatLine(\"beep\", 3)", "", ["beep", "beep", "beep"]), Object.assign(outCase("then repeatLine(\"ok\", 2)", "", ["beep", "beep", "beep", "ok", "ok"]), { post: 'repeatLine("ok", 2);' })],
+      solution: 'function repeatLine(text, times) {\n  for (let i = 0; i < times; i++) {\n    console.log(text);\n  }\n}\n\nrepeatLine("beep", 3);' },
+    { tier: "Hard", title: "The staircase", task: "Write <code>function stair()</code> that does one step of the staircase: move, turn right, move, turn left. Call it 3 times, then move once more to reach the exit.",
+      starter: "// Define stair(), then use it\n", hints: ["The function body has four robot commands.", "Call <code>stair();</code> three times (or in a loop), then <code>robot.move();</code>"],
+      src: [{ test: s => /function\s+stair\s*\(\s*\)/.test(s), msg: "Define <code>function stair()</code> for one step of the stairs, then reuse it." }],
+      cases: [{ label: "Staircase", map: STAIRS, dir: 1, expect: "on the exit", check: r => robotCheck(r) }],
+      solution: "function stair() {\n  robot.move();\n  robot.turnRight();\n  robot.move();\n  robot.turnLeft();\n}\nstair();\nstair();\nstair();\nrobot.move();" }
+  ],
+  return: [
+    { tier: "Easy", title: "Hours to minutes", task: "Write <code>function toMinutes(hours)</code> that returns the number of minutes.",
+      starter: "function toMinutes(hours) {\n\n}\n", hints: ["Multiply by 60 and return it.", "<code>return hours * 60;</code>"],
+      cases: [[1, 60], [2.5, 150], [0, 0]].map(([h, m]) => fnCase("toMinutes", [h], m)), solution: "function toMinutes(hours) {\n  return hours * 60;\n}" },
+    { tier: "Medium", title: "Bigger of two", task: "Write <code>function max(a, b)</code> that returns the bigger of two numbers (either one if they're equal).",
+      starter: "function max(a, b) {\n\n}\n", hints: ["Use an if: return a if it's bigger, otherwise return b.", "<code>if (a > b) { return a; } return b;</code>"],
+      cases: [[3, 9, 9], [10, 2, 10], [5, 5, 5], [-1, -7, -1]].map(([a, b, e]) => fnCase("max", [a, b], e)),
+      solution: "function max(a, b) {\n  if (a > b) {\n    return a;\n  }\n  return b;\n}" },
+    { tier: "Hard", title: "Clamp", task: "Write <code>function clamp(value, low, high)</code> that returns <code>low</code> if the value is below it, <code>high</code> if the value is above it, and the value itself otherwise.",
+      starter: "function clamp(value, low, high) {\n\n}\n", hints: ["Two ifs, each with its own return, then a final return for the value.", "<code>if (value < low) { return low; } if (value > high) { return high; } return value;</code>"],
+      cases: [[5, 0, 10, 5], [-3, 0, 10, 0], [12, 0, 10, 10], [10, 0, 10, 10]].map(([v, l, h, e]) => fnCase("clamp", [v, l, h], e)),
+      solution: "function clamp(value, low, high) {\n  if (value < low) {\n    return low;\n  }\n  if (value > high) {\n    return high;\n  }\n  return value;\n}" }
+  ],
+  arrays: [
+    { tier: "Easy", title: "Fleet report", task: "<code>ships</code> already exists and changes between tests. Print how many ships there are, then the name of the last ship.",
+      starter: "// ships already exists\n", hints: ["The count is <code>ships.length</code>.", "The last one is <code>ships[ships.length - 1]</code>."],
+      cases: [["Comet", "Nova", "Vega"], ["Solo"]].map(a => outCase(show(a), "const ships = " + JSON.stringify(a) + ";", [String(a.length), a[a.length - 1]])),
+      solution: "console.log(ships.length);\nconsole.log(ships[ships.length - 1]);" },
+    { tier: "Medium", title: "Swap the ends", task: "<code>rack</code> already exists (at least 2 items). Swap its first and last elements, then print the whole rack.",
+      starter: "// rack already exists\n", hints: ["Like swapping two variables: keep one value in a temporary variable first.", "<code>const temp = rack[0]; rack[0] = rack[rack.length - 1]; rack[rack.length - 1] = temp;</code>"],
+      cases: [["ruby", "jade", "opal"], ["a", "b"]].map(a => { const e = a.slice(); const t = e[0]; e[0] = e[e.length - 1]; e[e.length - 1] = t; return outCase(show(a), "const rack = " + JSON.stringify(a) + ";", [show(e)]); }),
+      solution: "const temp = rack[0];\nrack[0] = rack[rack.length - 1];\nrack[rack.length - 1] = temp;\nconsole.log(rack);" },
+    { tier: "Hard", title: "Middle reading", task: "<code>nums</code> already exists and always has an odd number of elements. Print the element exactly in the middle.",
+      starter: "// nums already exists\n", hints: ["For 5 elements the middle index is 2. How do you get 2 from 5?", "The middle index is <code>(nums.length - 1) / 2</code>."],
+      cases: [[4, 8, 15], [1, 2, 3, 4, 5], [42]].map(a => outCase(show(a), "const nums = " + JSON.stringify(a) + ";", [String(a[(a.length - 1) / 2])])),
+      solution: "const middle = (nums.length - 1) / 2;\nconsole.log(nums[middle]);" }
+  ],
+  arrloop: [
+    { tier: "Easy", title: "Warm days", task: "<code>temps</code> already exists. Print every temperature above 20, in order.",
+      starter: "// temps already exists\n", hints: ["Loop through temps, with an if inside.", "<code>for (const t of temps) { if (t > 20) { console.log(t); } }</code>"],
+      cases: [[[18, 25, 30, 12], ["25", "30"]], [[5, 6], []], [[21], ["21"]]].map(([a, e]) => outCase(show(a), "const temps = " + JSON.stringify(a) + ";", e)),
+      solution: "for (const t of temps) {\n  if (t > 20) {\n    console.log(t);\n  }\n}" },
+    { tier: "Medium", title: "Average", task: "Write <code>function average(nums)</code> that returns the average of the numbers, or 0 for an empty array.",
+      starter: "function average(nums) {\n\n}\n", hints: ["Add them up with an accumulator, then divide by <code>nums.length</code>. Check for an empty array first.", "<code>if (nums.length === 0) { return 0; }</code> before the loop."],
+      cases: [[[2, 4, 6], 4], [[5], 5], [[], 0], [[1, 2], 1.5]].map(([a, e]) => fnCase("average", [a], e, v => typeof v === "number" && isNaN(v) ? "NaN means 0 ÷ 0: handle the empty array before dividing." : "")),
+      solution: "function average(nums) {\n  if (nums.length === 0) {\n    return 0;\n  }\n  let total = 0;\n  for (const n of nums) {\n    total = total + n;\n  }\n  return total / nums.length;\n}" },
+    { tier: "Hard", title: "Running totals", task: "Write <code>function runningTotals(nums)</code> that returns a <b>new</b> array where each element is the sum of everything up to that point: <code>[1, 2, 3]</code> → <code>[1, 3, 6]</code>.",
+      starter: "function runningTotals(nums) {\n\n}\n", hints: ["Keep a running total, and push it into a results array on every round.", "<code>const out = []; let total = 0; for (const n of nums) { total = total + n; out.push(total); } return out;</code>"],
+      cases: [[[1, 2, 3], [1, 3, 6]], [[], []], [[5, -2, 10], [5, 3, 13]]].map(([a, e]) => fnCase("runningTotals", [a], e)),
+      solution: "function runningTotals(nums) {\n  const out = [];\n  let total = 0;\n  for (const n of nums) {\n    total = total + n;\n    out.push(total);\n  }\n  return out;\n}" }
+  ],
+  objects: [
+    { tier: "Easy", title: "Ship log", task: "<code>ship</code> already exists, with <code>name</code> and <code>fuel</code> properties. Print a line like <code>Comet has 40 fuel</code>.",
+      starter: "// ship already exists\n", hints: ["Read each property with a dot.", "<code>console.log(ship.name + \" has \" + ship.fuel + \" fuel\");</code>"],
+      cases: [{ name: "Comet", fuel: 40 }, { name: "Nova", fuel: 0 }].map(o => outCase(show(o), "const ship = " + JSON.stringify(o) + ";", [o.name + " has " + o.fuel + " fuel"])),
+      solution: 'console.log(ship.name + " has " + ship.fuel + " fuel");' },
+    { tier: "Medium", title: "Robot factory", task: "Write <code>function makeRobot(name)</code> that returns a new object with three properties: <code>name</code> (the parameter), <code>battery</code> set to 100, and <code>skills</code> set to an empty array.",
+      starter: "function makeRobot(name) {\n\n}\n", hints: ["Return an object literal: <code>return { … };</code>", "<code>return { name: name, battery: 100, skills: [] };</code>"],
+      cases: ["Zed", "Mira"].map(n => fnCase("makeRobot", [n], { name: n, battery: 100, skills: [] })),
+      solution: "function makeRobot(name) {\n  return { name: name, battery: 100, skills: [] };\n}" },
+    { tier: "Hard", title: "Skill upgrade", task: "Write <code>function addSkill(bot, skill)</code> that adds <code>skill</code> to <code>bot.skills</code> only if it isn't already there (use a loop to check), then returns how many skills the bot has.",
+      starter: "function addSkill(bot, skill) {\n\n}\n", hints: ["Loop through bot.skills and remember whether you found the skill. Only push if you didn't.", "<code>let found = false; for (const s of bot.skills) { if (s === skill) { found = true; } } if (!found) { bot.skills.push(skill); } return bot.skills.length;</code>"],
+      cases: [[["scan"], "weld", "scan", ["scan", "weld"]], [[], "fly", "fly", ["fly"]]].map(([start, s1, s2, end]) => ({
+        label: "skills " + show(start) + ": add " + show(s1) + ", then " + show(s2), expect: "returns " + end.length + " both times, skills " + show(end),
+        post: "__report.isFn = typeof addSkill === 'function'; const __b = { name: 'Zed', skills: " + JSON.stringify(start) + " }; if (__report.isFn) { __report.r1 = __call(addSkill, __b, " + JSON.stringify(s1) + "); __report.r2 = __call(addSkill, __b, " + JSON.stringify(s2) + "); } __report.bot = __b;",
+        check: r => {
+          const R = r.report;
+          if (!R.isFn) return fail("There is no function called <code>addSkill</code>.", "no function");
+          if (R.r1.err || R.r2.err) return fail("Calling addSkill caused an error: " + esc(R.r1.err || R.r2.err), "error");
+          if (!same(R.bot.skills, end)) return fail("After both calls the skills should be " + q(show(end)) + " but are " + q(show(R.bot.skills)) + ". " + (R.bot.skills.length > end.length ? "A skill was added twice: only push when it isn't found." : ""), show(R.bot.skills));
+          if (R.r1.v !== end.length || R.r2.v !== end.length) return fail("addSkill should return the number of skills (" + end.length + "), but returned " + q(show(R.r1.v)) + " and " + q(show(R.r2.v)) + ".", show(R.r1.v) + ", " + show(R.r2.v));
+          return pass(show(end));
+        } })),
+      solution: "function addSkill(bot, skill) {\n  let found = false;\n  for (const s of bot.skills) {\n    if (s === skill) {\n      found = true;\n    }\n  }\n  if (!found) {\n    bot.skills.push(skill);\n  }\n  return bot.skills.length;\n}" }
+  ],
+  dom: [
+    { tier: "Easy", title: "Bridge titles", task: "Set the <code>title</code> to <code>Bridge</code> and the <code>subtitle</code> to <code>All systems go</code>.",
+      page: [{ id: "title", tag: "h1", text: "Untitled" }, { id: "subtitle", tag: "div", label: "Subtitle", text: "…" }],
+      starter: "// Find both elements and change their text\n", hints: ["Use document.getElementById for each id.", "<code>document.getElementById(\"title\").textContent = \"Bridge\";</code>"],
+      cases: [{ label: "Panel", expect: "Bridge · All systems go", check: r => domEl(r, "title").text === "Bridge" && domEl(r, "subtitle").text === "All systems go" ? pass("done") : fail("The panel shows " + q(domEl(r, "title").text) + " and " + q(domEl(r, "subtitle").text) + ".", "texts") }],
+      solution: 'document.getElementById("title").textContent = "Bridge";\ndocument.getElementById("subtitle").textContent = "All systems go";' },
+    { tier: "Medium", title: "Swap the screens", task: "Swap the texts of the screens <code>a</code> and <code>b</code>, whatever they say.",
+      page: [{ id: "a", tag: "div", label: "Screen A", text: "LEFT" }, { id: "b", tag: "div", label: "Screen B", text: "RIGHT" }],
+      starter: 'const a = document.getElementById("a");\nconst b = document.getElementById("b");\n', hints: ["Save one text in a variable before overwriting it.", "<code>const temp = a.textContent; a.textContent = b.textContent; b.textContent = temp;</code>"],
+      cases: [["LEFT", "RIGHT"], ["UP", "DOWN"]].map(([x, y]) => ({ label: x + " / " + y, page: [{ id: "a", tag: "div", label: "Screen A", text: x }, { id: "b", tag: "div", label: "Screen B", text: y }], expect: y + " / " + x,
+        check: r => domEl(r, "a").text === y && domEl(r, "b").text === x ? pass(y + " / " + x) : fail("The screens show " + q(domEl(r, "a").text) + " and " + q(domEl(r, "b").text) + ". " + (domEl(r, "a").text === domEl(r, "b").text ? "Both say the same thing: save one text before overwriting it." : ""), domEl(r, "a").text + " / " + domEl(r, "b").text) })),
+      solution: 'const a = document.getElementById("a");\nconst b = document.getElementById("b");\nconst temp = a.textContent;\na.textContent = b.textContent;\nb.textContent = temp;' },
+    { tier: "Hard", title: "Crew roster", task: "<code>crew</code> already exists: an array of names that changes between tests. Show how many crew there are in <code>count</code>, and all the names in <code>list</code>, separated by a comma and a space (<code>Ada, Bo, Cy</code>).",
+      page: [{ id: "count", tag: "div", label: "Crew count", text: "?" }, { id: "list", tag: "div", label: "Roster", text: "?" }],
+      starter: '// crew already exists\nconst count = document.getElementById("count");\nconst list = document.getElementById("list");\n', hints: ["Build the text with a loop: add \", \" before every name except the first.", "<code>let text = \"\"; for (const name of crew) { if (text === \"\") { text = name; } else { text = text + \", \" + name; } }</code>"],
+      cases: [["Ada", "Bo", "Cy"], ["Zed"], []].map(c => ({ label: show(c), pre: "const crew = " + JSON.stringify(c) + ";", expect: c.length + " · " + (c.join(", ") || "(empty)"),
+        check: r => { const n = domEl(r, "count").text, l = domEl(r, "list").text; if (n !== String(c.length)) return fail("count should show " + c.length + " but shows " + q(n) + ".", n); return l === c.join(", ") ? pass(c.length + " · " + (l || "(empty)")) : fail("list should show " + q(c.join(", ") || "(nothing)") + " but shows " + q(l) + ".", l); } })),
+      solution: 'const count = document.getElementById("count");\nconst list = document.getElementById("list");\ncount.textContent = crew.length;\nlet text = "";\nfor (const name of crew) {\n  if (text === "") {\n    text = name;\n  } else {\n    text = text + ", " + name;\n  }\n}\nlist.textContent = text;' }
+  ],
+  style: [
+    { tier: "Easy", title: "Headline", task: "Make the <code>title</code> text <code>orange</code> and set its font size to <code>\"24px\"</code>.",
+      page: [{ id: "title", tag: "h1", text: "Mission Control" }],
+      starter: 'const title = document.getElementById("title");\n', hints: ["Two style properties: color and fontSize (camelCase).", "<code>title.style.color = \"orange\"; title.style.fontSize = \"24px\";</code>"],
+      cases: [{ label: "Panel", expect: "orange, 24px", check: r => { const s = domEl(r, "title").style; return s.color === "orange" && s.fontSize === "24px" ? pass("orange, 24px") : fail("The title's colour is " + q(s.color || "unset") + " and font size " + q(s.fontSize || "unset") + "." + (s.fontSize === "24" ? " Sizes need units: \"24px\"." : ""), (s.color || "-") + ", " + (s.fontSize || "-")); } }],
+      solution: 'const title = document.getElementById("title");\ntitle.style.color = "orange";\ntitle.style.fontSize = "24px";' },
+    { tier: "Medium", title: "Traffic light", task: "<code>state</code> already exists: either <code>\"stop\"</code> or <code>\"go\"</code>. Make <code>light</code> red with the text <code>STOP</code>, or green with the text <code>GO</code>.",
+      page: [{ id: "light", tag: "div", label: "Light", text: "?" }],
+      starter: '// state already exists\nconst light = document.getElementById("light");\n', hints: ["Use if/else on <code>state === \"stop\"</code>.", "Set both <code>light.style.background</code> and <code>light.textContent</code> in each branch."],
+      cases: [["stop", "red", "STOP"], ["go", "green", "GO"]].map(([s, c, t]) => ({ label: "state = " + s, pre: 'const state = "' + s + '";', expect: t + " on " + c,
+        check: r => { const L = domEl(r, "light"), bg = L.style.background || L.style.backgroundColor; return L.text === t && bg === c ? pass(t + " on " + c) : fail("The light shows " + q(L.text) + " on " + q(bg || "no colour") + ".", L.text + " / " + (bg || "-")); } })),
+      solution: 'const light = document.getElementById("light");\nif (state === "stop") {\n  light.style.background = "red";\n  light.textContent = "STOP";\n} else {\n  light.style.background = "green";\n  light.textContent = "GO";\n}' },
+    { tier: "Hard", title: "One panel at a time", task: "<code>active</code> already exists: 1, 2 or 3. Show only that panel: set the matching panel's (<code>p1</code>, <code>p2</code> or <code>p3</code>) display to <code>\"block\"</code> and hide the other two with <code>\"none\"</code>. Try a loop!",
+      page: [{ id: "p1", tag: "div", label: "Panel 1", text: "Engines" }, { id: "p2", tag: "div", label: "Panel 2", text: "Shields" }, { id: "p3", tag: "div", label: "Panel 3", text: "Comms" }],
+      starter: "// active already exists\n", hints: ["Ids can be built with +: <code>\"p\" + i</code> gives \"p1\", \"p2\", \"p3\".", "<code>for (let i = 1; i <= 3; i++) { const p = document.getElementById(\"p\" + i); if (i === active) { p.style.display = \"block\"; } else { p.style.display = \"none\"; } }</code>"],
+      cases: [1, 3].map(a => ({ label: "active = " + a, pre: "const active = " + a + ";", expect: "only p" + a + " visible",
+        check: r => { const ds = [1, 2, 3].map(i => domEl(r, "p" + i).style.display || "(unset)"); return ds.every((d, i) => d === (i + 1 === a ? "block" : "none")) ? pass("p" + a + " only") : fail("Displays are p1: " + ds[0] + ", p2: " + ds[1] + ", p3: " + ds[2] + ". Only p" + a + " should be \"block\".", ds.join(", ")); } })),
+      solution: 'for (let i = 1; i <= 3; i++) {\n  const p = document.getElementById("p" + i);\n  if (i === active) {\n    p.style.display = "block";\n  } else {\n    p.style.display = "none";\n  }\n}' }
+  ],
+  events: [
+    { tier: "Easy", title: "Hello button", task: "Clicking <code>hello</code> should change <code>msg</code> to <code>Hello!</code>. Before any click it must still say <code>…</code>.",
+      page: [{ id: "hello", tag: "button", text: "Say hello" }, { id: "msg", tag: "div", label: "Message", text: "…" }],
+      starter: 'const hello = document.getElementById("hello");\nconst msg = document.getElementById("msg");\n', hints: ["Change the text inside a click handler, not straight away.", "<code>hello.addEventListener(\"click\", function () { msg.textContent = \"Hello!\"; });</code>"],
+      cases: [[0, "…"], [1, "Hello!"]].map(([n, t]) => ({ label: n ? "After a click" : "Before clicking", post: n ? '__fire("hello");' : "", expect: t, check: r => domEl(r, "msg").text === t ? pass(t) : fail((n ? "After the click, " : "Before anyone clicks, ") + "msg should say " + q(t) + " but says " + q(domEl(r, "msg").text) + ".", domEl(r, "msg").text) })),
+      solution: 'const hello = document.getElementById("hello");\nconst msg = document.getElementById("msg");\nhello.addEventListener("click", function () {\n  msg.textContent = "Hello!";\n});' },
+    { tier: "Medium", title: "Up and down", task: "<code>plus</code> adds 1 and <code>minus</code> subtracts 1 from a counter shown in <code>value</code>, which starts at 0.",
+      page: [{ id: "plus", tag: "button", text: "+" }, { id: "minus", tag: "button", text: "−" }, { id: "value", tag: "div", label: "Value", text: "0" }],
+      starter: 'const plus = document.getElementById("plus");\nconst minus = document.getElementById("minus");\nconst value = document.getElementById("value");\n', hints: ["One counter variable outside both handlers. Each handler changes it, then shows it.", "<code>let n = 0; plus.addEventListener(\"click\", function () { n = n + 1; value.textContent = n; });</code> and the same for minus."],
+      cases: [[["plus", "plus", "plus", "minus"], "2"], [["minus", "minus"], "-2"]].map(([seq, t]) => ({ label: seq.join(", "), post: seq.map(s => '__fire("' + s + '");').join(" "), expect: t, check: r => domEl(r, "value").text === t ? pass(t) : fail("After " + seq.join(", ") + " the value should be " + t + " but is " + q(domEl(r, "value").text) + ".", domEl(r, "value").text) })),
+      solution: 'const plus = document.getElementById("plus");\nconst minus = document.getElementById("minus");\nconst value = document.getElementById("value");\nlet n = 0;\nplus.addEventListener("click", function () {\n  n = n + 1;\n  value.textContent = n;\n});\nminus.addEventListener("click", function () {\n  n = n - 1;\n  value.textContent = n;\n});' },
+    { tier: "Hard", title: "Packing list", task: "When <code>add</code> is clicked, read the <code>item</code> box. If it isn't empty, add it to the end of <code>list</code> (separated by a comma and a space) and clear the box. Empty items are ignored.",
+      page: [{ id: "item", tag: "input", label: "Item", value: "" }, { id: "add", tag: "button", text: "Add" }, { id: "list", tag: "div", label: "Packing list", text: "" }],
+      starter: 'const item = document.getElementById("item");\nconst add = document.getElementById("add");\nconst list = document.getElementById("list");\n', hints: ["Inside the handler: if the list is empty, the new item becomes the whole text; otherwise add \", \" and the item. Set <code>item.value = \"\"</code> afterwards.", "<code>if (item.value !== \"\") { if (list.textContent === \"\") { list.textContent = item.value; } else { list.textContent = list.textContent + \", \" + item.value; } item.value = \"\"; }</code>"],
+      cases: [[["rope", "map"], "rope, map"], [["", "fuel"], "fuel"]].map(([seq, t]) => ({ label: "add " + seq.map(v => v === "" ? "(empty)" : v).join(", then "), post: seq.map(v => '__type("item", "' + v + '"); __fire("add");').join(" "), expect: t + " · box cleared",
+        check: r => { const l = domEl(r, "list").text, v = domEl(r, "item").value; if (l !== t) return fail("The list should be " + q(t) + " but is " + q(l) + ".", l); return v === "" ? pass(t) : fail("The list is right, but clear the box afterwards: <code>item.value = \"\";</code>", "box: " + v); } })),
+      solution: 'const item = document.getElementById("item");\nconst add = document.getElementById("add");\nconst list = document.getElementById("list");\nadd.addEventListener("click", function () {\n  if (item.value !== "") {\n    if (list.textContent === "") {\n      list.textContent = item.value;\n    } else {\n      list.textContent = list.textContent + ", " + item.value;\n    }\n    item.value = "";\n  }\n});' }
+  ],
+  boss: [
+    { tier: "Easy", title: "Typo hunt", task: "Run this, read the error, and fix it so it prints <code>Shield: 50</code>.",
+      starter: 'const shield = 50;\nconsole.log("Shield: " + sheild);\n', hints: ["The error names something JavaScript has never heard of.", "<code>sheild</code> should be <code>shield</code>."],
+      cases: [outCase("Output", "", ["Shield: 50"])], solution: 'const shield = 50;\nconsole.log("Shield: " + shield);' },
+    { tier: "Medium", title: "One short", task: "This loop should print 1, 2, 3, 4 and 5, but it stops early. Find the bug.",
+      starter: "for (let i = 1; i < 5; i++) {\n  console.log(i);\n}\n", hints: ["Run it and compare the output with what you wanted. Which number is missing?", "The loop stops when <code>i < 5</code> becomes false. Use <code>i <= 5</code>."],
+      cases: [outCase("Output", "", ["1", "2", "3", "4", "5"])], solution: "for (let i = 1; i <= 5; i++) {\n  console.log(i);\n}" },
+    { tier: "Hard", title: "Three bugs", task: "<code>average(nums)</code> should return the average of an array, but it has <b>three</b> bugs. Fix them all.",
+      starter: "function average(nums) {\n  let total = 0;\n  for (let i = 0; i <= nums.length; i++) {\n    total = total + nums[i];\n    return total / nums.lenght;\n  }\n}\n", hints: ["Use Trace my code with a small array: watch when the function returns and what <code>nums.lenght</code> is.", "The loop goes one too far (<code><=</code>), the return is inside the loop, and <code>lenght</code> is misspelled."],
+      cases: [[[2, 4, 6], 4], [[10], 10], [[1, 2], 1.5]].map(([a, e]) => fnCase("average", [a], e, v => typeof v === "number" && isNaN(v) ? "NaN: something undefined got into the maths. Check the spelling of length and the loop's condition." : "")),
+      solution: "function average(nums) {\n  let total = 0;\n  for (let i = 0; i < nums.length; i++) {\n    total = total + nums[i];\n  }\n  return total / nums.length;\n}" }
+  ]
+};
+const missionKey = (L, k) => L.id + ":" + k;
+const missionDone = (L, k, s) => !!((s || store).missions || {})[missionKey(L, k)];
+const missionsOf = L => MISSIONS[L.id] || [];
+
 /* ================= Achievements ================= */
 const sectorDone = (s, w) => LESSONS.filter(L => L.world === w).every(L => s.done[L.id]);
 const ACHIEVEMENTS = [
@@ -2546,18 +2827,22 @@ const ACHIEVEMENTS = [
   { id: "review", title: "Second Look", desc: "Complete a review exercise.", icon: "bolt", test: s => Object.values(s.done).some(d => d.reviewed) },
   { id: "halfway", title: "Halfway There", desc: "Complete 9 repairs.", icon: "gear", test: s => Object.keys(s.done).length >= 9 },
   { id: "perfect", title: "Perfectionist", desc: "Earn 3 stars on every repair in one sector.", icon: "star", test: s => WORLDS.some((_, w) => LESSONS.filter(L => L.world === w).every(L => s.done[L.id] && s.done[L.id].stars === 3)) },
+  { id: "trainee", title: "Sparring Partner", desc: "Pass 5 Training Deck missions.", icon: "gear", test: s => Object.keys(s.missions || {}).length >= 5 },
+  { id: "hardmode", title: "Hard Mode", desc: "Pass 5 Hard missions in the Training Deck.", icon: "skull", test: s => Object.keys(s.missions || {}).filter(k => { const [id, i] = k.split(":"); return MISSIONS[id] && MISSIONS[id][+i] && MISSIONS[id][+i].tier === "Hard"; }).length >= 5 },
+  { id: "deck", title: "Deck Cleared", desc: "Pass every mission in the Training Deck.", icon: "trophy", test: s => Object.keys(MISSIONS).every(id => MISSIONS[id].every((_, k) => (s.missions || {})[id + ":" + k])) },
   { id: "web", title: "Web Wizard", desc: "Complete every repair in the Control Room, finale included.", icon: "panel", test: s => sectorDone(s, 5) },
   { id: "boss", title: "Glitch Slayer", desc: "Defeat the Glitch King.", icon: "skull", test: s => !!s.done.boss },
   { id: "all", title: "Station Restored", desc: "Repair every machine on the station.", icon: "trophy", test: s => LESSONS.every(L => s.done[L.id]) }
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
 // pred: lessons whose "predict the output" was answered correctly
-const freshStore = () => ({ done: {}, drafts: {}, sess: {}, drills: {}, ach: {}, stats: {}, pred: {}, seenIntro: false });
+// missions: Training Deck missions passed ("lessonId:index")
+const freshStore = () => ({ done: {}, drafts: {}, sess: {}, drills: {}, ach: {}, stats: {}, pred: {}, missions: {}, seenIntro: false });
 let store = freshStore();
 try { const s = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); if (s && s.done) store = Object.assign(freshStore(), s); } catch (_) {}
 function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (_) {} }
@@ -2568,7 +2853,7 @@ function hashStr(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h <
 function b64encode(str) { const bytes = new TextEncoder().encode(str); let bin = ""; for (const b of bytes) bin += String.fromCharCode(b); return btoa(bin); }
 function b64decode(b) { const bin = atob(b); return new TextDecoder().decode(Uint8Array.from(bin, ch => ch.charCodeAt(0))); }
 function makeSaveCode(st) {
-  const body = b64encode(JSON.stringify({ v: 1, done: st.done, drills: st.drills, drafts: st.drafts, ach: st.ach, stats: st.stats, pred: st.pred, seenIntro: st.seenIntro }));
+  const body = b64encode(JSON.stringify({ v: 1, done: st.done, drills: st.drills, drafts: st.drafts, ach: st.ach, stats: st.stats, pred: st.pred, missions: st.missions, seenIntro: st.seenIntro }));
   return SAVE_PREFIX + "." + body + "." + hashStr(body);
 }
 // Only known lessons, drills, achievements and sane value types survive a load
@@ -2586,12 +2871,13 @@ function sanitizeStore(d) {
     out.drills[id] = arr.slice(0, (ids.get(id).drills || []).length).map(v => v === true);
   }
   for (const [k, v] of Object.entries(d.drafts || {})) {
-    const m = /^([a-z0-9]+):(p|c|d\d|r)$/.exec(k);
+    const m = /^([a-z0-9]+):(p|c|d\d|r|m\d)$/.exec(k);
     if (m && ids.has(m[1]) && typeof v === "string") out.drafts[k] = v.slice(0, 20000);
   }
   const achIds = new Set(ACHIEVEMENTS.map(a => a.id));
   for (const [k, v] of Object.entries(d.ach || {})) if (achIds.has(k)) out.ach[k] = count(v) || 1;
   for (const [k, v] of Object.entries(d.pred || {})) if (ids.has(k) && v === true) out.pred[k] = true;
+  for (const [k, v] of Object.entries(d.missions || {})) { const m = /^([a-z0-9]+):(\d)$/.exec(k); if (m && ids.has(m[1]) && +m[2] < missionsOf(ids.get(m[1])).length && v === true) out.missions[k] = true; }
   for (const [k, v] of Object.entries(d.stats || {})) if (/^[a-zA-Z]{1,24}$/.test(k)) out.stats[k] = count(v);
   out.seenIntro = d.seenIntro === true;
   return out;
@@ -2617,8 +2903,10 @@ function toast(html, opts) {
 }
 // XP per repair: 100 + 25 per star, plus 50 for beating a sector finale
 const repairXP = (L, d) => 100 + 25 * d.stars + (isFinale(L) ? 50 : 0);
-const xp = () => Object.entries(store.done).reduce((a, [id, d]) => a + (LESSON_BY_ID.has(id) ? repairXP(LESSON_BY_ID.get(id), d) : 0), 0);
-const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"], [3000, "Station Chief"]];
+// Training Deck missions add bonus XP by difficulty
+const missionXP = () => Object.keys(store.missions || {}).reduce((a, k) => { const [id, i] = k.split(":"), m = MISSIONS[id] && MISSIONS[id][+i]; return a + (m ? MISSION_XP[m.tier] : 0); }, 0);
+const xp = () => Object.entries(store.done).reduce((a, [id, d]) => a + (LESSON_BY_ID.has(id) ? repairXP(LESSON_BY_ID.get(id), d) : 0), 0) + missionXP();
+const RANKS = [[0, "Rookie"], [300, "Apprentice"], [800, "Technician"], [1400, "Engineer"], [2000, "Architect"], [3000, "Station Chief"], [4500, "Commander"], [6500, "Admiral"]];
 
 /* ---- Concept mastery: New → Practising → Learned → Solid → Mastered ---- */
 const MASTERY = ["New", "Practising", "Learned", "Solid", "Mastered"];
@@ -2627,6 +2915,7 @@ function masteryOf(L, s) {
   const d = s.done[L.id];
   if (!d) return (s.drills[L.id] || []).some(Boolean) ? 1 : 0;
   if (d.reviewed) return 4;
+  if (missionsOf(L).length && missionsOf(L).every((_, k) => missionDone(L, k, s))) return 4;
   if (d.revealed || d.stars === 1) return 2;
   return d.stars === 2 ? 3 : 4;
 }
@@ -2673,7 +2962,7 @@ function renderStatus() {
 const app = $("#app");
 let view = { name: "map" };
 function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
-function render() { stopLive(); renderStatus(); if (view.name === "map") renderMap(); else if (view.name === "review") renderReview(); else renderLesson(); }
+function render() { stopLive(); renderStatus(); if (view.name === "map") renderMap(); else if (view.name === "review") renderReview(); else if (view.name === "arena") renderArena(); else renderLesson(); }
 $("#logo-btn").onclick = () => go({ name: "map" });
 
 function renderMap() {
@@ -2693,6 +2982,10 @@ function renderMap() {
   if (rq.length) h += '<section class="panel reviewq" aria-labelledby="rq-h"><div class="drill-head"><div><p class="eyebrow">Review queue</p><h3 id="rq-h">Worth another look</h3></div><span class="pill go">' + rq.length + " to review</span></div>" +
     '<p class="muted small">These concepts were a struggle the first time. One short, fresh exercise locks each one in and raises it to Mastered.</p><div class="rq-list">' +
     rq.slice(0, 4).map(L => '<div class="rq-item">' + pxImg(WORLD_ICONS[L.world], "rq-icon") + "<div><b>" + esc(L.title) + "</b><small>" + esc(L.concept) + " · " + reviewReason(store.done[L.id]) + '</small></div><button class="btn small" data-review="' + LESSONS.indexOf(L) + '">Review</button></div>').join("") + "</div></section>";
+  if (arenaTopics().some(T => store.done[T.id])) {
+    const mp = Object.keys(store.missions).length, mt = missionCount();
+    h += '<section class="panel welcome arena-card" aria-labelledby="ar-h">' + pxImg("gear", "welcome-icon") + '<div><p class="eyebrow">Training Deck</p><h3 id="ar-h">Extra missions: ' + mp + " of " + mt + ' passed</h3><p class="muted small">Three more missions (Easy, Medium and Hard) for every topic you\'ve repaired, with bonus XP. Practise until it feels easy.</p></div><div class="toolbar"><button class="btn primary" id="arena-open">Open the Training Deck</button></div></section>';
+  }
   WORLDS.forEach((w, wi) => {
     h += '<section class="sector"><div class="sector-info">' + pxImg(WORLD_ICONS[wi], "sec-icon") + '<div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div></div><div class="nodes">';
     LESSONS.forEach((l, i) => {
@@ -2718,6 +3011,7 @@ function renderMap() {
   const c = $("#continue"); if (c) c.onclick = () => go({ name: "lesson", i: nextIdx, stage: 0 });
   $$("[data-review]", app).forEach(b => b.onclick = () => go({ name: "review", i: +b.dataset.review }));
   const to = $("#tour-open"); if (to) to.onclick = openTour;
+  const ao = $("#arena-open"); if (ao) ao.onclick = () => go({ name: "arena" });
   const ts = $("#tour-skip"); if (ts) ts.onclick = () => { store.seenIntro = true; save(); render(); };
   wireSavePanel();
   $("#reset").onclick = () => {
@@ -2788,6 +3082,71 @@ function stageBriefing(host, L) {
     nextBtn("Start the finale", 3) + "</div>";
   $$("[data-open]", host).forEach(b => b.onclick = () => go({ name: "lesson", i: +b.dataset.open, stage: 0 }));
   wireGoto(host);
+}
+
+/* ---- Training Deck: extra Easy / Medium / Hard missions for every repaired topic ---- */
+const arenaTopics = () => LESSONS.filter(L => missionsOf(L).length);
+const missionCount = () => arenaTopics().reduce((a, L) => a + missionsOf(L).length, 0);
+const missionsPassed = L => missionsOf(L).filter((_, k) => missionDone(L, k)).length;
+function renderArena() {
+  const i = view.i;
+  if (i === undefined || i === null) return renderArenaOverview();
+  const L = LESSONS[i];
+  if (!L || !missionsOf(L).length || !store.done[L.id]) { go({ name: "arena" }); return; }
+  const ms = missionsOf(L);
+  app.innerHTML = lessonHead(L, i, "Training Deck") +
+    '<div class="cols"><div class="stack"><div class="panel"><h3>Remember</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul>" +
+    '<p class="muted small" style="margin-top:12px">Missions get harder from Easy to Hard. Hints are free, every mission gives bonus XP the first time you pass it, and passing all ' + ms.length + " masters this topic.</p>" +
+    '<div class="toolbar"><button class="btn small" id="ar-lesson">Reopen the lesson</button><button class="btn small" id="ar-all">All topics</button></div></div>' +
+    '<div class="panel"><h3>Progress</h3><div class="tier-list">' + ms.map((m, k) => '<div class="tier-row"><span class="tier t-' + m.tier.toLowerCase() + '">' + m.tier + "</span><span>" + esc(m.title) + '</span><span class="pill ' + (missionDone(L, k) ? "ok" : "go") + '">' + (missionDone(L, k) ? "Passed" : "+" + MISSION_XP[m.tier] + " XP") + "</span></div>").join("") + "</div></div></div>" +
+    '<div class="stack" id="ar-ms"></div></div><div class="next-row" id="ar-next"></div>';
+  $("#back").onclick = () => go({ name: "map" });
+  $("#ar-lesson").onclick = () => go({ name: "lesson", i, stage: 0 });
+  $("#ar-all").onclick = () => go({ name: "arena" });
+  const host = $("#ar-ms");
+  ms.forEach((m, k) => {
+    const div = document.createElement("div"); host.appendChild(div);
+    mountExercise(div, m, {
+      key: L.id + ":m" + k, eyebrow: '<span class="tier t-' + m.tier.toLowerCase() + '">' + m.tier + "</span> Mission " + (k + 1) + " of " + ms.length, checkLabel: "Check mission",
+      isDone: () => missionDone(L, k),
+      markDone: () => { store.missions[missionKey(L, k)] = true; },
+      okText: () => "+" + MISSION_XP[m.tier] + " XP." + (missionsPassed(L) === ms.length ? " Every mission for this topic is done: " + esc(L.title) + " is mastered." : ""),
+      onPass: first => {
+        if (first) {
+          toast(pxImg(WORLD_ICONS[L.world]) + "<div>" + m.tier + " mission passed<small>+" + MISSION_XP[m.tier] + " XP · " + esc(m.title) + "</small></div>");
+          checkAchievements();
+          const lm = $(".lh-mastery"); if (lm) lm.innerHTML = '<span class="label">Mastery</span>' + meter(masteryOf(L)) + "<small>" + MASTERY[masteryOf(L)] + "</small>";
+        }
+        renderStatus(); nextRow();
+      }
+    });
+  });
+  function nextRow() {
+    const open = arenaTopics().filter(T => store.done[T.id] && missionsPassed(T) < missionsOf(T).length && T !== L);
+    $("#ar-next").innerHTML = '<button class="btn" id="ar-map">Station map</button>' + (open.length ? '<button class="btn primary" id="ar-go">Next topic: ' + esc(open[0].title) + " →</button>" : "");
+    $("#ar-map").onclick = () => go({ name: "map" });
+    const g = $("#ar-go"); if (g) g.onclick = () => go({ name: "arena", i: LESSONS.indexOf(open[0]) });
+  }
+  nextRow();
+}
+function renderArenaOverview() {
+  const passed = Object.keys(store.missions).length, total = missionCount();
+  let h = '<div class="lesson-head"><button class="btn small" id="back">← Map</button>' + pxImg("gear", "head-icon") + '<div class="lh-text"><p class="eyebrow">Training Deck</p><h2>Extra missions</h2><p class="concept">' + passed + " of " + total + " missions passed · bonus XP for every first pass</p></div></div>";
+  h += '<p class="muted" style="max-width:68ch;margin-bottom:24px">Each topic has three extra missions, from Easy to Hard, that unlock once you\'ve repaired that topic. Use them to practise until a topic feels easy. Passing all three of a topic\'s missions raises it to Mastered.</p>';
+  WORLDS.forEach((w, wi) => {
+    const ts = arenaTopics().filter(T => T.world === wi);
+    if (!ts.length) return;
+    h += '<section class="sector"><div class="sector-info">' + pxImg(WORLD_ICONS[wi], "sec-icon") + '<div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + '</h3></div></div><div class="nodes">';
+    ts.forEach(T => {
+      const ok = !!store.done[T.id], n = missionsPassed(T), all = missionsOf(T).length;
+      h += '<button class="node ' + (!ok ? "locked" : n === all ? "done" : "available") + '" data-arena="' + LESSONS.indexOf(T) + '"' + (ok ? "" : " disabled") + '><span class="lv">' + esc(T.concept) + "</span><b>" + esc(T.title) + "</b>" +
+        '<span class="node-foot">' + (ok ? '<span class="tiers">' + missionsOf(T).map((m, k) => '<i class="tier-dot t-' + m.tier.toLowerCase() + (missionDone(T, k) ? " on" : "") + '" title="' + m.tier + (missionDone(T, k) ? ": passed" : "") + '"></i>').join("") + "</span><small>" + n + " / " + all + "</small>" : '<span class="pill">' + pxImg("lock", "mini") + " Repair the lesson first</span>") + "</span></button>";
+    });
+    h += "</div></section>";
+  });
+  app.innerHTML = h;
+  $("#back").onclick = () => go({ name: "map" });
+  $$("[data-arena]", app).forEach(b => b.onclick = () => go({ name: "arena", i: +b.dataset.arena }));
 }
 
 /* ---- Review screen: a fresh exercise for a concept that was a struggle ---- */
@@ -3404,13 +3763,16 @@ function stageReview(host, L, idx) {
   host.innerHTML = '<div class="cols"><div class="stack"><div class="okbox"><h4>' + esc(C.title) + ': complete</h4>' + pxStars(d.stars, true) + '<p>+' + repairXP(L, d) + " XP toward your rank" + (isFinale(L) ? ", including the 50 XP finale bonus" : "") + ".</p>" +
     (canReview ? '<p class="small">Mastery: <b>' + MASTERY[masteryOf(L)] + "</b>" + (masteryOf(L) < 4 ? ". A short review exercise raises it to Mastered." : ".") + '</p><div class="toolbar" style="margin-top:4px"><button class="btn small" id="toreviewex">' + (d.reviewed ? "Practise it again" : "Take the review exercise") + "</button></div>" : "") + "</div>" +
     '<div class="panel"><h3>Your solution</h3>' + codeBlock(d.code) + '<p class="muted small" style="margin-top:8px">Your version doesn\'t have to match the model below. If every test passed, it works. Compare the two to see other ways of writing the same idea.</p></div>' +
-    '<div class="panel"><h3>What you learned</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div></div>" +
+    '<div class="panel"><h3>What you learned</h3><ul class="mistakes">' + L.recap.map(r => "<li>" + r + "</li>").join("") + "</ul></div>" +
+    (missionsOf(L).length ? '<div class="panel"><h3>Keep practising</h3><p class="small">' + missionsPassed(L) + " of " + missionsOf(L).length + " Training Deck missions passed for this topic. They go from Easy to Hard and give bonus XP.</p>" +
+      '<div class="tiers" style="margin:10px 0">' + missionsOf(L).map((m, k) => '<span class="tier t-' + m.tier.toLowerCase() + (missionDone(L, k) ? " on" : "") + '">' + m.tier + (missionDone(L, k) ? " ✓" : "") + "</span>").join(" ") + '</div><button class="btn signal small" id="toarena">Open this topic\'s missions</button></div>' : "") + "</div>" +
     '<div class="stack"><div class="panel"><h3>Why the model solution works</h3><div class="scroll-x"><table class="explain"><tbody>' + solLines.map((ln, i) => "<tr><td>" + (hl(ln) || " ") + "</td><td>" + esc(C.why[i] || "") + "</td></tr>").join("") + "</tbody></table></div></div>" +
     '<div class="panel"><h3>Watch out for</h3><ul class="mistakes">' + L.mistakes.slice(0, 2).map(m => "<li>" + m + "</li>").join("") + "</ul></div></div></div>" +
     '<div class="next-row"><button class="btn" id="tomap">Station map</button>' + (next ? '<button class="btn primary" id="tonext">Next: ' + esc(next.title) + " →</button>" : '<span class="pill ok" style="align-self:center">Station fully repaired</span>') + "</div>";
   $("#tomap", host).onclick = () => go({ name: "map" });
   const tn = $("#tonext", host); if (tn) tn.onclick = () => go({ name: "lesson", i: idx + 1, stage: 0 });
   const rv = $("#toreviewex", host); if (rv) rv.onclick = () => go({ name: "review", i: idx });
+  const ta = $("#toarena", host); if (ta) ta.onclick = () => go({ name: "arena", i: idx });
 }
 
 /* ================= How to play: a short tour, opened from the welcome card or the top bar ================= */

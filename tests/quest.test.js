@@ -50,6 +50,19 @@ const tests = async () => {
     if (!isFinale(L)) ok(L.example.lines.length === L.example.code.split(NL).length, L.id + ": one explanation per example line");
     ok(Array.isArray(L.recap) && L.recap.length && Array.isArray(L.mistakes) && L.mistakes.length >= 2, L.id + ": has a recap and at least two common mistakes");
   }
+  // 1d. Training Deck missions: Easy, Medium, Hard for every lesson; solutions pass, starters don't
+  for (const L of LESSONS.filter(l => !isFinale(l))) {
+    const ms = missionsOf(L);
+    ok(ms.length === 3 && ms.map(m => m.tier).join() === "Easy,Medium,Hard", L.id + ": has Easy, Medium and Hard missions", ms.map(m => m.tier).join());
+    for (const [k, M] of ms.entries()) {
+      const name = L.id + " mission " + (k + 1) + " (" + M.tier + ")";
+      const ev = await evaluate(M.solution, M);
+      ok(ev.allOk, name + ": solution passes", ev.allOk ? "" : strip(failMessage(ev, M)));
+      const st = await evaluate(M.starter, M);
+      ok(!st.allOk, name + ": starter does not pass by itself");
+      ok(M.hints.length >= 2 && M.title && M.task, name + ": has a title, a task and two hints");
+    }
+  }
   // 1a. Reactive scenes: every test-rig challenge draws each case, before and after running real code
   for (const L of LESSONS.filter(l => l.challenge.scene === "rig")) {
     const C = L.challenge, vis = SCENES[L.id];
@@ -126,6 +139,7 @@ const tests = async () => {
     programs.push([L.id + " challenge solution", L.challenge.solution, c0.pre || "", c0.map, c0.dir, c0.page || L.challenge.page]);
     (L.drills || []).forEach((D, k) => programs.push([L.id + " drill " + (k + 1), D.solution, D.cases[0].pre || "", D.cases[0].map, D.cases[0].dir, D.cases[0].page || D.page]));
     if (REVIEWS[L.id]) programs.push([L.id + " review", REVIEWS[L.id].solution, REVIEWS[L.id].cases[0].pre || "", null, undefined, REVIEWS[L.id].page]);
+    missionsOf(L).forEach((M, k) => programs.push([L.id + " mission " + (k + 1), M.solution, M.cases[0].pre || "", M.cases[0].map, M.cases[0].dir, M.cases[0].page || M.page]));
     if (!isFinale(L)) {
       programs.push([L.id + " example", L.example.code, "", null, undefined, L.page], [L.id + " trace code", L.trace.code, "", null, undefined, L.page]);
       programs.push([L.id + " sandbox starter", L.practise.starter, "", L.practise.map || null, 1, L.practise.page]);
@@ -256,6 +270,18 @@ const tests = async () => {
   ok(unlocked(LESSONS.indexOf(lessonL("bool"))) && unlocked(LESSONS.indexOf(lessonL("if"))), "players who passed sector 2 lessons before finales existed keep their access");
   S.pred = { log: true, vars: true, math: true, bool: true, if: true };
   ok(checkAchievements(true).some(a => a.id === "fortune"), "five correct predictions unlock Fortune Teller");
+  // Missions: XP by tier, mastery when all three pass, achievements
+  S.done = { vars: { stars: 1 } }; S.missions = {};
+  const base = xp();
+  S.missions = { "vars:0": true, "vars:1": true };
+  ok(xp() === base + 15 + 25 && masteryOf(lessonL("vars")) === 2, "missions add tier XP (Easy 15, Medium 25)", String(xp() - base));
+  S.missions["vars:2"] = true;
+  ok(xp() === base + 15 + 25 + 40 && masteryOf(lessonL("vars")) === 4, "passing all three missions masters the topic (and Hard gives 40 XP)");
+  ["log:0", "log:1", "math:2", "bool:2", "if:2", "for:2"].forEach(k => { S.missions[k] = true; });
+  const mAch = checkAchievements(true).map(a => a.id);
+  ok(mAch.indexOf("trainee") >= 0 && mAch.indexOf("hardmode") >= 0 && mAch.indexOf("deck") < 0, "Sparring Partner and Hard Mode unlock; Deck Cleared needs every mission", mAch.join());
+  const sm = sanitizeStore({ missions: { "vars:2": true, "vars:7": true, "nope:0": true, "log:1": "yes" }, drafts: { "vars:m2": "x", "vars:m9x": "y" } });
+  ok(Object.keys(sm.missions).join() === "vars:2" && Object.keys(sm.drafts).join() === "vars:m2", "saved missions and mission drafts load safely", JSON.stringify(sm.missions));
   store = real;
 
   // 5b. Save codes
