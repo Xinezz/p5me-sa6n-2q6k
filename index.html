@@ -692,6 +692,8 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  satellite: { rows: ["kkk......kkk", "kbk......kbk", "kbk.kkkk.kbk", "kbkkkwwkkkbk", "kbk.kwwk.kbk", "kbk.kkkk.kbk", "kkk..kk..kkk", ".....kk.....", "....kyyk....", ".....kk....."] },
+  core: { rows: ["...kkkkkk...", "..krrrrrrk..", ".krrwwwwrrk.", "krrwkkkkwrrk", "krwkkrrkkwrk", "krwkrwwrkwrk", "krwkkrrkkwrk", "krrwkkkkwrrk", ".krrwwwwrrk.", "..krrrrrrk..", "...kkkkkk..."] },
   vault: { rows: ["kkkkkkkkkkkk", "kSSSSSSSSSSk", "kSkkkkkkkkSk", "kSkyyyyyykSk", "kSkyykkyykSk", "kSkyykkyykSk", "kSkyyyyyykSk", "kSkkkkkkkkSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk", ".kk......kk."] },
   crates: { rows: ["....kkkk....", "....kook....", "....kook....", "..kkkkkkkk..", "..kookkook..", "..kookkook..", "kkkkkkkkkkkk", "kookkookkook", "kookkookkook", "kkkkkkkkkkkk"] },
   dish: { rows: ["..........y.", ".kkkk....y..", "kwwwwk..y...", "kwwwwwkk....", "kwwwwwwk....", ".kwwwwk.....", "..kkkkk.....", "....kSk.....", "....kSk.....", "..kkSSSkk...", "..kSSSSSk...", "..kkkkkkk..."] },
@@ -702,7 +704,7 @@ const SPRITES = {
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
   exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
 };
-const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish", "crates", "vault"];
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish", "crates", "vault", "satellite", "core"];
 // Act II (advanced topics) starts at this sector index
 const ACT2_FROM = 7;
 const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
@@ -1437,6 +1439,19 @@ const outCase = (label, pre, lines, extra) => Object.assign({ label, pre, expect
   check: r => lines.length ? expectLogs(r.logs, lines) : (r.logs.length ? fail("Nothing should print here, but your code printed " + q(r.logs.join(", ")) + ".", r.logs.join(", ")) : pass("(nothing printed)")) }, extra || {});
 // A test case that calls one of the learner's functions and compares what it returns
 const fnCase = (fn, args, exp, tips) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return { label: txt, expect: show(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, tips) }; };
+// A test case for a function that should throw an Error with a given message
+const throwCase = (fn, args, msg) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return { label: txt, expect: "throws " + show(msg), post: callPost(fn, args), check: r => {
+  const R = r.report;
+  if (!R.isFn) return fail("There is no function called <code>" + fn + "</code>.", "no function");
+  if (R.out.err === undefined) return fail(q(txt) + " should throw an error with the message " + q(msg) + ", but it returned " + q(show(R.out.v)) + ". Use <code>throw new Error(" + esc(JSON.stringify(msg)) + ");</code>", show(R.out.v));
+  return R.out.err === msg ? pass("throws " + show(msg)) : fail(q(txt) + " threw " + q(R.out.err) + " instead of " + q(msg) + ".", R.out.err); } }; };
+// Builds a test case that drives a class through `script` (inside try), then checks __report
+const classCase = (label, expect, script, check) => ({ label, expect, post: "try { " + script + " } catch (e) { __report.err = e.message; }",
+  check: r => r.report.err ? fail("Using your class failed: " + esc(r.report.err), "error") : check(r.report) });
+// A test case for an async function: waits (on the simulated clock) for what it resolves to
+const asyncCase = (fn, args, exp, extra, tips) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return Object.assign({ label: txt, expect: show(exp),
+  post: "__report.isFn = typeof " + fn + " === 'function'; if (__report.isFn) __report.out = __acall(" + fn + (args.length ? ", " + args.map(a => JSON.stringify(a)).join(", ") : "") + ");",
+  check: r => r.report.isFn && r.report.out && r.report.out.pending ? fail(q(txt) + " never finished. Is an await waiting on something that never answers?", "still waiting") : callCheck(r.report, fn, txt, exp, tips) }, extra || {}); };
 
 /* ================= Curriculum ================= */
 const WORLDS = [
@@ -1449,7 +1464,9 @@ const WORLDS = [
   { name: "Glitch Core", blurb: "Final boss of Act I. Find and fix the bugs." },
   { name: "Signal Lab", blurb: "Work with text: string methods, slicing, splitting and template literals." },
   { name: "Array Engine", blurb: "Arrow functions and powerful array tools: map, filter, find, some, every and reduce." },
-  { name: "Data Vault", blurb: "Object tools, destructuring, spread and classes." }
+  { name: "Data Vault", blurb: "Object tools, destructuring, spread and classes." },
+  { name: "Async Relay", blurb: "Handle errors, schedule work with timers, and wait for answers with promises and async/await." },
+  { name: "The Source", blurb: "Final boss of Act II. Debug modern JavaScript." }
 ];
 
 const LESSONS = [
@@ -2552,6 +2569,164 @@ const LESSONS = [
     why: ["The blueprint.", "Runs for every new shuttle.", "Store the name…", "…the number of seats…", "…and an empty passenger list for this shuttle.", "", "Try to board someone.", "Already full?", "Refuse.", "", "Otherwise add them to this shuttle's list…", "…and report success.", "", "Build the status text from this shuttle's own values.", "", "", "End of the class."]
   },
   recap: ["A class is a blueprint; <code>new</code> builds objects from it.", "The constructor sets up each object using <code>this</code>.", "Methods are functions in the class, and <code>this</code> is the object they're called on."]
+},
+/* ================= ACT II · Async Relay ================= */
+{
+  id: "errors", world: 10, title: "Error Shields", concept: "try, catch and throw",
+  story: "The Async Relay talks to ships light-years away, and things go wrong all the time. Instead of letting one bad message crash the whole relay, shield the code.",
+  learn: [
+    ["Catching errors", "Normally an error stops the program. <code>try { … } catch (err) { … }</code> changes that: the code in <code>try</code> runs, and if anything in it throws an error, JavaScript jumps straight to <code>catch</code> instead of crashing."],
+    ["What's inside an error", "The caught error is an object: <code>err.message</code> is the description, and <code>err.name</code> is its type, like TypeError."],
+    ["Throwing your own", "<code>throw new Error(\"Not enough fuel\");</code> stops a function on purpose when something is wrong. Whoever called it can catch the error. <code>isNaN(n)</code> is handy here: it's true when n isn't a valid number."],
+    ["finally", "An optional <code>finally { … }</code> block runs at the end whether there was an error or not. It's useful for cleaning up."]
+  ],
+  terms: [["exception", "an error that has been thrown"], ["try / catch", "run code, and handle any error it throws"], ["throw", "raise an error on purpose"]],
+  example: { code: 'function launch(fuel) {\n  if (fuel < 50) {\n    throw new Error("Not enough fuel");\n  }\n  return "Launched!";\n}\ntry {\n  console.log(launch(80));\n  console.log(launch(10));\n  console.log("never printed");\n} catch (err) {\n  console.log("Abort: " + err.message);\n}\nconsole.log("Station still running");', lines: ["A function that refuses bad input.", "Too little fuel?", "Stop right here by throwing an error.", "", "Otherwise launch normally.", "", "Try some risky code.", "Works: prints Launched!", "Throws, so the try stops on this line.", "Skipped.", "The error lands here.", "Prints Abort: Not enough fuel.", "", "The program carries on: prints Station still running."] },
+  symbols: [["try { }", "code that might fail"], ["catch (err) { }", "runs only if something in try threw"], ["err.message", "the error's description"], ['throw new Error("…")', "raise an error on purpose"]],
+  good: { code: 'try {\n  risky();\n} catch (err) {\n  console.log("Problem: " + err.message);\n}', why: "The error is handled and reported, and the program keeps going." },
+  bad: { code: "try {\n  risky();\n} catch (err) {\n}", why: "An empty catch hides the problem completely. At least report what happened." },
+  mistakes: ["An empty catch that silently swallows errors.", "Expecting the lines after the error inside try to still run. They're skipped.", "Throwing a plain string instead of <code>new Error(\"…\")</code>, which loses the name and message.", "Expecting try/catch to catch a syntax error. Code that can't be read never runs at all."],
+  trace: { code: 'function launch(fuel) {\n  if (fuel < 50) {\n    throw new Error("Not enough fuel");\n  }\n  return "Launched!";\n}\ntry {\n  console.log(launch(80));\n  console.log(launch(10));\n  console.log("never printed");\n} catch (err) {\n  console.log("Abort: " + err.message);\n}\nconsole.log("Station still running");', steps: [
+    { l: 0, n: "Define launch. Nothing runs yet." },
+    { l: 7, o: "Launched!", n: "80 is enough fuel, so launch returns normally." },
+    { l: 2, v: { fuel: "10" }, n: "launch(10): too little fuel, so it throws." },
+    { l: 11, v: { err: "Error: Not enough fuel" }, o: "Abort: Not enough fuel", n: "The rest of try was skipped; catch received the error." },
+    { l: 13, o: "Station still running", n: "No crash: the program keeps going." }] },
+  practise: { starter: 'function divide(a, b) {\n  if (b === 0) {\n    throw new Error("Cannot divide by zero");\n  }\n  return a / b;\n}\ntry {\n  console.log(divide(10, 2));\n  console.log(divide(1, 0));\n} catch (err) {\n  console.log("Oops: " + err.message);\n}\n',
+    ideas: ["Remove the try/catch and see what happens to the program.", "Add a <code>finally { console.log(\"done\"); }</code> block.", "Print <code>err.name</code> too.", "Catch a real JavaScript error: call a function that doesn't exist inside try."] },
+  predict: { code: 'try {\n  console.log("A");\n  throw new Error("B");\n  console.log("C");\n} catch (e) {\n  console.log(e.message);\n}\nconsole.log("D");', answer: "A\nB\nD", explain: "A prints, then the throw jumps straight to catch, skipping C. catch prints the message B, and the program carries on to D." },
+  challenge: {
+    scene: "screens", title: "Shield the fuel sensor",
+    brief: "Write <code>parseFuel(text)</code> that turns text like <code>\"42\"</code> into the number 42, but <b>throws</b> an error with the message <code>Bad reading: abc</code> (using the text it received) when the text isn't a number. Then write <code>safeParse(text)</code> that calls parseFuel inside try/catch and returns the number, or 0 if parseFuel throws.",
+    starter: "function parseFuel(text) {\n\n}\n\nfunction safeParse(text) {\n\n}\n",
+    hints: ["<code>const n = Number(text); if (isNaN(n)) { throw new Error(\"Bad reading: \" + text); } return n;</code>", "safeParse: <code>try { return parseFuel(text); } catch (err) { return 0; }</code>"],
+    cases: [fnCase("parseFuel", ["42"], 42), fnCase("parseFuel", ["7.5"], 7.5), throwCase("parseFuel", ["abc"], "Bad reading: abc"), fnCase("safeParse", ["12"], 12), fnCase("safeParse", ["oops"], 0, v => typeof v === "number" && isNaN(v) ? "NaN got through: parseFuel should throw for bad text, and safeParse should catch it and return 0." : "")],
+    solution: 'function parseFuel(text) {\n  const n = Number(text);\n  if (isNaN(n)) {\n    throw new Error("Bad reading: " + text);\n  }\n  return n;\n}\n\nfunction safeParse(text) {\n  try {\n    return parseFuel(text);\n  } catch (err) {\n    return 0;\n  }\n}',
+    why: ["Define parseFuel.", "Try converting the text.", "Not a number?", "Refuse loudly, including the bad text in the message.", "", "A good reading is returned.", "", "", "Define safeParse.", "Risky call…", "…returned straight away if it works.", "If it threw…", "…fall back to 0.", "", ""]
+  },
+  recap: ["<code>try/catch</code> handles errors instead of crashing.", "<code>throw new Error(\"…\")</code> raises your own error.", "Code after a throw inside try is skipped; catch gets the error."]
+},
+{
+  id: "timers", world: 10, title: "Timers", concept: "setTimeout, callbacks and the order of events",
+  story: "Relay messages go out on a schedule: one now, one in a second, one in a minute. Code doesn't have to happen immediately.",
+  learn: [
+    ["Do it later", "<code>setTimeout(fn, ms)</code> runs the function fn after ms milliseconds (1000 ms is one second). In Quest the clock is simulated, so a long wait finishes instantly but still in the right order."],
+    ["The rest doesn't wait", "setTimeout only <b>schedules</b> the function. The lines after it carry on straight away. Timers run once the main code has finished, earliest first."],
+    ["Pass, don't call", "Give setTimeout the function itself: <code>setTimeout(ring, 1000)</code>. Writing <code>setTimeout(ring(), 1000)</code> would run ring immediately. Arrow functions are perfect here: <code>setTimeout(() => console.log(\"hi\"), 1000)</code>."],
+    ["Cancelling", "setTimeout returns an id. <code>clearTimeout(id)</code> cancels that timer before it fires."]
+  ],
+  terms: [["setTimeout", "run a function later"], ["callback", "the function handed over to run later"], ["clearTimeout", "cancel a scheduled timer"], ["asynchronous", "code that finishes later, while other code keeps running"]],
+  example: { code: 'console.log("Countdown starts");\nsetTimeout(() => console.log("Liftoff!"), 3000);\nsetTimeout(() => console.log("1"), 2000);\nsetTimeout(() => console.log("2"), 1000);\nconsole.log("Timers set");', lines: ["Runs now.", "Scheduled for 3 seconds from now. The code doesn't wait.", "Scheduled for 2 seconds.", "Scheduled for 1 second.", "Runs now, before any of the timers."] },
+  symbols: [["setTimeout(fn, ms)", "run fn after ms milliseconds"], ["() => …", "a quick callback"], ["clearTimeout(id)", "cancel a timer"]],
+  good: { code: "setTimeout(ring, 1000);", why: "The function itself is handed over, to run in one second." },
+  bad: { code: "setTimeout(ring(), 1000);", why: "The brackets run ring immediately and hand over its result instead, which isn't a function." },
+  mistakes: ["Expecting the next line to wait for the timer.", "Calling the function instead of passing it: <code>ring()</code> instead of <code>ring</code>.", "Forgetting that ms means milliseconds: 1000 is one second.", "Expecting timers to run in the order they were written. They run in time order."],
+  trace: { code: 'console.log("Countdown starts");\nsetTimeout(() => console.log("Liftoff!"), 3000);\nsetTimeout(() => console.log("1"), 2000);\nsetTimeout(() => console.log("2"), 1000);\nconsole.log("Timers set");', steps: [
+    { l: 0, o: "Countdown starts" },
+    { l: 1, n: "Schedule Liftoff for 3 s, and carry straight on." },
+    { l: 2, n: "Schedule 1 for 2 s." },
+    { l: 3, n: "Schedule 2 for 1 s." },
+    { l: 4, o: "Timers set", n: "The main code finishes before any timer fires." },
+    { l: 3, o: "2", n: "At 1 s the earliest timer fires." },
+    { l: 2, o: "1", n: "At 2 s." },
+    { l: 1, o: "Liftoff!", n: "At 3 s the last one fires." }] },
+  practise: { starter: 'function ring() {\n  console.log("Ring!");\n}\nsetTimeout(ring, 2000);\nsetTimeout(() => console.log("Half way"), 1000);\nconsole.log("Waiting…");\n',
+    ideas: ["Change the delays so Ring! comes before Half way.", "Store a timer's id and cancel it with clearTimeout.", "Try <code>setTimeout(ring(), 2000)</code> and read the error.", "Use a for loop to schedule five timers one second apart."] },
+  predict: { code: 'setTimeout(() => console.log("X"), 0);\nconsole.log("Y");\nsetTimeout(() => console.log("Z"), 0);', answer: "Y\nX\nZ", explain: "Even a 0 ms timer waits until the main code has finished, so Y comes first. Then the timers run in the order they were set." },
+  challenge: {
+    scene: "screens", title: "Program the launch sequence",
+    brief: "Write <code>countdown(n)</code> that uses timers to print n, then n − 1, and so on down to 1, <b>one second apart</b> (the first number straight away, at 0 ms), then <code>Liftoff!</code> one second after the last number. The tests print <code>--</code> right after calling countdown, so your numbers must come from timers.",
+    starter: "function countdown(n) {\n\n}\n",
+    hints: ["Loop i from 0 to n − 1 and schedule each number for <code>i * 1000</code> ms: <code>setTimeout(() => console.log(n - i), i * 1000);</code>", "Then schedule Liftoff for <code>n * 1000</code> ms."],
+    src: [{ test: s => /setTimeout\s*\(/.test(s), msg: "Use setTimeout to space out the countdown." }],
+    cases: [[3, ["--", "3", "2", "1", "Liftoff!"]], [1, ["--", "1", "Liftoff!"]]].map(([n, lines]) => {
+      const c = Object.assign(outCase("countdown(" + n + ")", "", lines), { post: 'countdown(' + n + '); console.log("--");' }), base = c.check;
+      c.check = r => r.logs.length && r.logs[0] !== "--" ? fail("The numbers printed straight away, before <code>--</code>. Schedule each one with setTimeout instead of printing it directly.", r.logs.join(", ")) : base(r);
+      return c; }),
+    solution: 'function countdown(n) {\n  for (let i = 0; i < n; i++) {\n    setTimeout(() => console.log(n - i), i * 1000);\n  }\n  setTimeout(() => console.log("Liftoff!"), n * 1000);\n}',
+    why: ["Define countdown.", "One timer per number.", "Round i prints n − i, i seconds from now. Each timer remembers its own i.", "", "Liftoff, one second after the last number.", ""]
+  },
+  recap: ["<code>setTimeout(fn, ms)</code> schedules fn to run later.", "The main code never waits: timers run afterwards, in time order.", "Pass the function itself, not the result of calling it."]
+},
+{
+  id: "async", world: 10, title: "Promises & Await", concept: "Promises, async functions and await",
+  story: "The relay sends questions to distant ships and the answers take time to arrive. Learn to wait for them without freezing the station.",
+  learn: [
+    ["Answers that arrive later", "Some work takes time, like waiting for a radio reply. Functions that do that return a <b>Promise</b>: a placeholder for a value that will arrive later. In this sector, <code>comms.request(\"status\")</code> asks a distant ship a question and returns a promise. The topics are status, fuel, crew and weather."],
+    ["await", "Inside an async function, <code>const reply = await comms.request(\"status\");</code> pauses <b>that function</b> until the answer arrives, then carries on with the reply. The rest of the program keeps running in the meantime."],
+    ["async functions", "Mark the function with <code>async</code> to be allowed to use <code>await</code> inside it. An async function always returns a promise itself, so whoever calls it can await it too."],
+    ["When a promise fails", "A request can fail: an unknown topic gives \"No signal\". Wrap the await in try/catch, the same Error Shields as before. Use <code>return await …</code> inside try, so the try is still running when the failure arrives."]
+  ],
+  terms: [["promise", "a placeholder for a value that arrives later"], ["async function", "a function that can pause with await, and returns a promise"], ["await", "wait for a promise's value"], ["reject", "when a promise fails instead of giving a value"]],
+  example: { code: 'async function report() {\n  console.log("Calling base…");\n  const status = await comms.request("status");\n  console.log("Status: " + status);\n  const crew = await comms.request("crew");\n  console.log("Crew: " + crew.length);\n}\nreport();\nconsole.log("(the station keeps working)");', lines: ["An async function, so it may use await.", "Runs straight away.", "Ask for the status and pause report() until the answer arrives.", "Carries on with the reply: Status: ALL GREEN.", "Another request, another pause.", "The crew list has 3 people.", "", "Start it. It runs until its first await, then hands control back.", "Prints while report() is still waiting for its first answer."] },
+  symbols: [["async function f()", "may use await; returns a promise"], ["await promise", "pause here until the value arrives"], ['comms.request("topic")', "the relay's radio: returns a promise"], ["return await …", "inside try, so failures can be caught"]],
+  good: { code: 'const fuel = await comms.request("fuel");', why: "await gives you the actual reply: 72." },
+  bad: { code: 'const fuel = comms.request("fuel");', why: "Without await, fuel is the promise itself, a placeholder, so printing it shows Promise { … }." },
+  mistakes: ["Forgetting await, then getting a Promise instead of the value.", "Using await outside an async function, which is a syntax error.", "Not catching failed requests.", "Forgetting to call the async function at all."],
+  trace: { code: 'async function report() {\n  console.log("Calling base…");\n  const status = await comms.request("status");\n  console.log("Status: " + status);\n  const crew = await comms.request("crew");\n  console.log("Crew: " + crew.length);\n}\nreport();\nconsole.log("(the station keeps working)");', steps: [
+    { l: 0, n: "Define report. Nothing runs yet." },
+    { l: 7, n: "Call report()." },
+    { l: 1, o: "Calling base…" },
+    { l: 2, n: "The request is sent. report() pauses here and lets the rest of the program run." },
+    { l: 8, o: "(the station keeps working)", n: "This prints while report is still waiting." },
+    { l: 3, v: { status: '"ALL GREEN"' }, o: "Status: ALL GREEN", n: "The reply arrives and report() picks up where it left off." },
+    { l: 5, v: { crew: '["Ada", "Bo", "Cy"]' }, o: "Crew: 3", n: "Second request, second pause, then the crew list." }] },
+  practise: { starter: 'async function check() {\n  const weather = await comms.request("weather");\n  console.log("Weather: " + weather);\n  try {\n    await comms.request("treasure");\n  } catch (err) {\n    console.log("Failed: " + err.message);\n  }\n}\ncheck();\n',
+    ideas: ["Remove an await and see what prints instead.", "Ask for \"fuel\" and \"crew\" too.", "Use <code>await comms.ping()</code>, which answers \"pong\".", "Remove the try/catch around the treasure request and read the error."] },
+  predict: { code: 'async function f() {\n  console.log("1");\n  await comms.ping();\n  console.log("3");\n}\nf();\nconsole.log("2");', answer: "1\n2\n3", explain: "f prints 1 and then pauses at await. Control goes back to the main code, which prints 2. When the ping answers, f carries on and prints 3." },
+  challenge: {
+    scene: "screens", title: "Open the uplink",
+    brief: "Write <code>async function fuelReport()</code> that asks <code>comms.request(\"fuel\")</code> and returns text like <code>Fuel: 72%</code>. Then write <code>async function safeRequest(topic)</code> that returns the reply for any topic, or <code>\"no signal\"</code> if the request fails.",
+    starter: "async function fuelReport() {\n\n}\n\nasync function safeRequest(topic) {\n\n}\n",
+    hints: ["<code>const fuel = await comms.request(\"fuel\"); return `Fuel: ${fuel}%`;</code>", "<code>try { return await comms.request(topic); } catch (err) { return \"no signal\"; }</code>. The await matters: without it, the failure escapes the try."],
+    cases: [
+      asyncCase("fuelReport", [], "Fuel: 72%", null, v => typeof v === "string" && v.indexOf("Promise") >= 0 ? "That's the promise, not the reply. Add await." : ""),
+      asyncCase("fuelReport", [], "Fuel: 40%", { label: "fuelReport() when fuel is 40", comms: { fuel: 40 } }),
+      asyncCase("safeRequest", ["weather"], "Solar storm"),
+      Object.assign(asyncCase("safeRequest", ["nope"], "no signal"), { check: r => { const R = r.report; if (R.isFn && R.out && R.out.err) return fail("The failed request escaped your try/catch: " + esc(R.out.err.replace(/\.$/, "")) + ". Write <code>return await comms.request(topic);</code> inside the try, so it's still running when the failure arrives.", "error"); return R.out && R.out.pending ? fail("safeRequest never finished.", "still waiting") : callCheck(R, "safeRequest", 'safeRequest("nope")', "no signal"); } })],
+    solution: 'async function fuelReport() {\n  const fuel = await comms.request("fuel");\n  return `Fuel: ${fuel}%`;\n}\n\nasync function safeRequest(topic) {\n  try {\n    return await comms.request(topic);\n  } catch (err) {\n    return "no signal";\n  }\n}',
+    why: ["async, so it may wait.", "Pause until the fuel reading arrives.", "Build the report from the actual number.", "", "", "Another async function.", "Shield the request.", "Wait inside the try, so a failure lands in this catch.", "A failed request…", "…becomes a friendly fallback.", "", ""]
+  },
+  recap: ["A promise is a value that arrives later.", "Inside an <code>async</code> function, <code>await</code> pauses until it arrives.", "Wrap await in try/catch to handle failures, and use <code>return await</code> inside try."]
+},
+/* ================= ACT II · The Source ================= */
+{
+  id: "swarm", world: 11, title: "The Glitch Swarm", concept: "Debugging modern JavaScript",
+  story: "The Glitch King is gone, but his swarm has dug into the station's core code: classes, callbacks and async calls. This is the final repair of Act II.",
+  learn: [
+    ["Bugs grow up too", "Modern code has its own favourite bugs: an arrow callback with braces but no return, a method that forgot <code>this.</code>, a method used without brackets, and a promise used without <code>await</code>."],
+    ["Read the clues", "<code>Promise { … }</code> or <code>[object Promise]</code> means a missing await. A list full of <code>undefined</code> means a callback forgot to return. \"x is not defined\" inside a class usually means a missing <code>this.</code>. <code>[Function: …]</code> means a function was used without <code>()</code>."],
+    ["Trace it", "Trace my code steps into callbacks, methods and async functions, so you can watch exactly where a value goes wrong."],
+    ["Shrink the problem", "Copy one function into the Practise sandbox and test it by itself with tiny inputs. A bug that hides in fifty lines is obvious in five."]
+  ],
+  terms: [["missing await", "using a promise as if it were the answer"], ["implicit return", "only arrows without braces return automatically"], ["this", "inside a method: the object the method belongs to"]],
+  example: { code: "const nums = [1, 2, 3];\nconst bad = nums.map(n => { n * 2 });\nconsole.log(bad);\nconst good = nums.map(n => n * 2);\nconsole.log(good);", lines: ["Some numbers.", "Braces with no return: every result is undefined.", "Prints [undefined, undefined, undefined]: the clue.", "No braces, so n * 2 is returned automatically.", "Prints [2, 4, 6]."] },
+  symbols: [["[undefined, …]", "a callback with braces forgot return"], ["Promise { … }", "a missing await"], ["x is not defined (in a method)", "probably a missing this."], ["[Function: …]", "a function used without ()"]],
+  good: { code: "const doubled = nums.map(n => n * 2);", why: "No braces, so the value is returned." },
+  bad: { code: "const doubled = nums.map(n => { n * 2 });", why: "Braces without return: every element becomes undefined." },
+  mistakes: ["Fixing symptoms instead of reading the clue in the output.", "Changing several things at once, so you can't tell which change mattered.", "Forgetting that an async function's result must be awaited.", "Mixing up <code>this.items</code> and <code>items</code> inside a class."],
+  trace: { code: "const nums = [1, 2, 3];\nconst bad = nums.map(n => { n * 2 });\nconsole.log(bad);\nconst good = nums.map(n => n * 2);\nconsole.log(good);", steps: [
+    { l: 0, v: { nums: "[1, 2, 3]" } },
+    { l: 1, v: { bad: "[undefined, undefined, undefined]" }, n: "The callback works out n * 2, but braces mean nothing is returned." },
+    { l: 2, o: "[undefined, undefined, undefined]", n: "A list of undefined is the tell-tale sign." },
+    { l: 3, v: { good: "[2, 4, 6]" }, n: "Without braces the value comes back." },
+    { l: 4, o: "[2, 4, 6]" }] },
+  practise: { starter: "class Tank {\n  constructor() {\n    this.level = 10;\n  }\n  fill(n) {\n    level = level + n;\n  }\n}\nconst t = new Tank();\nt.fill(5);\nconsole.log(t.level);\n",
+    ideas: ["Run it and read the error. Which variable is not defined?", "Fix it so it prints 15.", "Add a <code>drain()</code> method and test it.", "Use Trace my code to watch this.level change."] },
+  predict: { code: "async function f() {\n  return 5;\n}\nconst x = f();\nconsole.log(x);", answer: "Promise { … }", explain: "An async function always returns a promise. Without await, x is the promise itself, not 5." },
+  challenge: {
+    scene: "screens", title: "Defeat the Glitch Swarm",
+    brief: "The swarm broke the station log, and there are <b>4 bugs</b>. <code>StationLog</code> should store entries, return the warning entries from <code>warnings()</code>, and summarise them as <code>\"3 entries, 2 warnings\"</code>. <code>fetchLog()</code> should resolve to <code>\"2 entries, 1 warnings · first: ALL GREEN\"</code>. Fix everything.",
+    starter: '// The Glitch Swarm broke the station log. There are 4 bugs.\nclass StationLog {\n  constructor() {\n    this.entries = [];\n  }\n  add(text, level) {\n    entries.push({ text: text, level: level });\n  }\n  warnings() {\n    return this.entries.filter(e => { e.level === "warn" });\n  }\n  summary() {\n    return `${this.entries.length} entries, ${this.warnings.length} warnings`;\n  }\n}\n\nasync function fetchLog() {\n  const log = new StationLog();\n  const status = comms.request("status");\n  log.add(status, "info");\n  log.add("Hull scratch", "warn");\n  return `${log.summary()} · first: ${log.entries[0].text}`;\n}\n',
+    hints: ["Run it and follow the clues one at a time: a \"not defined\" error inside a method, a callback with braces, a method used without (), and a promise without await. Trace my code helps with each one."],
+    cases: [
+      classCase("3 entries (2 warnings)", "warnings() has 2 · \"3 entries, 2 warnings\"", 'const l = new StationLog(); l.add("A", "warn"); l.add("B", "info"); l.add("C", "warn"); __report.w = l.warnings().length; __report.s = l.summary();',
+        R => R.w !== 2 ? fail("warnings() should return the 2 warning entries but returned " + q(show(R.w)) + " of them. Check the filter callback.", "warnings " + show(R.w)) : R.s === "3 entries, 2 warnings" ? pass(R.s) : fail("summary() returned " + q(show(R.s)) + ". Is warnings being called with ()?", show(R.s))),
+      asyncCase("fetchLog", [], "2 entries, 1 warnings · first: ALL GREEN", null, v => typeof v === "string" && /object Promise|Promise/.test(v) ? "The first entry is a promise: something forgot to await." : "")],
+    solution: 'class StationLog {\n  constructor() {\n    this.entries = [];\n  }\n  add(text, level) {\n    this.entries.push({ text: text, level: level });\n  }\n  warnings() {\n    return this.entries.filter(e => e.level === "warn");\n  }\n  summary() {\n    return `${this.entries.length} entries, ${this.warnings().length} warnings`;\n  }\n}\n\nasync function fetchLog() {\n  const log = new StationLog();\n  const status = await comms.request("status");\n  log.add(status, "info");\n  log.add("Hull scratch", "warn");\n  return `${log.summary()} · first: ${log.entries[0].text}`;\n}',
+    why: ["The log blueprint.", "", "Each log gets its own entries array.", "", "", "Bug 1: entries belongs to this log, so it's this.entries.", "", "", "Bug 2: without braces, the comparison is returned and filter works.", "", "", "Bug 3: warnings is a method, so call it with () before reading length.", "", "", "", "", "", "Bug 4: await the reply, or status is just a promise.", "", "", "The first entry's text is now the real status.", ""]
+  },
+  recap: ["Read the clue first: Promise, undefined lists, \"not defined\" or [Function].", "Missing return, missing this., missing () and missing await are the classic modern bugs.", "Trace and shrink the problem until the bug has nowhere to hide."]
 }
 ];
 
@@ -2883,6 +3058,54 @@ Object.assign(DRILLS, {
       hints: ["Inside a method, one word means \"this robot\".", "<code>return this.name.toUpperCase();</code>"],
       cases: [outCase("Output", "", ["ZED"])],
       solution: 'class Robot {\n  constructor(name) {\n    this.name = name;\n  }\n  shout() {\n    return this.name.toUpperCase();\n  }\n}\nconsole.log(new Robot("zed").shout());' }
+  ],
+  errors: [
+    { title: "Catch it", task: "Fill in the keyword that catches the error, so the program prints <code>Caught: No fuel</code> instead of crashing.",
+      starter: 'function launch() {\n  throw new Error("No fuel");\n}\ntry {\n  launch();\n} ___ (err) {\n  console.log("Caught: " + err.message);\n}\n',
+      hints: ["try is always paired with this keyword.", "<code>} catch (err) {</code>"],
+      cases: [outCase("Output", "", ["Caught: No fuel"])],
+      solution: 'function launch() {\n  throw new Error("No fuel");\n}\ntry {\n  launch();\n} catch (err) {\n  console.log("Caught: " + err.message);\n}' },
+    { title: "Throw it", task: "Fill in the keyword so <code>checkFuel</code> raises an error with the message <code>Too low</code> when n is below 10.",
+      starter: 'function checkFuel(n) {\n  if (n < 10) {\n    ___ new Error("Too low");\n  }\n  return "OK";\n}\n',
+      hints: ["The keyword that raises an error.", "<code>throw new Error(\"Too low\");</code>"],
+      cases: [throwCase("checkFuel", [5], "Too low"), fnCase("checkFuel", [50], "OK")],
+      solution: 'function checkFuel(n) {\n  if (n < 10) {\n    throw new Error("Too low");\n  }\n  return "OK";\n}' }
+  ],
+  timers: [
+    { title: "Later, please", task: "Fill in any delay in milliseconds, so <code>First</code> prints before <code>Second</code>.",
+      starter: 'setTimeout(() => console.log("Second"), ___);\nconsole.log("First");\n',
+      hints: ["Any number works, even 0: timers always wait until the main code has finished.", "Try <code>1000</code>."],
+      cases: [outCase("Output", "", ["First", "Second"])],
+      solution: 'setTimeout(() => console.log("Second"), 1000);\nconsole.log("First");' },
+    { title: "Pass, don't call", task: "Fill in the blank so <code>ring</code> runs one second later, after <code>Waiting</code>.",
+      starter: 'function ring() {\n  console.log("Ring!");\n}\nsetTimeout(___, 1000);\nconsole.log("Waiting");\n',
+      hints: ["Hand over the function itself, without brackets.", "<code>setTimeout(ring, 1000);</code>"],
+      cases: [outCase("Output", "", ["Waiting", "Ring!"])],
+      solution: 'function ring() {\n  console.log("Ring!");\n}\nsetTimeout(ring, 1000);\nconsole.log("Waiting");' }
+  ],
+  async: [
+    { title: "Await it", task: "Fill in the keyword so <code>s</code> holds the actual status, not a promise.",
+      starter: 'async function main() {\n  const s = ___ comms.request("status");\n  console.log(s);\n}\nmain();\n',
+      hints: ["The keyword that waits for a promise's value.", "<code>const s = await comms.request(\"status\");</code>"],
+      cases: [outCase("Output", "", ["ALL GREEN"])],
+      solution: 'async function main() {\n  const s = await comms.request("status");\n  console.log(s);\n}\nmain();' },
+    { title: "Mark it async", task: "Fill in the keyword that allows <code>await</code> inside this function.",
+      starter: '___ function main() {\n  const f = await comms.request("fuel");\n  console.log(f);\n}\nmain();\n',
+      hints: ["Functions that use await need a special word in front.", "<code>async function main() {</code>"],
+      cases: [outCase("Output", "", ["72"])],
+      solution: 'async function main() {\n  const f = await comms.request("fuel");\n  console.log(f);\n}\nmain();' }
+  ],
+  swarm: [
+    { title: "Missing return", task: "This prints a list of undefined. Fill in the missing keyword so it prints <code>[2, 4, 6]</code>.",
+      starter: "const doubled = [1, 2, 3].map(n => { ___ n * 2; });\nconsole.log(doubled);\n",
+      hints: ["An arrow with braces has to say what it gives back.", "<code>{ return n * 2; }</code>"],
+      cases: [outCase("Output", "", ["[2, 4, 6]"])],
+      solution: "const doubled = [1, 2, 3].map(n => { return n * 2; });\nconsole.log(doubled);" },
+    { title: "Called too early", task: "The alarm goes off straight away and then the code crashes. Fix it so <code>Armed</code> prints first and <code>Alarm!</code> one second later.",
+      starter: 'function alarm() {\n  console.log("Alarm!");\n}\nsetTimeout(alarm(), 1000);\nconsole.log("Armed");\n',
+      hints: ["Read the error: setTimeout received something that isn't a function.", "Pass the function without brackets: <code>setTimeout(alarm, 1000);</code>"],
+      cases: [outCase("Output", "", ["Armed", "Alarm!"])],
+      solution: 'function alarm() {\n  console.log("Alarm!");\n}\nsetTimeout(alarm, 1000);\nconsole.log("Armed");' }
   ]
 });
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
@@ -3078,6 +3301,19 @@ FINALES.push({ id: "fin9", world: 9, kind: "finale", title: "Fleet Registry", co
         check: r => { const R = r.report; if (R.err) return fail("renamed() failed: " + esc(R.err), "error"); if (!same(R.out, [{ name: "Kite II", crew: 3 }, { name: "Orion", crew: 7 }])) return fail("renamed() returned " + q(show(R.out)) + ".", show(R.out)); return R.stored[0].name === "Kite" ? pass("renamed copy") : fail("The result is right, but the stored ship was renamed too. Return a copy with spread instead of changing it.", "stored " + R.stored[0].name); } }],
     solution: "class Fleet {\n  constructor() {\n    this.ships = [];\n  }\n  add(name, crew) {\n    this.ships.push({ name: name, crew: crew });\n  }\n  totalCrew() {\n    return this.ships.reduce((sum, s) => sum + s.crew, 0);\n  }\n  largest() {\n    if (this.ships.length === 0) {\n      return \"none\";\n    }\n    const big = this.ships.reduce((best, s) => {\n      if (s.crew > best.crew) {\n        return s;\n      }\n      return best;\n    });\n    return big.name;\n  }\n  renamed(oldName, newName) {\n    return this.ships.map(s => {\n      if (s.name === oldName) {\n        return { ...s, name: newName };\n      }\n      return s;\n    });\n  }\n}",
     why: ["The blueprint.", "Set up each new fleet…", "…with its own empty list of ships.", "", "Store a plain object for each ship.", "", "", "Add up every ship's crew.", "", "", "Find the biggest ship.", "Nothing stored yet…", "…so there's no largest.", "", "reduce keeps whichever ship has more crew. Using > keeps the first in a tie.", "", "", "", "", "", "Return just its name.", "", "Make a renamed copy of the list.", "map builds a new array, one entry per ship.", "The ship being renamed…", "…becomes a copy with the new name.", "", "Every other ship is reused as it is.", "", "", "End of the class."]
+  } });
+FINALES.push({ id: "fin10", world: 10, kind: "finale", title: "Deep Space Uplink", concept: "Sector finale: many requests, some of them failing", combines: ["errors", "async", "objtools"],
+  story: "One last job before the core: collect reports from every topic on the relay. Some channels are dead. One dead channel must not stop the rest.",
+  mistakes: ["Wrapping the whole loop in one try, so the first failure stops every remaining request.", "Forgetting await inside the loop, so the object fills up with promises."],
+  recap: ["await works inside loops: each request finishes before the next one starts.", "A try/catch inside the loop isolates each failure.", "Bracket notation builds an object from keys you only know while the code runs."],
+  challenge: {
+    scene: "screens", title: "Gather every report",
+    brief: "Write <code>async function gather(topics)</code> that asks <code>comms.request(topic)</code> for every topic in the array and returns an object with one key per topic. Each key holds the reply, or <code>\"no signal\"</code> if that request failed: <code>gather([\"status\", \"nope\"])</code> → <code>{ status: \"ALL GREEN\", nope: \"no signal\" }</code>.",
+    starter: "async function gather(topics) {\n\n}\n",
+    hints: ["Start with <code>const out = {};</code>. Loop over the topics, and put the try/catch <b>inside</b> the loop: <code>try { out[topic] = await comms.request(topic); } catch (err) { out[topic] = \"no signal\"; }</code>. Return out at the end."],
+    cases: [asyncCase("gather", [["status", "fuel"]], { status: "ALL GREEN", fuel: 72 }), asyncCase("gather", [["crew", "nope", "weather"]], { crew: ["Ada", "Bo", "Cy"], nope: "no signal", weather: "Solar storm" }, null, v => v && typeof v === "object" && !("weather" in v) ? "The failed request stopped the rest. Put the try/catch inside the loop, around each request." : ""), asyncCase("gather", [[]], {})],
+    solution: 'async function gather(topics) {\n  const out = {};\n  for (const topic of topics) {\n    try {\n      out[topic] = await comms.request(topic);\n    } catch (err) {\n      out[topic] = "no signal";\n    }\n  }\n  return out;\n}',
+    why: ["An async function, so it can await inside.", "The report object, filled in as answers arrive.", "One request at a time.", "Shield just this one request.", "Wait for the reply and store it under the topic's name.", "This channel is dead…", "…so record that and move on to the next topic.", "", "", "Every topic has an entry now.", ""]
   } });
 // Place each finale right after the last lesson of its sector
 FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
@@ -3580,9 +3816,6 @@ Object.assign(MISSIONS, {
       solution: "function countBy(items) {\n  return items.reduce((counts, x) => {\n    if (counts[x] === undefined) {\n      counts[x] = 0;\n    }\n    counts[x] = counts[x] + 1;\n    return counts;\n  }, {});\n}" }
   ]
 });
-// Builds a test case that drives a class through `script` (inside try), then checks __report
-const classCase = (label, expect, script, check) => ({ label, expect, post: "try { " + script + " } catch (e) { __report.err = e.message; }",
-  check: r => r.report.err ? fail("Using your class failed: " + esc(r.report.err), "error") : check(r.report) });
 Object.assign(REVIEWS, {
   objtools: { title: "Count the keys", task: "Write <code>countKeys(obj)</code> that returns how many keys an object has.",
     starter: "function countKeys(obj) {\n\n}\n",
@@ -3652,6 +3885,84 @@ Object.assign(MISSIONS, {
       solution: "class Inventory {\n  constructor() {\n    this.items = {};\n  }\n  count(name) {\n    if (this.items[name] === undefined) {\n      return 0;\n    }\n    return this.items[name];\n  }\n  add(name, n) {\n    this.items[name] = this.count(name) + n;\n  }\n  remove(name, n) {\n    if (this.count(name) < n) {\n      return false;\n    }\n    this.items[name] = this.count(name) - n;\n    return true;\n  }\n}" }
   ]
 });
+Object.assign(REVIEWS, {
+  errors: { title: "Safe divide", task: "Write <code>safeDivide(a, b)</code> that returns a ÷ b, but throws an error with the message <code>Cannot divide by zero</code> when b is 0.",
+    starter: "function safeDivide(a, b) {\n\n}\n",
+    hints: ["Check b first, then divide.", "<code>if (b === 0) { throw new Error(\"Cannot divide by zero\"); } return a / b;</code>"],
+    cases: [fnCase("safeDivide", [10, 4], 2.5), throwCase("safeDivide", [3, 0], "Cannot divide by zero")],
+    solution: 'function safeDivide(a, b) {\n  if (b === 0) {\n    throw new Error("Cannot divide by zero");\n  }\n  return a / b;\n}' },
+  timers: { title: "Out of order", task: "Make the program print <code>C</code> immediately, <code>B</code> after 1 second and <code>A</code> after 2 seconds, so the output reads C, B, A.",
+    starter: "// Print C now, B after 1 s, A after 2 s\n",
+    hints: ["Two timers with different delays, then one normal console.log.", "<code>setTimeout(() => console.log(\"A\"), 2000);</code> · <code>setTimeout(() => console.log(\"B\"), 1000);</code> · <code>console.log(\"C\");</code>"],
+    src: [{ test: s => /setTimeout\s*\(/.test(s), msg: "Use setTimeout for the delayed letters." }],
+    cases: [outCase("Output", "", ["C", "B", "A"])],
+    solution: 'setTimeout(() => console.log("A"), 2000);\nsetTimeout(() => console.log("B"), 1000);\nconsole.log("C");' },
+  async: { title: "Crew count", task: "Write <code>async function crewCount()</code> that asks <code>comms.request(\"crew\")</code> and returns how many people are in the list.",
+    starter: "async function crewCount() {\n\n}\n",
+    hints: ["Await the list, then use its length.", "<code>const crew = await comms.request(\"crew\"); return crew.length;</code>"],
+    cases: [asyncCase("crewCount", [], 3), asyncCase("crewCount", [], 1, { label: "crewCount() with one crew member", comms: { crew: ["Zed"] } })],
+    solution: 'async function crewCount() {\n  const crew = await comms.request("crew");\n  return crew.length;\n}' },
+  swarm: { title: "Fix the chain", task: "<code>okWeight(crates)</code> should return the total weight of the crates whose <code>ok</code> is true (0 if there are none), but it has two bugs. Fix it.",
+    starter: "function okWeight(crates) {\n  return crates.filter(c => c.ok).map(c => { c.weight }).reduce((a, b) => a + b);\n}\n",
+    hints: ["Run it with Trace my code. What does map produce? What does reduce do with an empty array and no starting value?", "<code>.map(c => c.weight).reduce((a, b) => a + b, 0)</code>"],
+    cases: [[[{ weight: 5, ok: true }, { weight: 9, ok: false }, { weight: 2, ok: true }], 7], [[{ weight: 4, ok: false }], 0]].map(([a, e]) => fnCase("okWeight", [a], e)),
+    solution: "function okWeight(crates) {\n  return crates.filter(c => c.ok).map(c => c.weight).reduce((a, b) => a + b, 0);\n}" }
+});
+Object.assign(MISSIONS, {
+  errors: [
+    { tier: "Easy", title: "Recover", task: "<code>risky()</code> throws an error. Wrap the call in try/catch so the program prints <code>Recovered: Overheat</code> and then still prints <code>Done</code>.",
+      starter: 'function risky() {\n  throw new Error("Overheat");\n}\nrisky();\nconsole.log("Done");\n', hints: ["Only the risky call needs to go inside try.", "<code>try { risky(); } catch (err) { console.log(\"Recovered: \" + err.message); }</code>"],
+      cases: [outCase("Output", "", ["Recovered: Overheat", "Done"])], solution: 'function risky() {\n  throw new Error("Overheat");\n}\ntry {\n  risky();\n} catch (err) {\n  console.log("Recovered: " + err.message);\n}\nconsole.log("Done");' },
+    { tier: "Medium", title: "Validate the speed", task: "Write <code>setSpeed(n)</code> that throws <code>Negative speed</code> if n is below 0, throws <code>Too fast</code> if n is above 100, and otherwise returns <code>Speed set to 40</code> (with the real number).",
+      starter: "function setSpeed(n) {\n\n}\n", hints: ["Two ifs, each throwing its own error, then a normal return.", "<code>if (n < 0) { throw new Error(\"Negative speed\"); }</code>"],
+      cases: [fnCase("setSpeed", [40], "Speed set to 40"), throwCase("setSpeed", [-5], "Negative speed"), throwCase("setSpeed", [150], "Too fast"), fnCase("setSpeed", [100], "Speed set to 100")],
+      solution: 'function setSpeed(n) {\n  if (n < 0) {\n    throw new Error("Negative speed");\n  }\n  if (n > 100) {\n    throw new Error("Too fast");\n  }\n  return "Speed set to " + n;\n}' },
+    { tier: "Hard", title: "Try them all", task: "Write <code>tryAll(fns)</code>: it receives an array of functions and calls them in order until one <b>doesn't</b> throw, then returns that function's result. If every one throws (or the array is empty), return <code>\"all failed\"</code>.",
+      starter: "function tryAll(fns) {\n\n}\n", hints: ["Loop over fns with a try/catch inside the loop: return as soon as one works.", "<code>for (const fn of fns) { try { return fn(); } catch (err) { } } return \"all failed\";</code>"],
+      cases: [['[() => { throw new Error("a"); }, () => "second", () => "third"]', "second"], ['[() => { throw new Error("x"); }]', "all failed"], ["[]", "all failed"]].map(([arr, e]) => ({ label: "tryAll(" + arr.replace(/\{ throw new Error\("\w"\); \}/g, "{ throw … }") + ")", expect: show(e),
+        post: "__report.isFn = typeof tryAll === 'function'; if (__report.isFn) __report.out = __call(tryAll, " + arr + ");",
+        check: r => callCheck(r.report, "tryAll", "tryAll(…)", e) })),
+      solution: 'function tryAll(fns) {\n  for (const fn of fns) {\n    try {\n      return fn();\n    } catch (err) {\n      // that one failed: try the next\n    }\n  }\n  return "all failed";\n}' }
+  ],
+  timers: [
+    { tier: "Easy", title: "Delayed hello", task: "Print <code>Hello</code> two seconds from now, and <code>Now</code> straight away.",
+      starter: "// Hello in 2 seconds, Now immediately\n", hints: ["setTimeout for the delayed one, and a normal console.log for the other.", "<code>setTimeout(() => console.log(\"Hello\"), 2000);</code>"],
+      src: [{ test: s => /setTimeout\s*\(/.test(s), msg: "Use setTimeout." }],
+      cases: [outCase("Output", "", ["Now", "Hello"])], solution: 'setTimeout(() => console.log("Hello"), 2000);\nconsole.log("Now");' },
+    { tier: "Medium", title: "Beeper", task: "Write <code>beep(times)</code> that prints <code>beep 1</code>, <code>beep 2</code> and so on, one per second, using timers (the first at 0 ms). The tests print <code>--</code> right after calling it.",
+      starter: "function beep(times) {\n\n}\n", hints: ["Schedule each beep with a delay of <code>i * 1000</code>.", "<code>for (let i = 1; i <= times; i++) { setTimeout(() => console.log(\"beep \" + i), (i - 1) * 1000); }</code>"],
+      cases: [Object.assign(outCase("beep(3)", "", ["--", "beep 1", "beep 2", "beep 3"]), { post: 'beep(3); console.log("--");' })],
+      solution: 'function beep(times) {\n  for (let i = 1; i <= times; i++) {\n    setTimeout(() => console.log("beep " + i), (i - 1) * 1000);\n  }\n}' },
+    { tier: "Hard", title: "Disarm", task: "Write <code>arm(seconds)</code> that schedules <code>BOOM</code> to print after that many seconds and returns the timer's id, and <code>disarm(id)</code> that cancels it.",
+      starter: "function arm(seconds) {\n\n}\n\nfunction disarm(id) {\n\n}\n", hints: ["setTimeout returns an id: return it from arm.", "<code>function disarm(id) { clearTimeout(id); }</code>"],
+      cases: [Object.assign(outCase("arm(5), then disarm it", "", ["safe"]), { post: 'disarm(arm(5)); setTimeout(() => console.log("safe"), 10000);' }), Object.assign(outCase("arm(1) and wait", "", ["BOOM"]), { post: "arm(1);" })],
+      solution: 'function arm(seconds) {\n  return setTimeout(() => console.log("BOOM"), seconds * 1000);\n}\n\nfunction disarm(id) {\n  clearTimeout(id);\n}' }
+  ],
+  async: [
+    { tier: "Easy", title: "Ping", task: "Write <code>async function ping()</code> that awaits <code>comms.ping()</code> and prints <code>Reply: pong</code>. Then call it.",
+      starter: "// Define ping, then call it\n", hints: ["<code>const reply = await comms.ping();</code>", "Then <code>console.log(\"Reply: \" + reply);</code>, and call <code>ping();</code> at the end."],
+      cases: [outCase("Output", "", ["Reply: pong"])], solution: 'async function ping() {\n  const reply = await comms.ping();\n  console.log("Reply: " + reply);\n}\nping();' },
+    { tier: "Medium", title: "Two requests", task: "Write <code>async function crewAndFuel()</code> that returns text like <code>3 crew, 72% fuel</code>, using the crew list and the fuel reading from the relay.",
+      starter: "async function crewAndFuel() {\n\n}\n", hints: ["Two awaits, one for each topic.", "<code>return `${crew.length} crew, ${fuel}% fuel`;</code>"],
+      cases: [asyncCase("crewAndFuel", [], "3 crew, 72% fuel"), asyncCase("crewAndFuel", [], "1 crew, 15% fuel", { label: "crewAndFuel() on a small ship", comms: { crew: ["Solo"], fuel: 15 } })],
+      solution: 'async function crewAndFuel() {\n  const crew = await comms.request("crew");\n  const fuel = await comms.request("fuel");\n  return `${crew.length} crew, ${fuel}% fuel`;\n}' },
+    { tier: "Hard", title: "First answer", task: "Write <code>async function firstWorking(topics)</code> that tries each topic in order and returns the first reply that arrives without failing, or <code>\"silence\"</code> if they all fail.",
+      starter: "async function firstWorking(topics) {\n\n}\n", hints: ["A loop with a try/catch inside: return as soon as a request works.", "<code>for (const t of topics) { try { return await comms.request(t); } catch (err) { } } return \"silence\";</code>"],
+      cases: [asyncCase("firstWorking", [["nope", "status", "fuel"]], "ALL GREEN"), asyncCase("firstWorking", [["x", "y"]], "silence")],
+      solution: 'async function firstWorking(topics) {\n  for (const t of topics) {\n    try {\n      return await comms.request(t);\n    } catch (err) {\n      // dead channel: try the next one\n    }\n  }\n  return "silence";\n}' }
+  ],
+  swarm: [
+    { tier: "Easy", title: "Undefined list", task: "This prints a list of undefined instead of the names in capitals. Fix the callback.",
+      starter: 'const names = ["ada", "bo"].map(n => { n.toUpperCase() });\nconsole.log(names);\n', hints: ["A list of undefined means a callback with braces forgot to return.", "Drop the braces: <code>n => n.toUpperCase()</code>"],
+      cases: [outCase("Output", "", ['["ADA", "BO"]'])], solution: 'const names = ["ada", "bo"].map(n => n.toUpperCase());\nconsole.log(names);' },
+    { tier: "Medium", title: "Lost this", task: "The tank should print 15, but it crashes. Fix it.",
+      starter: "class Tank {\n  constructor() {\n    this.level = 10;\n  }\n  fill(n) {\n    level = level + n;\n  }\n}\nconst t = new Tank();\nt.fill(5);\nconsole.log(t.level);\n", hints: ["\"level is not defined\" inside a method is a big clue.", "<code>this.level = this.level + n;</code>"],
+      cases: [outCase("Output", "", ["15"])], solution: "class Tank {\n  constructor() {\n    this.level = 10;\n  }\n  fill(n) {\n    this.level = this.level + n;\n  }\n}\nconst t = new Tank();\nt.fill(5);\nconsole.log(t.level);" },
+    { tier: "Hard", title: "Promise soup", task: "This should print <code>Fuel at 72%</code> and <code>Crew of 3</code>, but it prints nonsense. Find every missing piece.",
+      starter: 'async function status() {\n  const fuel = comms.request("fuel");\n  const crew = comms.request("crew");\n  console.log(`Fuel at ${fuel}%`);\n  console.log(`Crew of ${crew.length}`);\n}\nstatus();\n', hints: ["\"[object Promise]\" and \"undefined\" mean the replies weren't awaited.", "Add <code>await</code> before both requests."],
+      cases: [outCase("Output", "", ["Fuel at 72%", "Crew of 3"])], solution: 'async function status() {\n  const fuel = await comms.request("fuel");\n  const crew = await comms.request("crew");\n  console.log(`Fuel at ${fuel}%`);\n  console.log(`Crew of ${crew.length}`);\n}\nstatus();' }
+  ]
+});
 const missionKey = (L, k) => L.id + ":" + k;
 const missionDone = (L, k, s) => !!((s || store).missions || {})[missionKey(L, k)];
 const missionsOf = L => MISSIONS[L.id] || [];
@@ -3674,13 +3985,15 @@ const ACHIEVEMENTS = [
   { id: "trainee", title: "Sparring Partner", desc: "Pass 5 Training Deck missions.", icon: "gear", test: s => Object.keys(s.missions || {}).length >= 5 },
   { id: "hardmode", title: "Hard Mode", desc: "Pass 5 Hard missions in the Training Deck.", icon: "skull", test: s => Object.keys(s.missions || {}).filter(k => { const [id, i] = k.split(":"); return MISSIONS[id] && MISSIONS[id][+i] && MISSIONS[id][+i].tier === "Hard"; }).length >= 5 },
   { id: "deck", title: "Deck Cleared", desc: "Pass every mission in the Training Deck.", icon: "trophy", test: s => Object.keys(MISSIONS).every(id => MISSIONS[id].every((_, k) => (s.missions || {})[id + ":" + k])) },
+  { id: "relay", title: "Relay Master", desc: "Complete every repair in the Async Relay, finale included.", icon: "satellite", test: s => sectorDone(s, 10) },
+  { id: "swarm", title: "Swarm Breaker", desc: "Defeat the Glitch Swarm and finish Act II.", icon: "core", test: s => !!s.done.swarm },
   { id: "web", title: "Web Wizard", desc: "Complete every repair in the Control Room, finale included.", icon: "panel", test: s => sectorDone(s, 5) },
   { id: "boss", title: "Glitch Slayer", desc: "Defeat the Glitch King.", icon: "skull", test: s => !!s.done.boss },
   { id: "all", title: "Station Restored", desc: "Repair every machine on the station.", icon: "trophy", test: s => LESSONS.every(L => s.done[L.id]) }
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "2.4.0";
+const APP_VERSION = "3.0.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -4591,7 +4904,8 @@ function stageChallenge(host, L, idx) {
   // Tracing uses the first test case's inputs, like Run. It never counts as an attempt.
   $("#ctrace", host).onclick = async () => {
     const c = C.cases[0];
-    const res = await showTrace($("#ctrace-out", host), ed.get(), { pre: c.pre || "", map: c.map || null, dir: c.dir, page: c.page || C.page || null });
+    // The first test's own call runs too, so the trace can step inside the learner's functions
+    const res = await showTrace($("#ctrace-out", host), ed.get(), { pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir, page: c.page || C.page || null, comms: c.comms || C.comms || null });
     renderResult($("#cout", host), res, ed);
     if (C.cases.length > 1) $("#ctrace-out", host).insertAdjacentHTML("afterbegin", '<p class="muted small" style="margin-bottom:6px">Tracing with the inputs of test <code>' + esc(c.label) + "</code>.</p>");
   };
