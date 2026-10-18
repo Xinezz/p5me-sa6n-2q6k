@@ -692,6 +692,7 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  vault: { rows: ["kkkkkkkkkkkk", "kSSSSSSSSSSk", "kSkkkkkkkkSk", "kSkyyyyyykSk", "kSkyykkyykSk", "kSkyykkyykSk", "kSkyyyyyykSk", "kSkkkkkkkkSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk", ".kk......kk."] },
   crates: { rows: ["....kkkk....", "....kook....", "....kook....", "..kkkkkkkk..", "..kookkook..", "..kookkook..", "kkkkkkkkkkkk", "kookkookkook", "kookkookkook", "kkkkkkkkkkkk"] },
   dish: { rows: ["..........y.", ".kkkk....y..", "kwwwwk..y...", "kwwwwwkk....", "kwwwwwwk....", ".kwwwwk.....", "..kkkkk.....", "....kSk.....", "....kSk.....", "..kkSSSkk...", "..kSSSSSk...", "..kkkkkkk..."] },
   panel: { rows: ["kkkkkkkkkkkk", "kbbbbbbbbbbk", "kbnnnnnnnnbk", "kbnwnnnnnnbk", "kbnnnnnnnnbk", "kbbbbbbbbbbk", "kSSSSSSSSSSk", "kSrSgSySoSSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk"] },
@@ -701,7 +702,7 @@ const SPRITES = {
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
   exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
 };
-const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish", "crates"];
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish", "crates", "vault"];
 // Act II (advanced topics) starts at this sector index
 const ACT2_FROM = 7;
 const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
@@ -1447,7 +1448,8 @@ const WORLDS = [
   { name: "Control Room", blurb: "Make a web page react: change text and styles, read inputs, handle clicks." },
   { name: "Glitch Core", blurb: "Final boss of Act I. Find and fix the bugs." },
   { name: "Signal Lab", blurb: "Work with text: string methods, slicing, splitting and template literals." },
-  { name: "Array Engine", blurb: "Arrow functions and powerful array tools: map, filter, find, some, every and reduce." }
+  { name: "Array Engine", blurb: "Arrow functions and powerful array tools: map, filter, find, some, every and reduce." },
+  { name: "Data Vault", blurb: "Object tools, destructuring, spread and classes." }
 ];
 
 const LESSONS = [
@@ -2416,6 +2418,140 @@ const LESSONS = [
     why: ["Define allOnline.", "every: true only if every part's status is ok.", "", "", "Define totalPower.", "Start at 0 and add each part's power.", "", "", "Define firstOffline.", "find gives the first part that isn't ok, or undefined.", "No such part…", "…so report \"none\".", "", "Otherwise return just its name.", ""]
   },
   recap: ["<code>find</code> returns the first match (or undefined).", "<code>some</code> and <code>every</code> answer yes-or-no questions about a whole array.", "<code>reduce</code> combines an array into one value, starting from the value you give it."]
+},
+/* ================= ACT II · Data Vault ================= */
+{
+  id: "objtools", world: 9, title: "Object Toolkit", concept: "Object.keys, values, entries and lookups",
+  story: "The Data Vault stores everything in objects: stock lists, crew rosters, settings. Learn the tools for looking inside them.",
+  learn: [
+    ["Objects as lookup tables", "An object can link names to values: <code>const stock = { bolts: 40, gears: 12 };</code>. When the key's name is stored in a variable, use square brackets: <code>stock[item]</code> reads whichever key <code>item</code> holds."],
+    ["Listing what's inside", "<code>Object.keys(stock)</code> gives an array of the keys: <code>[\"bolts\", \"gears\"]</code>. <code>Object.values(stock)</code> gives the values: <code>[40, 12]</code>. <code>Object.entries(stock)</code> gives pairs: <code>[[\"bolts\", 40], [\"gears\", 12]]</code>."],
+    ["Looping over an object", "Combine them with a loop: <code>for (const item of Object.keys(stock)) { … stock[item] … }</code>. Because these are arrays, map, filter and reduce work on them too."],
+    ["Does a key exist?", "<code>\"bolts\" in stock</code> is true if the object has that key. Reading a missing key gives <code>undefined</code>. Objects have no <code>.length</code>: use <code>Object.keys(stock).length</code>."]
+  ],
+  terms: [["key", "a property's name"], ["Object.keys / values / entries", "arrays of an object's keys, values, or [key, value] pairs"], ["bracket lookup", "obj[key] reads the property whose name is in key"]],
+  example: { code: 'const stock = { bolts: 40, gears: 12, lenses: 0 };\nconsole.log(Object.keys(stock));\nconsole.log(Object.values(stock));\nfor (const item of Object.keys(stock)) {\n  console.log(`${item}: ${stock[item]}`);\n}\nconsole.log("gears" in stock);', lines: ["An object linking item names to amounts.", "Prints the keys: [\"bolts\", \"gears\", \"lenses\"].", "Prints the values: [40, 12, 0].", "Loop over the keys…", "…reading each amount with brackets, because the key is in a variable.", "", "Is there a gears key? true."] },
+  symbols: [["Object.keys(obj)", "array of keys"], ["Object.values(obj)", "array of values"], ["Object.entries(obj)", "array of [key, value] pairs"], ["obj[key]", "read the property named by key"], ['"key" in obj', "does the key exist?"]],
+  good: { code: "const count = stock[item];", why: "Brackets read the key whose name is stored in item." },
+  bad: { code: "const count = stock.item;", why: "A dot looks for a key literally called <code>item</code>, which doesn't exist, so this is undefined." },
+  mistakes: ["Using <code>obj.key</code> when the key's name is in a variable. Use <code>obj[key]</code>.", "Expecting <code>obj.length</code>: objects don't have one. Use <code>Object.keys(obj).length</code>.", "Forgetting that keys from Object.keys are always strings.", "Expecting entries to give objects: they're two-element arrays."],
+  trace: { code: 'const stock = { bolts: 40, gears: 12, lenses: 0 };\nconsole.log(Object.keys(stock));\nconsole.log(Object.values(stock));\nfor (const item of Object.keys(stock)) {\n  console.log(`${item}: ${stock[item]}`);\n}\nconsole.log("gears" in stock);', steps: [
+    { l: 0, v: { stock: "{ bolts: 40, gears: 12, lenses: 0 }" } },
+    { l: 1, o: '["bolts", "gears", "lenses"]', n: "Object.keys lists the keys, in order." },
+    { l: 2, o: "[40, 12, 0]", n: "Object.values lists the values." },
+    { l: 4, v: { item: '"bolts"' }, o: "bolts: 40", n: "First key: stock[\"bolts\"] is 40." },
+    { l: 4, v: { item: '"gears"' }, o: "gears: 12" },
+    { l: 4, v: { item: '"lenses"' }, o: "lenses: 0" },
+    { l: 6, o: "true", n: "in checks whether a key exists." }] },
+  practise: { starter: 'const crew = { pilot: "Ada", engineer: "Bo", medic: "Cy" };\nconsole.log(Object.keys(crew).length);\nfor (const role of Object.keys(crew)) {\n  console.log(`${crew[role]} is the ${role}`);\n}\n',
+    ideas: ["Add a new role with <code>crew.cook = \"Dee\";</code> and run again.", "Read a role whose name is in a variable: <code>const r = \"medic\"; console.log(crew[r]);</code>", "Check <code>\"captain\" in crew</code>.", "Print <code>Object.values(crew).join(\", \")</code>."] },
+  predict: { code: 'const s = { a: 1, b: 5 };\nconst k = "b";\nconsole.log(s[k]);\nconsole.log(s.k);\nconsole.log(Object.keys(s).length);', answer: "5\nundefined\n2", explain: "s[k] reads the key stored in k, which is \"b\". s.k looks for a key literally called k, which doesn't exist. There are 2 keys." },
+  challenge: {
+    scene: "screens", title: "Audit the vault",
+    brief: "<code>stock</code> objects look like <code>{ bolts: 40, gears: 0 }</code>. Write <code>totalItems(stock)</code> (the sum of every amount), <code>outOfStock(stock)</code> (an array of the item names with 0 left) and <code>restock(stock, item, n)</code>, which adds n to that item (starting from 0 if it's new) and returns its new amount.",
+    starter: "function totalItems(stock) {\n\n}\n\nfunction outOfStock(stock) {\n\n}\n\nfunction restock(stock, item, n) {\n\n}\n",
+    hints: ["<code>Object.values(stock).reduce((sum, n) => sum + n, 0)</code> · <code>Object.keys(stock).filter(item => stock[item] === 0)</code>", "restock: if <code>stock[item] === undefined</code>, set it to 0 first; then add n and return <code>stock[item]</code>."],
+    cases: [["totalItems", [{ bolts: 40, gears: 0, lenses: 5 }], 45], ["totalItems", [{}], 0], ["outOfStock", [{ bolts: 40, gears: 0, lenses: 0 }], ["gears", "lenses"]], ["outOfStock", [{ bolts: 1 }], []], ["restock", [{ bolts: 4 }, "bolts", 6], 10], ["restock", [{}, "gears", 3], 3]].map(([fn, args, exp]) =>
+      fnCase(fn, args, exp, v => fn === "restock" && typeof v === "number" && isNaN(v) ? "NaN: the item didn't exist yet, so it was undefined. Start it at 0 first." : "")),
+    solution: "function totalItems(stock) {\n  return Object.values(stock).reduce((sum, n) => sum + n, 0);\n}\n\nfunction outOfStock(stock) {\n  return Object.keys(stock).filter(item => stock[item] === 0);\n}\n\nfunction restock(stock, item, n) {\n  if (stock[item] === undefined) {\n    stock[item] = 0;\n  }\n  stock[item] = stock[item] + n;\n  return stock[item];\n}",
+    why: ["Define totalItems.", "All the amounts as an array, added up from 0.", "", "", "Define outOfStock.", "All the names, keeping those whose amount is 0. Brackets read the key held in item.", "", "", "Define restock.", "A brand-new item…", "…starts at 0.", "", "Add the delivery.", "Return the new amount.", ""]
+  },
+  recap: ["<code>Object.keys</code>, <code>values</code> and <code>entries</code> turn an object into arrays.", "<code>obj[key]</code> reads the property whose name is stored in a variable.", "Objects have no length: count their keys instead."]
+},
+{
+  id: "spread", world: 9, title: "Unpack & Spread", concept: "Destructuring, spread and default values",
+  story: "Vault records get copied, merged and unpacked all day. A few pieces of shorthand make that safe and quick.",
+  learn: [
+    ["Unpacking an object", "<code>const { name, fuel } = ship;</code> makes two variables, <code>name</code> and <code>fuel</code>, from the properties with those names. This is called <b>destructuring</b>."],
+    ["Unpacking an array", "<code>const [first, second] = crew;</code> takes elements in order: first gets <code>crew[0]</code>, second gets <code>crew[1]</code>."],
+    ["Spreading with ...", "Three dots spread an array or object out. <code>[...a, ...b]</code> makes one new array from two. <code>{ ...ship, fuel: 100 }</code> copies the ship and replaces its fuel, and the original isn't touched."],
+    ["Default values", "<code>function greet(name = \"pilot\") { … }</code> uses \"pilot\" when no name is passed. Defaults also work when unpacking: <code>const { rank = \"cadet\" } = person;</code>"]
+  ],
+  terms: [["destructuring", "unpacking properties or elements into variables"], ["spread (...)", "copying all elements or properties into a new array or object"], ["default value", "used when nothing (undefined) is given"]],
+  example: { code: 'const ship = { name: "Kite", fuel: 30 };\nconst { name, fuel } = ship;\nconsole.log(`${name} ${fuel}`);\nconst refuelled = { ...ship, fuel: 100 };\nconsole.log(refuelled);\nconsole.log(ship.fuel);\nconst [a, b] = ["Ada", "Bo", "Cy"];\nconsole.log(b);', lines: ["A ship object.", "Unpack two properties into variables of the same names.", "Prints Kite 30.", "Copy every property, then replace fuel.", "Prints { name: \"Kite\", fuel: 100 }.", "The original is untouched: 30.", "Unpack the first two elements. Cy is simply ignored.", "Prints Bo."] },
+  symbols: [["const { a, b } = obj", "unpack properties"], ["const [x, y] = arr", "unpack elements"], ["[...a, ...b]", "new array from both"], ["{ ...obj, key: v }", "copy, then override"], ["(x = 5)", "default value"]],
+  good: { code: "const updated = { ...ship, fuel: 100 };", why: "A new object: the original ship keeps its old fuel." },
+  bad: { code: "const updated = ship;\nupdated.fuel = 100;", why: "updated is the same object as ship, not a copy, so this changes the original ship too." },
+  mistakes: ["Unpacking a name that doesn't match any property: you get undefined.", "Forgetting the dots: <code>[a, b]</code> nests two arrays, while <code>[...a, ...b]</code> joins them.", "Order matters: in <code>{ fuel: 100, ...ship }</code>, ship's fuel wins because it comes last.", "Thinking <code>const copy = obj</code> makes a copy. It doesn't: both names point to the same object."],
+  trace: { code: 'const ship = { name: "Kite", fuel: 30 };\nconst { name, fuel } = ship;\nconsole.log(`${name} ${fuel}`);\nconst refuelled = { ...ship, fuel: 100 };\nconsole.log(refuelled);\nconsole.log(ship.fuel);\nconst [a, b] = ["Ada", "Bo", "Cy"];\nconsole.log(b);', steps: [
+    { l: 0, v: { ship: '{ name: "Kite", fuel: 30 }' } },
+    { l: 1, v: { name: '"Kite"', fuel: "30" }, n: "Two new variables, unpacked from the ship's properties." },
+    { l: 2, o: "Kite 30" },
+    { l: 3, v: { refuelled: '{ name: "Kite", fuel: 100 }' }, n: "...ship copies both properties, then fuel: 100 replaces the copy's fuel." },
+    { l: 4, o: '{ name: "Kite", fuel: 100 }' },
+    { l: 5, o: "30", n: "The original ship never changed." },
+    { l: 6, v: { a: '"Ada"', b: '"Bo"' }, n: "Array unpacking goes by position." },
+    { l: 7, o: "Bo" }] },
+  practise: { starter: 'const a = ["Ada", "Bo"];\nconst b = ["Cy"];\nconst all = [...a, ...b, "Dee"];\nconsole.log(all);\nfunction greet(name = "pilot") {\n  return `Hello, ${name}!`;\n}\nconsole.log(greet());\nconsole.log(greet("Zed"));\n',
+    ideas: ["Unpack the first name from <code>all</code>: <code>const [first] = all;</code>", "Make a copy of a settings object with one value changed.", "Try <code>[a, b]</code> without the dots and compare.", "Give greet a different default."] },
+  predict: { code: 'const s = { x: 1, y: 2 };\nconst t = { ...s, y: 9 };\nconst u = { y: 9, ...s };\nconsole.log(t.y);\nconsole.log(u.y);\nconsole.log(s.y);', answer: "9\n2\n2", explain: "In t, y: 9 comes after the spread, so it wins. In u, the spread comes last, so s's y (2) wins. s itself never changes." },
+  challenge: {
+    scene: "screens", title: "Process the vault records",
+    brief: "Write <code>refit(ship, changes)</code> that returns a <b>new</b> ship with the changes applied, leaving the original alone. Write <code>mergeCrews(a, b)</code> that returns one array with both crews. Write <code>badge({ name, rank })</code>, which unpacks its object parameter and returns <code>\"Ada (captain)\"</code>, using <code>cadet</code> when there's no rank. Use spread and destructuring.",
+    starter: "function refit(ship, changes) {\n\n}\n\nfunction mergeCrews(a, b) {\n\n}\n\nfunction badge({ name, rank }) {\n\n}\n",
+    hints: ["<code>return { ...ship, ...changes };</code> · <code>return [...a, ...b];</code>", "Add a default in the parameter: <code>function badge({ name, rank = \"cadet\" })</code>, then <code>return `${name} (${rank})`;</code>"],
+    src: [{ test: s => /\.\.\./.test(s), msg: "Use spread (...) to copy and merge." }],
+    cases: [
+      { label: 'refit({ name: "Kite", fuel: 30 }, { fuel: 100 })', expect: '{ name: "Kite", fuel: 100 }, original unchanged',
+        post: "__report.isFn = typeof refit === 'function'; const __ship = { name: 'Kite', fuel: 30 }; if (__report.isFn) __report.out = __call(refit, __ship, { fuel: 100 }); __report.orig = __ship;",
+        check: r => { const c = callCheck(r.report, "refit", "refit(ship, { fuel: 100 })", { name: "Kite", fuel: 100 }); if (!c.ok) return c; return r.report.orig.fuel !== 30 ? fail("The result is right, but the original ship was changed too. Copy it with spread instead of changing it.", "original fuel " + r.report.orig.fuel) : c; } },
+      fnCase("refit", [{ name: "Orion", crew: 2 }, { name: "Orion II", crew: 4 }], { name: "Orion II", crew: 4 }),
+      fnCase("mergeCrews", [["Ada", "Bo"], ["Cy"]], ["Ada", "Bo", "Cy"], v => Array.isArray(v) && Array.isArray(v[0]) ? "That nests the arrays. Spread them: <code>[...a, ...b]</code>." : ""),
+      fnCase("mergeCrews", [[], ["Zed"]], ["Zed"]),
+      fnCase("badge", [{ name: "Ada", rank: "captain" }], "Ada (captain)"),
+      fnCase("badge", [{ name: "Bo" }], "Bo (cadet)", v => v === "Bo (undefined)" ? "No rank was given, so use a default: <code>rank = \"cadet\"</code>." : "")],
+    solution: "function refit(ship, changes) {\n  return { ...ship, ...changes };\n}\n\nfunction mergeCrews(a, b) {\n  return [...a, ...b];\n}\n\nfunction badge({ name, rank = \"cadet\" }) {\n  return `${name} (${rank})`;\n}",
+    why: ["Define refit.", "Copy every property of ship, then every property of changes. Later ones win, and the original isn't touched.", "", "", "Define mergeCrews.", "Spread both arrays into one new array.", "", "", "Unpack the object parameter, with a default rank.", "Build the badge text.", ""]
+  },
+  recap: ["Destructuring unpacks properties or elements into variables.", "<code>...</code> spreads arrays and objects into new ones, which is safe copying.", "Default values fill in when nothing is given."]
+},
+{
+  id: "classes", world: 9, title: "Blueprints", concept: "Classes, constructors and methods",
+  story: "The vault keeps records for hundreds of robots, all the same shape. Writing each object by hand is a waste of time. Make a blueprint instead.",
+  learn: [
+    ["One blueprint, many objects", "A <b>class</b> is a blueprint for objects that share the same shape and abilities. You describe it once, then build as many objects from it as you like."],
+    ["The constructor", "Inside a class, <code>constructor(name) { … }</code> runs every time a new object is built. <code>this</code> means \"the object being built\": <code>this.name = name;</code> stores the name on it."],
+    ["Building with new", "<code>const bolt = new Robot(\"Bolt\");</code> builds a new Robot. Then <code>bolt.name</code> is \"Bolt\". Forgetting <code>new</code> is an error."],
+    ["Methods", "Functions written inside the class are <b>methods</b>: <code>charge(amount) { this.battery = this.battery + amount; }</code>. Call them with a dot: <code>bolt.charge(10)</code>. Inside a method, <code>this</code> is the object it was called on."]
+  ],
+  terms: [["class", "a blueprint for making objects"], ["constructor", "the method that sets up each new object"], ["this", "inside a class: the object being built or used"], ["instance", "one object built from a class"]],
+  example: { code: 'class Robot {\n  constructor(name) {\n    this.name = name;\n    this.battery = 50;\n  }\n  charge(amount) {\n    this.battery = this.battery + amount;\n  }\n  status() {\n    return `${this.name}: ${this.battery}%`;\n  }\n}\nconst bolt = new Robot("Bolt");\nbolt.charge(30);\nconsole.log(bolt.status());\nconst zed = new Robot("Zed");\nconsole.log(zed.status());', lines: ["Start the blueprint for Robot objects.", "The constructor runs for every new robot.", "Store the name on the new object.", "Every robot starts at 50%.", "", "A method: adds to this robot's battery.", "this is whichever robot the method is called on.", "", "Another method that returns a status line.", "Read this robot's own name and battery.", "", "End of the class.", "Build a robot. The constructor runs with name = \"Bolt\".", "Charge Bolt: 50 + 30 = 80.", "Prints Bolt: 80%.", "Build a second robot. It has its own battery.", "Prints Zed: 50%. Charging Bolt didn't affect Zed."] },
+  symbols: [["class Name { }", "defines a blueprint"], ["constructor(…)", "sets up each new object"], ["this.x = …", "stores a value on the object"], ["new Name(…)", "builds an object from the class"], ["obj.method()", "calls a method on that object"]],
+  good: { code: 'const r = new Robot("Ada");\nr.charge(5);', why: "new builds the object; the method is then called on it." },
+  bad: { code: 'const r = Robot("Ada");', why: "Without <code>new</code>, JavaScript refuses: a class constructor can't be called like a normal function." },
+  mistakes: ["Forgetting <code>new</code>.", "Writing <code>battery</code> instead of <code>this.battery</code> inside a method: battery is not defined.", "Putting commas between methods (classes don't use them, unlike objects).", "Calling a method without brackets: <code>bolt.status</code> is the method itself, <code>bolt.status()</code> runs it."],
+  trace: { code: 'class Robot {\n  constructor(name) {\n    this.name = name;\n    this.battery = 50;\n  }\n  charge(amount) {\n    this.battery = this.battery + amount;\n  }\n  status() {\n    return `${this.name}: ${this.battery}%`;\n  }\n}\nconst bolt = new Robot("Bolt");\nbolt.charge(30);\nconsole.log(bolt.status());\nconst zed = new Robot("Zed");\nconsole.log(zed.status());', steps: [
+    { l: 0, n: "The class is defined. Nothing is built yet." },
+    { l: 12, n: "new Robot(\"Bolt\") builds an object and runs the constructor." },
+    { l: 2, v: { name: '"Bolt"' }, n: "Inside the constructor, this is the new robot. It gets a name…" },
+    { l: 3, n: "…and a battery of 50." },
+    { l: 12, v: { bolt: 'Robot { name: "Bolt", battery: 50 }' }, n: "The finished object is stored in bolt." },
+    { l: 6, v: { bolt: 'Robot { name: "Bolt", battery: 80 }' }, n: "charge(30): this is bolt, so bolt's battery becomes 80." },
+    { l: 14, o: "Bolt: 80%", n: "status() reads bolt's own values." },
+    { l: 15, v: { zed: 'Robot { name: "Zed", battery: 50 }' }, n: "A second robot, with its own separate battery." },
+    { l: 16, o: "Zed: 50%" }] },
+  practise: { starter: 'class Lamp {\n  constructor(colour) {\n    this.colour = colour;\n    this.on = false;\n  }\n  toggle() {\n    this.on = !this.on;\n  }\n}\nconst lamp = new Lamp("red");\nlamp.toggle();\nconsole.log(lamp);\n',
+    ideas: ["Build a second lamp in a different colour and print both.", "Add a method <code>describe()</code> that returns <code>`${this.colour} lamp is ${this.on}`</code>.", "Remove <code>new</code> and read the error.", "Change <code>this.on</code> to just <code>on</code> inside toggle and read the error."] },
+  predict: { code: "class Box {\n  constructor(n) {\n    this.n = n;\n  }\n  add(k) {\n    this.n = this.n + k;\n  }\n}\nconst a = new Box(1);\nconst b = new Box(10);\na.add(5);\nconsole.log(a.n);\nconsole.log(b.n);", answer: "6\n10", explain: "Each object has its own n. add(5) changed a's n from 1 to 6, and b kept its 10." },
+  challenge: {
+    scene: "screens", title: "Build the shuttle class",
+    brief: "Write a class <code>Shuttle</code>. <code>new Shuttle(name, seats)</code> stores the name and number of seats, and starts with an empty <code>passengers</code> array. <code>board(person)</code> adds the person and returns true, unless the shuttle is full, in which case it returns false. <code>status()</code> returns text like <code>Kite: 2/3 seats taken</code>.",
+    starter: "class Shuttle {\n\n}\n",
+    hints: ["The constructor sets <code>this.name</code>, <code>this.seats</code> and <code>this.passengers = []</code>.", "In board, check <code>this.passengers.length >= this.seats</code> first, and return false if it's full; otherwise push and return true."],
+    cases: [
+      { label: 'new Shuttle("Kite", 2): board Ada, Bo, Cy', expect: "true, true, false · Kite: 2/2 seats taken",
+        post: "try { const s = new Shuttle('Kite', 2); __report.r = [s.board('Ada'), s.board('Bo'), s.board('Cy')]; __report.st = s.status(); __report.p = s.passengers; } catch (e) { __report.err = e.message; }",
+        check: r => { const R = r.report; if (R.err) return fail("Building or using the shuttle failed: " + esc(R.err), "error");
+          if (!same(R.r, [true, true, false])) return fail("board should return true, true, then false (the shuttle is full), but returned " + q(show(R.r)) + ".", show(R.r));
+          if (!same(R.p, ["Ada", "Bo"])) return fail("passengers should be " + q('["Ada", "Bo"]') + " but is " + q(show(R.p)) + ".", show(R.p));
+          return R.st === "Kite: 2/2 seats taken" ? pass(R.st) : fail("status() returned " + q(show(R.st)) + " instead of " + q("Kite: 2/2 seats taken") + ".", show(R.st)); } },
+      { label: 'new Shuttle("Orion", 5) with nobody aboard', expect: "Orion: 0/5 seats taken",
+        post: "try { const s = new Shuttle('Orion', 5); __report.st = s.status(); } catch (e) { __report.err = e.message; }",
+        check: r => r.report.err ? fail("Building the shuttle failed: " + esc(r.report.err), "error") : r.report.st === "Orion: 0/5 seats taken" ? pass(r.report.st) : fail("status() returned " + q(show(r.report.st)) + " instead of " + q("Orion: 0/5 seats taken") + ".", show(r.report.st)) }],
+    solution: "class Shuttle {\n  constructor(name, seats) {\n    this.name = name;\n    this.seats = seats;\n    this.passengers = [];\n  }\n  board(person) {\n    if (this.passengers.length >= this.seats) {\n      return false;\n    }\n    this.passengers.push(person);\n    return true;\n  }\n  status() {\n    return `${this.name}: ${this.passengers.length}/${this.seats} seats taken`;\n  }\n}",
+    why: ["The blueprint.", "Runs for every new shuttle.", "Store the name…", "…the number of seats…", "…and an empty passenger list for this shuttle.", "", "Try to board someone.", "Already full?", "Refuse.", "", "Otherwise add them to this shuttle's list…", "…and report success.", "", "Build the status text from this shuttle's own values.", "", "", "End of the class."]
+  },
+  recap: ["A class is a blueprint; <code>new</code> builds objects from it.", "The constructor sets up each object using <code>this</code>.", "Methods are functions in the class, and <code>this</code> is the object they're called on."]
 }
 ];
 
@@ -2710,6 +2846,43 @@ Object.assign(DRILLS, {
       hints: ["Each round, return the total so far plus the current number.", "<code>(sum, n) => sum + n</code>"],
       cases: [[[1, 2, 3], "6"], [[], "0"]].map(([a, e]) => outCase(show(a), "const nums = " + JSON.stringify(a) + ";", [e])),
       solution: "const total = nums.reduce((sum, n) => sum + n, 0);\nconsole.log(total);" }
+  ],
+  objtools: [
+    { title: "List the keys", task: "<code>stock</code> already exists. Fill in the tool that lists its keys.",
+      starter: "// stock already exists\nconsole.log(Object.___(stock));\n",
+      hints: ["You want the names, not the amounts.", "<code>Object.keys(stock)</code>"],
+      cases: [{ bolts: 4, gears: 2 }, { lens: 1 }].map(s => outCase(show(s), "const stock = " + JSON.stringify(s) + ";", [show(Object.keys(s))])),
+      solution: "console.log(Object.keys(stock));" },
+    { title: "Bracket lookup", task: "<code>stock</code> and <code>item</code> already exist. <code>item</code> holds a key's name. Fill in the brackets so the amount for that item prints.",
+      starter: "// stock and item already exist\nconsole.log(stock[___]);\n",
+      hints: ["The key's name is stored in a variable, so put the variable in the brackets.", "<code>stock[item]</code>"],
+      cases: [["gears", 2], ["bolts", 4]].map(([it, n]) => outCase("item = " + show(it), "const stock = { bolts: 4, gears: 2 }, item = " + JSON.stringify(it) + ";", [String(n)])),
+      solution: "console.log(stock[item]);" }
+  ],
+  spread: [
+    { title: "Unpack it", task: "<code>ship</code> already exists. Fill in the blank so its <code>name</code> property is unpacked into a variable called name.",
+      starter: "// ship already exists\nconst { ___ } = ship;\nconsole.log(name);\n",
+      hints: ["Put the property's name between the braces.", "<code>const { name } = ship;</code>"],
+      cases: ["Kite", "Orion"].map(n => outCase("ship " + n, "const ship = { name: " + JSON.stringify(n) + ", fuel: 50 };", [n])),
+      solution: "const { name } = ship;\nconsole.log(name);" },
+    { title: "Join the lists", task: "<code>a</code> and <code>b</code> already exist. Fill in the brackets so <code>all</code> is one array with everything from a, then everything from b.",
+      starter: "// a and b already exist\nconst all = [___];\nconsole.log(all);\n",
+      hints: ["Spread each array with three dots.", "<code>[...a, ...b]</code>"],
+      src: [{ test: s => /\.\.\.\s*a\b/.test(s) && /\.\.\.\s*b\b/.test(s), msg: "Spread both arrays: <code>...a</code> and <code>...b</code>." }],
+      cases: [[["Ada"], ["Bo", "Cy"]], [[], ["Zed"]]].map(([x, y]) => outCase(show(x) + " + " + show(y), "const a = " + JSON.stringify(x) + ", b = " + JSON.stringify(y) + ";", [show(x.concat(y))])),
+      solution: "const all = [...a, ...b];\nconsole.log(all);" }
+  ],
+  classes: [
+    { title: "Build one", task: "Fill in the keyword that builds a new Robot from the class.",
+      starter: 'class Robot {\n  constructor(name) {\n    this.name = name;\n  }\n}\nconst r = ___ Robot("Zed");\nconsole.log(r.name);\n',
+      hints: ["Objects are built from classes with one special keyword.", "<code>new Robot(\"Zed\")</code>"],
+      cases: [outCase("Output", "", ["Zed"])],
+      solution: 'class Robot {\n  constructor(name) {\n    this.name = name;\n  }\n}\nconst r = new Robot("Zed");\nconsole.log(r.name);' },
+    { title: "Use this", task: "Fill in the blank so <code>shout()</code> returns the robot's own name in capitals.",
+      starter: 'class Robot {\n  constructor(name) {\n    this.name = name;\n  }\n  shout() {\n    return ___.name.toUpperCase();\n  }\n}\nconsole.log(new Robot("zed").shout());\n',
+      hints: ["Inside a method, one word means \"this robot\".", "<code>return this.name.toUpperCase();</code>"],
+      cases: [outCase("Output", "", ["ZED"])],
+      solution: 'class Robot {\n  constructor(name) {\n    this.name = name;\n  }\n  shout() {\n    return this.name.toUpperCase();\n  }\n}\nconsole.log(new Robot("zed").shout());' }
   ]
 });
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
@@ -2883,6 +3056,28 @@ FINALES.push({ id: "fin8", world: 8, kind: "finale", title: "Cargo Sorter", conc
         fnCase(fn, args, exp, v => fn === "heaviestId" && v && typeof v === "object" ? "That's the whole crate. Return its id." : fn === "safeLoad" && v === 145 ? "That includes the fragile crate. Filter it out first." : "")); })(),
     solution: "function safeLoad(crates) {\n  return crates.filter(c => !c.fragile).reduce((sum, c) => sum + c.weight, 0);\n}\n\nfunction heaviestId(crates) {\n  const heaviest = crates.reduce((best, c) => {\n    if (c.weight > best.weight) {\n      return c;\n    }\n    return best;\n  });\n  return heaviest.id;\n}",
     why: ["Define safeLoad.", "Keep the crates that aren't fragile, then add up their weights starting from 0.", "", "", "Define heaviestId.", "With no starting value, reduce begins with the first crate as best.", "A heavier crate…", "…becomes the new best.", "", "Otherwise keep the best so far. Using > (not >=) keeps the first crate in a tie.", "End of the callback.", "Return just the id.", ""]
+  } });
+FINALES.push({ id: "fin9", world: 9, kind: "finale", title: "Fleet Registry", concept: "Sector finale: a class that manages data", combines: ["objtools", "spread", "classes", "findreduce"],
+  story: "The Data Vault needs one system to track the whole fleet. Build it as a class that holds an array of ship records.",
+  mistakes: ["Changing the original ship objects in renamed() instead of returning copies.", "Forgetting <code>this.</code> when reading the ships array inside a method."],
+  recap: ["A class can hold an array of plain objects and offer methods to work with it.", "Array methods (reduce, map) work just as well inside methods.", "Spread makes copies, so methods can return new data without changing the stored data."],
+  challenge: {
+    scene: "screens", title: "Build the fleet registry",
+    brief: "Write a class <code>Fleet</code>. It starts with an empty <code>ships</code> array. <code>add(name, crew)</code> stores a ship object like <code>{ name: \"Kite\", crew: 3 }</code>. <code>totalCrew()</code> returns everyone aboard all ships. <code>largest()</code> returns the name of the ship with the most crew (the first, if tied), or <code>\"none\"</code> if empty. <code>renamed(oldName, newName)</code> returns a <b>new array</b> where that ship has the new name, without changing the stored ships.",
+    starter: "class Fleet {\n\n}\n",
+    hints: ["totalCrew: <code>this.ships.reduce((sum, s) => sum + s.crew, 0)</code>. renamed: <code>this.ships.map(s => { if (s.name === oldName) { return { ...s, name: newName }; } return s; })</code>."],
+    cases: [
+      { label: "Kite (3), Orion (7), Vega (7)", expect: "totalCrew 17 · largest Orion",
+        post: "try { const f = new Fleet(); f.add('Kite', 3); f.add('Orion', 7); f.add('Vega', 7); __report.t = f.totalCrew(); __report.l = f.largest(); __report.n = f.ships.length; } catch (e) { __report.err = e.message; }",
+        check: r => { const R = r.report; if (R.err) return fail("Using the fleet failed: " + esc(R.err), "error"); if (R.n !== 3) return fail("After 3 add() calls, ships should hold 3 ships but holds " + q(show(R.n)) + ".", "ships " + show(R.n)); if (R.t !== 17) return fail("totalCrew() should be 17 but returned " + q(show(R.t)) + ".", "total " + show(R.t)); return R.l === "Orion" ? pass("17 · Orion") : fail("largest() should be \"Orion\" (the first of the tied ships) but returned " + q(show(R.l)) + ".", show(R.l)); } },
+      { label: "An empty fleet", expect: "totalCrew 0 · largest none",
+        post: "try { const f = new Fleet(); __report.t = f.totalCrew(); __report.l = f.largest(); } catch (e) { __report.err = e.message; }",
+        check: r => r.report.err ? fail("An empty fleet failed: " + esc(r.report.err), "error") : r.report.t === 0 && r.report.l === "none" ? pass("0 · none") : fail("An empty fleet should give totalCrew 0 and largest \"none\", but gave " + q(show(r.report.t)) + " and " + q(show(r.report.l)) + ".", show(r.report.t) + " · " + show(r.report.l)) },
+      { label: "renamed(\"Kite\", \"Kite II\")", expect: "new array renamed · stored ships unchanged",
+        post: "try { const f = new Fleet(); f.add('Kite', 3); f.add('Orion', 7); __report.out = f.renamed('Kite', 'Kite II'); __report.stored = f.ships; } catch (e) { __report.err = e.message; }",
+        check: r => { const R = r.report; if (R.err) return fail("renamed() failed: " + esc(R.err), "error"); if (!same(R.out, [{ name: "Kite II", crew: 3 }, { name: "Orion", crew: 7 }])) return fail("renamed() returned " + q(show(R.out)) + ".", show(R.out)); return R.stored[0].name === "Kite" ? pass("renamed copy") : fail("The result is right, but the stored ship was renamed too. Return a copy with spread instead of changing it.", "stored " + R.stored[0].name); } }],
+    solution: "class Fleet {\n  constructor() {\n    this.ships = [];\n  }\n  add(name, crew) {\n    this.ships.push({ name: name, crew: crew });\n  }\n  totalCrew() {\n    return this.ships.reduce((sum, s) => sum + s.crew, 0);\n  }\n  largest() {\n    if (this.ships.length === 0) {\n      return \"none\";\n    }\n    const big = this.ships.reduce((best, s) => {\n      if (s.crew > best.crew) {\n        return s;\n      }\n      return best;\n    });\n    return big.name;\n  }\n  renamed(oldName, newName) {\n    return this.ships.map(s => {\n      if (s.name === oldName) {\n        return { ...s, name: newName };\n      }\n      return s;\n    });\n  }\n}",
+    why: ["The blueprint.", "Set up each new fleet…", "…with its own empty list of ships.", "", "Store a plain object for each ship.", "", "", "Add up every ship's crew.", "", "", "Find the biggest ship.", "Nothing stored yet…", "…so there's no largest.", "", "reduce keeps whichever ship has more crew. Using > keeps the first in a tie.", "", "", "", "", "", "Return just its name.", "", "Make a renamed copy of the list.", "map builds a new array, one entry per ship.", "The ship being renamed…", "…becomes a copy with the new name.", "", "Every other ship is reused as it is.", "", "", "End of the class."]
   } });
 // Place each finale right after the last lesson of its sector
 FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
@@ -3385,6 +3580,78 @@ Object.assign(MISSIONS, {
       solution: "function countBy(items) {\n  return items.reduce((counts, x) => {\n    if (counts[x] === undefined) {\n      counts[x] = 0;\n    }\n    counts[x] = counts[x] + 1;\n    return counts;\n  }, {});\n}" }
   ]
 });
+// Builds a test case that drives a class through `script` (inside try), then checks __report
+const classCase = (label, expect, script, check) => ({ label, expect, post: "try { " + script + " } catch (e) { __report.err = e.message; }",
+  check: r => r.report.err ? fail("Using your class failed: " + esc(r.report.err), "error") : check(r.report) });
+Object.assign(REVIEWS, {
+  objtools: { title: "Count the keys", task: "Write <code>countKeys(obj)</code> that returns how many keys an object has.",
+    starter: "function countKeys(obj) {\n\n}\n",
+    hints: ["Objects have no length, but the array of their keys does.", "<code>return Object.keys(obj).length;</code>"],
+    cases: [[{ a: 1, b: 2 }, 2], [{}, 0]].map(([o, e]) => fnCase("countKeys", [o], e)),
+    solution: "function countKeys(obj) {\n  return Object.keys(obj).length;\n}" },
+  spread: { title: "Safe update", task: "Write <code>withFuel(ship, fuel)</code> that returns a copy of the ship with its fuel replaced. The original ship must not change.",
+    starter: "function withFuel(ship, fuel) {\n\n}\n",
+    hints: ["Spread the ship into a new object, then set fuel after it.", "<code>return { ...ship, fuel: fuel };</code>"],
+    src: [{ test: s => /\.\.\./.test(s), msg: "Copy the ship with spread (...)." }],
+    cases: [{ label: 'withFuel({ name: "Kite", fuel: 5 }, 90)', expect: '{ name: "Kite", fuel: 90 }, original unchanged',
+      post: "__report.isFn = typeof withFuel === 'function'; const __s = { name: 'Kite', fuel: 5 }; if (__report.isFn) __report.out = __call(withFuel, __s, 90); __report.orig = __s;",
+      check: r => { const c = callCheck(r.report, "withFuel", "withFuel(ship, 90)", { name: "Kite", fuel: 90 }); if (!c.ok) return c; return r.report.orig.fuel !== 5 ? fail("The original ship was changed. Return a copy instead.", "original changed") : c; } }],
+    solution: "function withFuel(ship, fuel) {\n  return { ...ship, fuel: fuel };\n}" },
+  classes: { title: "Counter class", task: "Write a class <code>Counter</code> whose objects start with <code>count</code> at 0. Its <code>increment()</code> method adds 1 and returns the new count.",
+    starter: "class Counter {\n\n}\n",
+    hints: ["The constructor sets <code>this.count = 0;</code>.", "<code>increment() { this.count = this.count + 1; return this.count; }</code>"],
+    cases: [classCase("new Counter(), increment twice", "returns 1, then 2", "const c = new Counter(); __report.a = c.increment(); __report.b = c.increment(); __report.c = c.count;",
+      R => R.a === 1 && R.b === 2 && R.c === 2 ? pass("1, 2") : fail("Expected 1 then 2, but increment returned " + q(show(R.a)) + " and " + q(show(R.b)) + ".", show(R.a) + ", " + show(R.b)))],
+    solution: "class Counter {\n  constructor() {\n    this.count = 0;\n  }\n  increment() {\n    this.count = this.count + 1;\n    return this.count;\n  }\n}" }
+});
+Object.assign(MISSIONS, {
+  objtools: [
+    { tier: "Easy", title: "Price list", task: "<code>prices</code> already exists, like <code>{ bolt: 2, lens: 15 }</code>. Print one line per item, like <code>bolt: 2</code>, in order.",
+      starter: "// prices already exists\n", hints: ["Loop over Object.keys and read each price with brackets.", "<code>for (const item of Object.keys(prices)) { console.log(`${item}: ${prices[item]}`); }</code>"],
+      cases: [{ bolt: 2, lens: 15 }, { gear: 7 }].map(p => outCase(show(p), "const prices = " + JSON.stringify(p) + ";", Object.keys(p).map(k => k + ": " + p[k]))),
+      solution: "for (const item of Object.keys(prices)) {\n  console.log(`${item}: ${prices[item]}`);\n}" },
+    { tier: "Medium", title: "Most stocked", task: "Write <code>mostStocked(stock)</code> that returns the name of the item with the biggest amount (the first one, if tied).",
+      starter: "function mostStocked(stock) {\n\n}\n", hints: ["Loop over the keys and remember the best key so far.", "Start with <code>let best = Object.keys(stock)[0];</code> and replace it whenever <code>stock[k] > stock[best]</code>."],
+      cases: [[{ bolts: 4, gears: 9, lenses: 9 }, "gears"], [{ solo: 1 }, "solo"]].map(([s, e]) => fnCase("mostStocked", [s], e)),
+      solution: "function mostStocked(stock) {\n  let best = Object.keys(stock)[0];\n  for (const k of Object.keys(stock)) {\n    if (stock[k] > stock[best]) {\n      best = k;\n    }\n  }\n  return best;\n}" },
+    { tier: "Hard", title: "Invert", task: "Write <code>invert(obj)</code> that returns a new object with the keys and values swapped: <code>{ a: \"x\", b: \"y\" }</code> → <code>{ x: \"a\", y: \"b\" }</code>.",
+      starter: "function invert(obj) {\n\n}\n", hints: ["Start with an empty object and fill it in a loop over the keys.", "<code>const out = {}; for (const k of Object.keys(obj)) { out[obj[k]] = k; } return out;</code>"],
+      cases: [[{ a: "x", b: "y" }, { x: "a", y: "b" }], [{}, {}]].map(([o, e]) => fnCase("invert", [o], e)),
+      solution: "function invert(obj) {\n  const out = {};\n  for (const k of Object.keys(obj)) {\n    out[obj[k]] = k;\n  }\n  return out;\n}" }
+  ],
+  spread: [
+    { tier: "Easy", title: "Copy and add", task: "<code>crew</code> already exists. Make <code>newCrew</code>, a copy with <code>\"Zed\"</code> added at the end, without changing crew. Print crew's length, then newCrew's length.",
+      starter: "// crew already exists\n", hints: ["Spread the old array into a new one and add Zed after it.", "<code>const newCrew = [...crew, \"Zed\"];</code>"],
+      src: [{ test: s => /\.\.\.\s*crew/.test(s), msg: "Copy crew with spread: <code>[...crew, \"Zed\"]</code>." }],
+      cases: [["Ada", "Bo"], []].map(c => outCase(show(c), "const crew = " + JSON.stringify(c) + ";", [String(c.length), String(c.length + 1)])),
+      solution: 'const newCrew = [...crew, "Zed"];\nconsole.log(crew.length);\nconsole.log(newCrew.length);' },
+    { tier: "Medium", title: "Swap the pair", task: "Write <code>swap(pair)</code> that receives a two-element array and returns a new array with the elements swapped. Unpack it with destructuring.",
+      starter: "function swap(pair) {\n\n}\n", hints: ["<code>const [a, b] = pair;</code>", "Then <code>return [b, a];</code>"],
+      src: [{ test: s => /const\s*\[|function\s+swap\s*\(\s*\[/.test(s), msg: "Unpack the pair with array destructuring: <code>const [a, b] = pair;</code>" }],
+      cases: [[["left", "right"], ["right", "left"]], [[1, 2], [2, 1]]].map(([p, e]) => fnCase("swap", [p], e)),
+      solution: "function swap(pair) {\n  const [a, b] = pair;\n  return [b, a];\n}" },
+    { tier: "Hard", title: "Settings with defaults", task: "Write <code>settings(options)</code> that returns an object with the defaults <code>volume: 5</code> and <code>theme: \"dark\"</code>, overridden by anything in options.",
+      starter: "function settings(options) {\n\n}\n", hints: ["Defaults first, then spread the options so they win.", "<code>return { volume: 5, theme: \"dark\", ...options };</code>"],
+      cases: [[{ theme: "light" }, { volume: 5, theme: "light" }], [{}, { volume: 5, theme: "dark" }], [{ volume: 9, extra: true }, { volume: 9, theme: "dark", extra: true }]].map(([o, e]) => fnCase("settings", [o], e, v => v && v.theme === "dark" && o.theme === "light" ? "The defaults are winning. Spread the options after the defaults." : "")),
+      solution: 'function settings(options) {\n  return { volume: 5, theme: "dark", ...options };\n}' }
+  ],
+  classes: [
+    { tier: "Easy", title: "Lamp", task: "Write a class <code>Lamp</code> whose objects start with <code>on</code> set to false. <code>toggle()</code> flips it between true and false.",
+      starter: "class Lamp {\n\n}\n", hints: ["The constructor sets <code>this.on = false;</code>.", "<code>toggle() { this.on = !this.on; }</code>"],
+      cases: [[1, true], [2, false]].map(([n, e]) => classCase("toggle " + n + "×", "on is " + e, "const l = new Lamp(); " + "l.toggle(); ".repeat(n) + "__report.on = l.on;", R => R.on === e ? pass(String(e)) : fail("After " + n + " toggle" + (n > 1 ? "s" : "") + ", on should be " + e + " but is " + q(show(R.on)) + ".", show(R.on)))),
+      solution: "class Lamp {\n  constructor() {\n    this.on = false;\n  }\n  toggle() {\n    this.on = !this.on;\n  }\n}" },
+    { tier: "Medium", title: "Bank account", task: "Write a class <code>Account</code>. <code>new Account(owner)</code> starts with a <code>balance</code> of 0. <code>deposit(n)</code> adds n. <code>withdraw(n)</code> takes n out and returns true, unless there isn't enough money, in which case it changes nothing and returns false.",
+      starter: "class Account {\n\n}\n", hints: ["In withdraw, check <code>n > this.balance</code> first.", "<code>withdraw(n) { if (n > this.balance) { return false; } this.balance = this.balance - n; return true; }</code>"],
+      cases: [classCase("deposit 50, withdraw 20, then 100", "true, then false · balance 30", "const a = new Account('Ada'); a.deposit(50); __report.w1 = a.withdraw(20); __report.w2 = a.withdraw(100); __report.b = a.balance; __report.o = a.owner;",
+        R => R.w1 === true && R.w2 === false && R.b === 30 ? pass("true, false · 30") : fail("Expected true, false and a balance of 30, but got " + q(show(R.w1)) + ", " + q(show(R.w2)) + " and " + q(show(R.b)) + ".", show(R.w1) + ", " + show(R.w2) + " · " + show(R.b)))],
+      solution: "class Account {\n  constructor(owner) {\n    this.owner = owner;\n    this.balance = 0;\n  }\n  deposit(n) {\n    this.balance = this.balance + n;\n  }\n  withdraw(n) {\n    if (n > this.balance) {\n      return false;\n    }\n    this.balance = this.balance - n;\n    return true;\n  }\n}" },
+    { tier: "Hard", title: "Inventory", task: "Write a class <code>Inventory</code> that keeps an object of item counts. <code>add(name, n)</code> adds n of an item. <code>remove(name, n)</code> takes n away and returns true, or returns false (and changes nothing) if there aren't enough. <code>count(name)</code> returns how many there are (0 for unknown items).",
+      starter: "class Inventory {\n\n}\n", hints: ["Store counts in <code>this.items = {}</code> and read them with brackets: <code>this.items[name]</code>.", "Write count first (return 0 when undefined) and use it inside add and remove."],
+      cases: [classCase("add bolts 5, remove 3, remove 9", "true, false · bolts 2 · gears 0", "const inv = new Inventory(); inv.add('bolts', 5); __report.r1 = inv.remove('bolts', 3); __report.r2 = inv.remove('bolts', 9); __report.b = inv.count('bolts'); __report.g = inv.count('gears');",
+        R => R.r1 === true && R.r2 === false && R.b === 2 && R.g === 0 ? pass("true, false · 2 · 0") : fail("Expected true, false, bolts 2 and gears 0, but got " + [R.r1, R.r2, R.b, R.g].map(x => q(show(x))).join(", ") + ".", [R.r1, R.r2, R.b, R.g].map(x => show(x)).join(", ")))],
+      solution: "class Inventory {\n  constructor() {\n    this.items = {};\n  }\n  count(name) {\n    if (this.items[name] === undefined) {\n      return 0;\n    }\n    return this.items[name];\n  }\n  add(name, n) {\n    this.items[name] = this.count(name) + n;\n  }\n  remove(name, n) {\n    if (this.count(name) < n) {\n      return false;\n    }\n    this.items[name] = this.count(name) - n;\n    return true;\n  }\n}" }
+  ]
+});
 const missionKey = (L, k) => L.id + ":" + k;
 const missionDone = (L, k, s) => !!((s || store).missions || {})[missionKey(L, k)];
 const missionsOf = L => MISSIONS[L.id] || [];
@@ -3413,7 +3680,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.4.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
