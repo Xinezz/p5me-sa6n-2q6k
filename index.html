@@ -692,6 +692,7 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  crates: { rows: ["....kkkk....", "....kook....", "....kook....", "..kkkkkkkk..", "..kookkook..", "..kookkook..", "kkkkkkkkkkkk", "kookkookkook", "kookkookkook", "kkkkkkkkkkkk"] },
   dish: { rows: ["..........y.", ".kkkk....y..", "kwwwwk..y...", "kwwwwwkk....", "kwwwwwwk....", ".kwwwwk.....", "..kkkkk.....", "....kSk.....", "....kSk.....", "..kkSSSkk...", "..kSSSSSk...", "..kkkkkkk..."] },
   panel: { rows: ["kkkkkkkkkkkk", "kbbbbbbbbbbk", "kbnnnnnnnnbk", "kbnwnnnnnnbk", "kbnnnnnnnnbk", "kbbbbbbbbbbk", "kSSSSSSSSSSk", "kSrSgSySoSSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk"] },
   trophy: { rows: ["..kkkkkkkk..", "kkkyyyyyykkk", "kykywyyyykyk", "kykyyyyyykyk", ".kkyyyyyykk.", "...kyyyyk...", "....kyyk....", ".....kk.....", "....kyyk....", "...kOOOOk...", "...kkkkkk..."] },
@@ -700,7 +701,7 @@ const SPRITES = {
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
   exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
 };
-const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish"];
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish", "crates"];
 // Act II (advanced topics) starts at this sector index
 const ACT2_FROM = 7;
 const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
@@ -1445,7 +1446,8 @@ const WORLDS = [
   { name: "Data Archive", blurb: "Store many values with arrays and objects." },
   { name: "Control Room", blurb: "Make a web page react: change text and styles, read inputs, handle clicks." },
   { name: "Glitch Core", blurb: "Final boss of Act I. Find and fix the bugs." },
-  { name: "Signal Lab", blurb: "Work with text: string methods, slicing, splitting and template literals." }
+  { name: "Signal Lab", blurb: "Work with text: string methods, slicing, splitting and template literals." },
+  { name: "Array Engine", blurb: "Arrow functions and powerful array tools: map, filter, find, some, every and reduce." }
 ];
 
 const LESSONS = [
@@ -2294,6 +2296,126 @@ const LESSONS = [
     why: ["Define report.", "Three slots, each reading a property of the mission object.", "", "", "Define eta.", "The division happens inside the slot, and the result is filled into the text.", ""]
   },
   recap: ["Template literals use backticks and <code>${ }</code> slots.", "Any expression can go in a slot: maths, properties, method calls.", "They can span several lines."]
+},
+/* ================= ACT II · Array Engine ================= */
+{
+  id: "arrows", world: 8, title: "Arrow Functions", concept: "Arrow functions and callbacks",
+  story: "The Array Engine runs on hundreds of tiny instructions. Before you can drive it, you need a shorter way to write functions, and a way to hand them to other functions.",
+  learn: [
+    ["A shorter way to write functions", "<code>const double = (n) => { return n * 2; };</code> does the same job as <code>function double(n) { return n * 2; }</code>. The arrow <code>=></code> points from the parameters to the body."],
+    ["Even shorter", "When the body is a single expression, drop the braces and the <code>return</code>: <code>const double = n => n * 2;</code>. The value after the arrow is returned automatically. With exactly one parameter the brackets are optional; with none or several, keep them: <code>() => 42</code>, <code>(a, b) => a + b</code>."],
+    ["Functions are values", "A function can be stored in a variable, kept in an array or object, or passed to another function, just like a number or a string."],
+    ["Callbacks", "A function you hand to another function is called a <b>callback</b>. The other function decides when to call it. You've done this already: <code>addEventListener(\"click\", function () { … })</code> and <code>setTimeout</code> both take callbacks."]
+  ],
+  terms: [["arrow function", "a short way to write a function: (a, b) => a + b"], ["implicit return", "an arrow without braces returns its expression automatically"], ["callback", "a function passed to another function, to be called later"]],
+  example: { code: 'const double = n => n * 2;\nconst add = (a, b) => a + b;\nconsole.log(double(21));\nconsole.log(add(2, 3));\nfunction twice(action) {\n  action();\n  action();\n}\ntwice(() => console.log("Beep"));', lines: ["An arrow with one parameter. n * 2 is returned automatically.", "Two parameters need brackets.", "Prints 42.", "Prints 5.", "A normal function that takes a function as its parameter.", "Call whatever function it was given…", "…twice.", "", "Pass an arrow function as the callback: Beep prints twice."] },
+  symbols: [["=>", "the arrow: parameters on the left, body on the right"], ["n => n * 2", "one parameter, returns n * 2"], ["(a, b) => a + b", "two parameters need brackets"], ["() => …", "no parameters: empty brackets"]],
+  good: { code: "const square = n => n * n;", why: "A single expression, returned automatically." },
+  bad: { code: "const square = n => { n * n };", why: "With braces, the arrow no longer returns anything by itself, so this returns <code>undefined</code>. Either drop the braces or write <code>return n * n;</code>." },
+  mistakes: ["Using braces but forgetting <code>return</code>.", "Writing the arrow the wrong way round (<code>=<</code>) or as <code>-></code>.", "Calling a function when you meant to pass it: <code>twice(beep())</code> runs beep straight away; <code>twice(beep)</code> passes it.", "Leaving out the brackets with two parameters: <code>a, b => a + b</code> doesn't work."],
+  trace: { code: 'const double = n => n * 2;\nconst add = (a, b) => a + b;\nconsole.log(double(21));\nconsole.log(add(2, 3));\nfunction twice(action) {\n  action();\n  action();\n}\ntwice(() => console.log("Beep"));', steps: [
+    { l: 0, n: "Store an arrow function in double. Nothing runs yet." },
+    { l: 1, n: "Store another one in add." },
+    { l: 2, o: "42", n: "double(21): n is 21, and 21 * 2 comes back automatically." },
+    { l: 3, o: "5", n: "add(2, 3) returns 5." },
+    { l: 8, n: "Pass an arrow function into twice. Inside twice, it's called action." },
+    { l: 5, o: "Beep", n: "twice calls the callback once…" },
+    { l: 6, o: "Beep", n: "…and again." }] },
+  practise: { starter: 'const greet = name => "Hello, " + name;\nconsole.log(greet("Ada"));\nconst area = (w, h) => w * h;\nconsole.log(area(3, 4));\n',
+    ideas: ["Write <code>const isEven = n => n % 2 === 0;</code> and test it.", "Turn a function from an earlier lesson into an arrow function.", "Store two arrow functions in an array and call <code>fns[1](5)</code>.", "Write <code>function run(fn) { return fn(10); }</code> and pass it different arrows."] },
+  predict: { code: "const f = x => x + 1;\nconst g = x => { x * 10 };\nconsole.log(f(1));\nconsole.log(g(1));", answer: "2\nundefined", explain: "f has no braces, so x + 1 is returned. g has braces but no return statement, so it returns undefined." },
+  challenge: {
+    scene: "screens", title: "Program the engine controls",
+    brief: "Create <code>toKm</code> as an <b>arrow function</b> that turns miles into kilometres (multiply by 1.6). Then write <code>applyTwice(fn, x)</code>, which calls the function <code>fn</code> on <code>x</code>, then calls it again on that result, and returns the final value: <code>applyTwice(n => n * 3, 2)</code> → <code>18</code>.",
+    starter: "// toKm as an arrow function\n\n// applyTwice(fn, x)\n",
+    hints: ["<code>const toKm = miles => miles * 1.6;</code>", "Call fn on x, then on the result: <code>return fn(fn(x));</code>"],
+    src: [{ test: s => /\btoKm\s*=\s*\(?\s*[A-Za-z_$][\w$]*\s*\)?\s*=>/.test(s), msg: "Write toKm as an arrow function: <code>const toKm = miles => …</code>" }],
+    cases: [...[[10, 16], [0, 0], [2.5, 4]].map(([m, e]) => fnCase("toKm", [m], e)),
+      ...[["n => n * 3", "2", 18, "applyTwice(n => n * 3, 2)"], ['s => s + "!"', '"go"', "go!!", 'applyTwice(s => s + "!", "go")']].map(([f, x, e, txt]) => ({
+        label: txt, expect: show(e), post: "__report.isFn = typeof applyTwice === 'function'; if (__report.isFn) __report.out = __call(applyTwice, " + f + ", " + x + ");",
+        check: r => callCheck(r.report, "applyTwice", txt, e, v => v === (typeof e === "number" ? 6 : "go!") ? "That's only one call. Call fn again on the first result: <code>fn(fn(x))</code>." : "") }))],
+    solution: "const toKm = miles => miles * 1.6;\n\nfunction applyTwice(fn, x) {\n  return fn(fn(x));\n}",
+    why: ["An arrow with one parameter; miles * 1.6 is returned automatically.", "", "applyTwice receives a function and a value.", "fn(x) runs first; its result goes straight into fn again.", ""]
+  },
+  recap: ["<code>(a, b) => a + b</code> is a short way to write a function.", "Without braces, an arrow returns its expression automatically.", "Functions are values: they can be stored and passed to other functions as callbacks."]
+},
+{
+  id: "mapfilter", world: 8, title: "Map & Filter", concept: "Transforming and filtering arrays",
+  story: "Cargo pours through the Array Engine all day. Instead of writing a loop for every job, learn the two machines it uses most: map and filter.",
+  learn: [
+    ["Do something to every element", "<code>nums.map(n => n * 2)</code> calls your function on each element and builds a <b>new</b> array from what it returns: <code>[1, 2, 3]</code> becomes <code>[2, 4, 6]</code>. The original array doesn't change."],
+    ["Keep only some elements", "<code>nums.filter(n => n > 2)</code> keeps the elements where your function returns true: <code>[1, 2, 3, 4]</code> becomes <code>[3, 4]</code>."],
+    ["Chaining", "Each method returns a new array, so they can be chained: <code>nums.filter(n => n > 0).map(n => n * 10)</code> filters first, then maps what's left."],
+    ["Loops in disguise", "map and filter do what your loop-and-push patterns did, in one line, and their names say what's happening. Underneath, they're still loops."]
+  ],
+  terms: [["map", "makes a new array by changing every element"], ["filter", "makes a new array with only the elements that pass a test"], ["chaining", "calling one method on the result of another"]],
+  example: { code: 'const temps = [12, 25, 31, 8];\nconst warm = temps.filter(t => t > 20);\nconsole.log(warm);\nconst doubled = temps.map(t => t * 2);\nconsole.log(doubled);\nconsole.log(temps.filter(t => t < 20).map(t => t + "°C"));', lines: ["Four temperature readings.", "Keep only the readings above 20.", "Prints [25, 31].", "A new array with every reading doubled.", "Prints [24, 50, 62, 16]. temps itself is unchanged.", "Filter the cold ones, then turn each into a label: [\"12°C\", \"8°C\"]."] },
+  symbols: [[".map(x => …)", "new array, one result per element"], [".filter(x => …)", "new array, only elements where the test is true"], [".filter(…).map(…)", "chain: filter first, then map"]],
+  good: { code: "const names = crew.map(m => m.name);", why: "Pull one property out of every object: a very common use of map." },
+  bad: { code: "const names = crew.map(m => { m.name });", why: "Braces without <code>return</code>, so every element becomes undefined." },
+  mistakes: ["Braces in the callback without <code>return</code>.", "A filter callback that doesn't return true or false.", "Expecting map to change the original array. It makes a new one.", "Expecting map to remove elements. It always returns the same number of elements; use filter for that."],
+  trace: { code: 'const temps = [12, 25, 31, 8];\nconst warm = temps.filter(t => t > 20);\nconsole.log(warm);\nconst doubled = temps.map(t => t * 2);\nconsole.log(doubled);\nconsole.log(temps.filter(t => t < 20).map(t => t + "°C"));', steps: [
+    { l: 0, v: { temps: "[12, 25, 31, 8]" } },
+    { l: 1, v: { warm: "[25, 31]" }, n: "filter tests each reading: 12 no, 25 yes, 31 yes, 8 no." },
+    { l: 2, o: "[25, 31]" },
+    { l: 3, v: { doubled: "[24, 50, 62, 16]" }, n: "map doubles every element into a new array." },
+    { l: 4, o: "[24, 50, 62, 16]" },
+    { l: 5, o: '["12°C", "8°C"]', n: "filter keeps 12 and 8, then map turns each into text." }] },
+  practise: { starter: 'const crew = [{ name: "Ada", age: 36 }, { name: "Bo", age: 19 }, { name: "Cy", age: 52 }];\nconst names = crew.map(m => m.name);\nconsole.log(names);\nconst seniors = crew.filter(m => m.age > 30);\nconsole.log(seniors.length);\n',
+    ideas: ["Map the crew to their ages.", "Filter crew whose name starts with \"C\": <code>m.name[0] === \"C\"</code>.", "Chain: names of everyone over 30.", "Map the ages to <code>age + 1</code>, as if a year had passed."] },
+  predict: { code: "const n = [1, 2, 3, 4];\nconsole.log(n.map(x => x * x));\nconsole.log(n.filter(x => x % 2 === 0).length);\nconsole.log(n);", answer: "[1, 4, 9, 16]\n2\n[1, 2, 3, 4]", explain: "map squares each number. filter keeps 2 and 4, so the length is 2. The original array is never changed." },
+  challenge: {
+    scene: "screens", title: "Sort the cargo manifest",
+    brief: "Crates look like <code>{ id: 7, weight: 30 }</code>. Write <code>heavyIds(crates)</code> that returns the <b>ids</b> of crates heavier than 50, and <code>labels(crates)</code> that returns a label like <code>\"#7: 30kg\"</code> for every crate. Use filter and map.",
+    starter: "function heavyIds(crates) {\n\n}\n\nfunction labels(crates) {\n\n}\n",
+    hints: ["heavyIds: filter the heavy ones, then map each crate to its id: <code>crates.filter(c => c.weight > 50).map(c => c.id)</code>", "labels: <code>crates.map(c => `#${c.id}: ${c.weight}kg`)</code>"],
+    src: [{ test: s => /\.filter\s*\(/.test(s) && /\.map\s*\(/.test(s), msg: "Use filter and map rather than loops: that's what this lesson is practising." }],
+    cases: (() => { const A = [{ id: 7, weight: 30 }, { id: 9, weight: 80 }, { id: 3, weight: 51 }], B = [{ id: 1, weight: 50 }];
+      return [["heavyIds", [A], [9, 3]], ["heavyIds", [B], []], ["heavyIds", [[]], []], ["labels", [A], ["#7: 30kg", "#9: 80kg", "#3: 51kg"]], ["labels", [[]], []]].map(([fn, args, exp]) =>
+        fnCase(fn, args, exp, v => Array.isArray(v) && v.some(x => x && typeof x === "object") ? "Those are whole crates. Map each one to its id: <code>.map(c => c.id)</code>." : Array.isArray(v) && v.some(x => x === undefined) ? "Some elements are undefined: a callback with braces needs <code>return</code>." : "")); })(),
+    solution: "function heavyIds(crates) {\n  return crates.filter(c => c.weight > 50).map(c => c.id);\n}\n\nfunction labels(crates) {\n  return crates.map(c => `#${c.id}: ${c.weight}kg`);\n}",
+    why: ["Define heavyIds.", "Keep the crates over 50, then turn each remaining crate into its id.", "", "", "Define labels.", "One label per crate, built with a template literal.", ""]
+  },
+  recap: ["<code>map</code> makes a new array with one result per element.", "<code>filter</code> makes a new array with only the elements that pass.", "They can be chained, and neither changes the original."]
+},
+{
+  id: "findreduce", world: 8, title: "Find, Some & Reduce", concept: "find, some, every and reduce",
+  story: "The engine's diagnostics need answers, not lists: which part failed first, is anything overheating, how much power in total? Four more tools answer those.",
+  learn: [
+    ["Find one element", "<code>crew.find(m => m.name === \"Bo\")</code> returns the <b>first</b> element where your function returns true, or <code>undefined</code> if there's none."],
+    ["Yes-or-no questions", "<code>nums.some(n => n < 0)</code> is true if <b>at least one</b> element passes. <code>nums.every(n => n > 0)</code> is true only if <b>all</b> of them do."],
+    ["Reduce: boil a list down to one value", "<code>nums.reduce((total, n) => total + n, 0)</code> starts <code>total</code> at 0, then gives the callback each element in turn. Whatever the callback returns becomes the next total. It's the accumulator pattern in one line."],
+    ["Picking the right tool", "map: same number of elements, changed. filter: fewer elements. find: one element. some and every: true or false. reduce: a single value of any kind."]
+  ],
+  terms: [["find", "the first element that passes, or undefined"], ["some / every", "does at least one / every element pass?"], ["reduce", "combines all elements into one value"], ["accumulator", "the running result passed from round to round"]],
+  example: { code: "const fuel = [40, 15, 90, 5];\nconsole.log(fuel.find(f => f < 20));\nconsole.log(fuel.some(f => f > 80));\nconsole.log(fuel.every(f => f > 10));\nconst total = fuel.reduce((sum, f) => sum + f, 0);\nconsole.log(total);", lines: ["Four fuel tanks.", "The first one under 20 is 15.", "Is any tank above 80? Yes: 90.", "Are all tanks above 10? No: 5 isn't.", "Start at 0 and add each tank: 0 + 40 + 15 + 90 + 5.", "Prints 150."] },
+  symbols: [[".find(x => …)", "first element that passes"], [".some(x => …)", "true if any pass"], [".every(x => …)", "true if all pass"], [".reduce((acc, x) => …, start)", "combine everything into one value"]],
+  good: { code: "const total = prices.reduce((sum, p) => sum + p, 0);", why: "The 0 at the end is the starting total, so an empty array gives 0 instead of an error." },
+  bad: { code: "const total = prices.reduce((sum, p) => { sum + p }, 0);", why: "Braces without return: the next total becomes undefined, and the result is NaN or undefined." },
+  mistakes: ["Forgetting reduce's starting value (the 0 at the end).", "Not returning the new total from the reduce callback.", "Mixing up find (one element) and filter (an array).", "Using a find result without checking for undefined."],
+  trace: { code: "const fuel = [40, 15, 90, 5];\nconsole.log(fuel.find(f => f < 20));\nconsole.log(fuel.some(f => f > 80));\nconsole.log(fuel.every(f => f > 10));\nconst total = fuel.reduce((sum, f) => sum + f, 0);\nconsole.log(total);", steps: [
+    { l: 0, v: { fuel: "[40, 15, 90, 5]" } },
+    { l: 1, o: "15", n: "find checks 40 (no), then 15 (yes) and stops there." },
+    { l: 2, o: "true", n: "some stops at the first match: 90." },
+    { l: 3, o: "false", n: "every fails as soon as one doesn't pass: 5." },
+    { l: 4, v: { total: "150" }, n: "sum goes 0 → 40 → 55 → 145 → 150." },
+    { l: 5, o: "150" }] },
+  practise: { starter: 'const parts = [{ name: "pump", power: 30, ok: true }, { name: "fan", power: 12, ok: false }, { name: "core", power: 80, ok: true }];\nconsole.log(parts.find(p => !p.ok));\nconsole.log(parts.every(p => p.ok));\nconsole.log(parts.reduce((sum, p) => sum + p.power, 0));\n',
+    ideas: ["Find the part called \"core\".", "Is any part using more than 50 power?", "Use reduce to count the parts that are ok: <code>(n, p) => { if (p.ok) { return n + 1; } return n; }</code>, starting from 0.", "Try find with a name that doesn't exist, and see what you get."] },
+  predict: { code: "const a = [3, 8, 2];\nconsole.log(a.find(x => x > 5));\nconsole.log(a.some(x => x > 10));\nconsole.log(a.reduce((m, x) => m * x, 1));", answer: "8\nfalse\n48", explain: "8 is the first element above 5. Nothing is above 10. reduce multiplies, starting at 1: 1 × 3 × 8 × 2 = 48." },
+  challenge: {
+    scene: "screens", title: "Run the engine diagnostics",
+    brief: "Engine parts look like <code>{ name: \"pump\", status: \"ok\", power: 30 }</code>. Write <code>allOnline(parts)</code> (true if every part's status is <code>\"ok\"</code>), <code>totalPower(parts)</code> (the sum of all power, using reduce) and <code>firstOffline(parts)</code> (the <b>name</b> of the first part that isn't ok, or <code>\"none\"</code>).",
+    starter: "function allOnline(parts) {\n\n}\n\nfunction totalPower(parts) {\n\n}\n\nfunction firstOffline(parts) {\n\n}\n",
+    hints: ["<code>parts.every(p => p.status === \"ok\")</code> · <code>parts.reduce((sum, p) => sum + p.power, 0)</code>", "firstOffline: <code>const part = parts.find(p => p.status !== \"ok\");</code> then return <code>\"none\"</code> if it's undefined, otherwise <code>part.name</code>."],
+    src: [{ test: s => /\.every\s*\(/.test(s) && /\.reduce\s*\(/.test(s) && /\.find\s*\(/.test(s), msg: "Use every, reduce and find: that's what this lesson is practising." }],
+    cases: (() => { const A = [{ name: "pump", status: "ok", power: 30 }, { name: "fan", status: "hot", power: 12 }, { name: "core", status: "down", power: 80 }], B = [{ name: "core", status: "ok", power: 80 }];
+      return [["allOnline", [A], false], ["allOnline", [B], true], ["totalPower", [A], 122], ["totalPower", [[]], 0], ["firstOffline", [A], "fan"], ["firstOffline", [B], "none"]].map(([fn, args, exp]) =>
+        fnCase(fn, args, exp, v => fn === "firstOffline" && v && typeof v === "object" ? "That's the whole part. Return its name." : fn === "totalPower" && typeof v === "number" && isNaN(v) ? "NaN: the reduce callback must return sum + p.power, starting from 0." : "")); })(),
+    solution: 'function allOnline(parts) {\n  return parts.every(p => p.status === "ok");\n}\n\nfunction totalPower(parts) {\n  return parts.reduce((sum, p) => sum + p.power, 0);\n}\n\nfunction firstOffline(parts) {\n  const part = parts.find(p => p.status !== "ok");\n  if (part === undefined) {\n    return "none";\n  }\n  return part.name;\n}',
+    why: ["Define allOnline.", "every: true only if every part's status is ok.", "", "", "Define totalPower.", "Start at 0 and add each part's power.", "", "", "Define firstOffline.", "find gives the first part that isn't ok, or undefined.", "No such part…", "…so report \"none\".", "", "Otherwise return just its name.", ""]
+  },
+  recap: ["<code>find</code> returns the first match (or undefined).", "<code>some</code> and <code>every</code> answer yes-or-no questions about a whole array.", "<code>reduce</code> combines an array into one value, starting from the value you give it."]
 }
 ];
 
@@ -2552,6 +2674,42 @@ Object.assign(DRILLS, {
       src: [{ test: s => /`[^`]*\$\{/.test(s) && !/\+/.test(s), msg: "Use one template literal with ${ } slots, and no + signs." }],
       cases: [outCase("Output", "", ["Ship Kite has 80% fuel"])],
       solution: 'const ship = "Kite";\nconst fuel = 80;\nconsole.log(`Ship ${ship} has ${fuel}% fuel`);' }
+  ],
+  arrows: [
+    { title: "Arrow body", task: "Fill in the body so <code>triple</code> returns its number times 3.",
+      starter: "const triple = n => ___;\n",
+      hints: ["Without braces, whatever comes after the arrow is returned.", "<code>const triple = n => n * 3;</code>"],
+      cases: [[4, 12], [0, 0]].map(([n, e]) => fnCase("triple", [n], e)),
+      solution: "const triple = n => n * 3;" },
+    { title: "Hand over a callback", task: "<code>twice</code> calls whatever function it's given two times. Fill in the blank with an arrow function that prints <code>Go!</code>.",
+      starter: "function twice(action) {\n  action();\n  action();\n}\ntwice(___);\n",
+      hints: ["An arrow with no parameters starts with empty brackets.", "<code>twice(() => console.log(\"Go!\"));</code>"],
+      cases: [outCase("Output", "", ["Go!", "Go!"])],
+      solution: 'function twice(action) {\n  action();\n  action();\n}\ntwice(() => console.log("Go!"));' }
+  ],
+  mapfilter: [
+    { title: "Double everything", task: "<code>nums</code> already exists. Fill in the callback so map doubles every number.",
+      starter: "// nums already exists\nconsole.log(nums.map(n => ___));\n",
+      hints: ["The callback returns the new value for each element.", "<code>n => n * 2</code>"],
+      cases: [[1, 2, 3], [10]].map(a => outCase(show(a), "const nums = " + JSON.stringify(a) + ";", [show(a.map(n => n * 2))])),
+      solution: "console.log(nums.map(n => n * 2));" },
+    { title: "Keep the big ones", task: "<code>nums</code> already exists. Fill in the test so filter keeps only the numbers greater than 10.",
+      starter: "// nums already exists\nconsole.log(nums.filter(n => ___));\n",
+      hints: ["The callback must give true for the numbers to keep.", "<code>n => n > 10</code>"],
+      cases: [[5, 12, 30, 10], [1]].map(a => outCase(show(a), "const nums = " + JSON.stringify(a) + ";", [show(a.filter(n => n > 10))])),
+      solution: "console.log(nums.filter(n => n > 10));" }
+  ],
+  findreduce: [
+    { title: "Find Bo", task: "<code>crew</code> already exists: objects with <code>name</code> and <code>role</code>. Fill in the test so find returns Bo, then his role prints.",
+      starter: "// crew already exists\nconst bo = crew.find(m => ___);\nconsole.log(bo.role);\n",
+      hints: ["Compare each member's name with \"Bo\".", "<code>m => m.name === \"Bo\"</code>"],
+      cases: [[{ name: "Ada", role: "pilot" }, { name: "Bo", role: "engineer" }], [{ name: "Bo", role: "medic" }]].map(c => outCase("crew of " + c.length, "const crew = " + JSON.stringify(c) + ";", [c.find(m => m.name === "Bo").role])),
+      solution: 'const bo = crew.find(m => m.name === "Bo");\nconsole.log(bo.role);' },
+    { title: "Sum with reduce", task: "<code>nums</code> already exists. Fill in the reduce callback so it returns the running total.",
+      starter: "// nums already exists\nconst total = nums.reduce((sum, n) => ___, 0);\nconsole.log(total);\n",
+      hints: ["Each round, return the total so far plus the current number.", "<code>(sum, n) => sum + n</code>"],
+      cases: [[[1, 2, 3], "6"], [[], "0"]].map(([a, e]) => outCase(show(a), "const nums = " + JSON.stringify(a) + ";", [e])),
+      solution: "const total = nums.reduce((sum, n) => sum + n, 0);\nconsole.log(total);" }
   ]
 });
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
@@ -2709,6 +2867,22 @@ FINALES.push({ id: "fin7", world: 7, kind: "finale", title: "Decoder Ring", conc
     })),
     solution: "function decode(raw) {\n  const parts = raw.trim().split(\":\");\n  const type = parts[0].toUpperCase();\n  const name = parts[1][0].toUpperCase() + parts[1].slice(1).toLowerCase();\n  return `${type} from ${name} on deck ${parts[2]}`;\n}",
     why: ["Define decode.", "Trim the outer spaces, then split into [type, name, deck].", "The type in capitals.", "Capital first letter, then the rest in lower case.", "A template literal assembles the message.", ""]
+  } });
+FINALES.push({ id: "fin8", world: 8, kind: "finale", title: "Cargo Sorter", concept: "Sector finale: array tools working together", combines: ["arrows", "mapfilter", "findreduce"],
+  story: "The Array Engine's cargo hold is a mess of crates, some of them fragile. Load the safe ones and report the heaviest, using nothing but array tools.",
+  mistakes: ["Forgetting reduce's starting value, so an empty hold breaks.", "Returning the heaviest crate object instead of its id."],
+  recap: ["filter, then reduce: pick the elements you need, then combine them.", "reduce can track more than a sum: here it remembers the heaviest crate so far.", "Arrow callbacks keep each step to one short line."],
+  challenge: {
+    scene: "screens", title: "Load the cargo hold",
+    brief: "Crates look like <code>{ id: 4, weight: 30, fragile: false }</code>. Write <code>safeLoad(crates)</code> that returns the total weight of the crates that are <b>not</b> fragile, and <code>heaviestId(crates)</code> that returns the <b>id</b> of the heaviest crate (the first one if there's a tie). Use array methods, not loops.",
+    starter: "function safeLoad(crates) {\n\n}\n\nfunction heaviestId(crates) {\n\n}\n",
+    hints: ["safeLoad: <code>crates.filter(c => !c.fragile).reduce((sum, c) => sum + c.weight, 0)</code>. heaviestId: reduce with a callback that returns whichever crate is heavier, <code>c</code> or <code>best</code> (use an if inside braces), then return the winner's id."],
+    src: [{ test: s => /\.reduce\s*\(/.test(s) && !/\bfor\s*\(/.test(s) && !/\bwhile\s*\(/.test(s), msg: "Use array methods (filter, reduce …) instead of for or while loops." }],
+    cases: (() => { const A = [{ id: 4, weight: 30, fragile: false }, { id: 8, weight: 70, fragile: true }, { id: 2, weight: 45, fragile: false }], B = [{ id: 1, weight: 10, fragile: true }], C = [{ id: 5, weight: 20, fragile: false }, { id: 6, weight: 20, fragile: false }];
+      return [["safeLoad", [A], 75], ["safeLoad", [B], 0], ["safeLoad", [[]], 0], ["heaviestId", [A], 8], ["heaviestId", [B], 1], ["heaviestId", [C], 5]].map(([fn, args, exp]) =>
+        fnCase(fn, args, exp, v => fn === "heaviestId" && v && typeof v === "object" ? "That's the whole crate. Return its id." : fn === "safeLoad" && v === 145 ? "That includes the fragile crate. Filter it out first." : "")); })(),
+    solution: "function safeLoad(crates) {\n  return crates.filter(c => !c.fragile).reduce((sum, c) => sum + c.weight, 0);\n}\n\nfunction heaviestId(crates) {\n  const heaviest = crates.reduce((best, c) => {\n    if (c.weight > best.weight) {\n      return c;\n    }\n    return best;\n  });\n  return heaviest.id;\n}",
+    why: ["Define safeLoad.", "Keep the crates that aren't fragile, then add up their weights starting from 0.", "", "", "Define heaviestId.", "With no starting value, reduce begins with the first crate as best.", "A heavier crate…", "…becomes the new best.", "", "Otherwise keep the best so far. Using > (not >=) keeps the first crate in a tie.", "End of the callback.", "Return just the id.", ""]
   } });
 // Place each finale right after the last lesson of its sector
 FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
@@ -3149,6 +3323,68 @@ Object.assign(MISSIONS, {
       solution: "function ticket(name, seat) {\n  return `Passenger: ${name}\nSeat: ${seat}`;\n}" }
   ]
 });
+Object.assign(REVIEWS, {
+  arrows: { title: "Arrow converter", task: "Rewrite <code>cube</code> as an arrow function (<code>const cube = n => …</code>), with no <code>function</code> keyword left.",
+    starter: "function cube(n) {\n  return n * n * n;\n}\n",
+    hints: ["One expression after the arrow is returned automatically.", "<code>const cube = n => n * n * n;</code>"],
+    src: [{ test: s => /\bcube\s*=\s*\(?\s*[A-Za-z_$][\w$]*\s*\)?\s*=>/.test(s) && !/\bfunction\b/.test(s), msg: "Write it as <code>const cube = n => …</code>, with no <code>function</code> keyword." }],
+    cases: [[3, 27], [-2, -8]].map(([n, e]) => fnCase("cube", [n], e)),
+    solution: "const cube = n => n * n * n;" },
+  mapfilter: { title: "Shout the names", task: "Write <code>shout(names)</code> that returns a new array with every name in capitals followed by <code>!</code>: <code>[\"ada\", \"bo\"]</code> → <code>[\"ADA!\", \"BO!\"]</code>.",
+    starter: "function shout(names) {\n\n}\n",
+    hints: ["One new value per name: that's map.", "<code>return names.map(n => n.toUpperCase() + \"!\");</code>"],
+    cases: [[["ada", "bo"], ["ADA!", "BO!"]], [[], []]].map(([a, e]) => fnCase("shout", [a], e)),
+    solution: 'function shout(names) {\n  return names.map(n => n.toUpperCase() + "!");\n}' },
+  findreduce: { title: "Longest name", task: "Write <code>longest(names)</code> that uses reduce to return the longest name (the first one, if there's a tie).",
+    starter: "function longest(names) {\n\n}\n",
+    hints: ["Like finding the heaviest crate: keep whichever name is longer.", "<code>names.reduce((best, n) => { if (n.length > best.length) { return n; } return best; })</code>"],
+    src: [{ test: s => /\.reduce\s*\(/.test(s), msg: "Use reduce for this one." }],
+    cases: [[["Bo", "Ada", "Cy"], "Ada"], [["Zed"], "Zed"], [["Al", "Bo"], "Al"]].map(([a, e]) => fnCase("longest", [a], e)),
+    solution: "function longest(names) {\n  return names.reduce((best, n) => {\n    if (n.length > best.length) {\n      return n;\n    }\n    return best;\n  });\n}" }
+});
+Object.assign(MISSIONS, {
+  arrows: [
+    { tier: "Easy", title: "Arrow area", task: "Create <code>area</code> as an arrow function that takes a width and a height and returns width × height.",
+      starter: "// const area = …\n", hints: ["Two parameters need brackets.", "<code>const area = (w, h) => w * h;</code>"],
+      src: [{ test: s => /\barea\s*=\s*\([^)]*\)\s*=>/.test(s), msg: "Write area as an arrow function: <code>const area = (w, h) => …</code>" }],
+      cases: [[[3, 4], 12], [[2.5, 2], 5]].map(([a, e]) => fnCase("area", a, e)), solution: "const area = (w, h) => w * h;" },
+    { tier: "Medium", title: "Repeat the call", task: "Write <code>repeat(fn, times)</code> that calls the function <code>fn</code> exactly <code>times</code> times. The tests pass in arrow functions that print.",
+      starter: "function repeat(fn, times) {\n\n}\n", hints: ["A for loop inside, calling fn each round.", "<code>for (let i = 0; i < times; i++) { fn(); }</code>"],
+      cases: [Object.assign(outCase('repeat(() => console.log("hi"), 3)', "", ["hi", "hi", "hi"]), { post: 'repeat(() => console.log("hi"), 3);' }), Object.assign(outCase('repeat(() => console.log("x"), 0)', "", []), { post: 'repeat(() => console.log("x"), 0);' })],
+      solution: "function repeat(fn, times) {\n  for (let i = 0; i < times; i++) {\n    fn();\n  }\n}" },
+    { tier: "Hard", title: "Multiplier factory", task: "Write <code>makeMultiplier(n)</code> that <b>returns a new function</b>. That function takes a number and multiplies it by n: <code>const triple = makeMultiplier(3); triple(5)</code> → <code>15</code>.",
+      starter: "function makeMultiplier(n) {\n\n}\n", hints: ["Return an arrow function. It can still use n from the outer function.", "<code>return x => x * n;</code>"],
+      cases: [[3, 5, 15], [10, 0.5, 5]].map(([n, x, e]) => ({ label: "makeMultiplier(" + n + ")(" + x + ")", expect: String(e),
+        post: "__report.isFn = typeof makeMultiplier === 'function'; if (__report.isFn) { const __f = makeMultiplier(" + n + "); __report.out = typeof __f === 'function' ? __call(__f, " + x + ") : { err: 'makeMultiplier returned ' + typeof __f + ', not a function' }; }",
+        check: r => callCheck(r.report, "makeMultiplier", "makeMultiplier(" + n + ")(" + x + ")", e) })),
+      solution: "function makeMultiplier(n) {\n  return x => x * n;\n}" }
+  ],
+  mapfilter: [
+    { tier: "Easy", title: "Price rise", task: "<code>prices</code> already exists. Print a new array with 5 added to every price.",
+      starter: "// prices already exists\n", hints: ["One new value per price: map.", "<code>console.log(prices.map(p => p + 5));</code>"],
+      cases: [[10, 20], [0]].map(a => outCase(show(a), "const prices = " + JSON.stringify(a) + ";", [show(a.map(p => p + 5))])), solution: "console.log(prices.map(p => p + 5));" },
+    { tier: "Medium", title: "Even numbers", task: "Write <code>evens(nums)</code> that returns only the even numbers, using filter.",
+      starter: "function evens(nums) {\n\n}\n", hints: ["Even means the remainder after dividing by 2 is 0.", "<code>return nums.filter(n => n % 2 === 0);</code>"],
+      src: [{ test: s => /\.filter\s*\(/.test(s), msg: "Use filter." }],
+      cases: [[[1, 2, 3, 4], [2, 4]], [[7], []]].map(([a, e]) => fnCase("evens", [a], e)), solution: "function evens(nums) {\n  return nums.filter(n => n % 2 === 0);\n}" },
+    { tier: "Hard", title: "Ready crew", task: "Crew members look like <code>{ name: \"Ada\", ready: true }</code>. Write <code>readyNames(crew)</code> that returns the names of the ready members, in capitals.",
+      starter: "function readyNames(crew) {\n\n}\n", hints: ["Filter the ready ones, then map each to its name in capitals.", "<code>return crew.filter(m => m.ready).map(m => m.name.toUpperCase());</code>"],
+      cases: [[[{ name: "Ada", ready: true }, { name: "Bo", ready: false }, { name: "Cy", ready: true }], ["ADA", "CY"]], [[], []]].map(([a, e]) => fnCase("readyNames", [a], e)),
+      solution: "function readyNames(crew) {\n  return crew.filter(m => m.ready).map(m => m.name.toUpperCase());\n}" }
+  ],
+  findreduce: [
+    { tier: "Easy", title: "Any danger?", task: "<code>readings</code> already exists. Print whether any reading is above 100.",
+      starter: "// readings already exists\n", hints: ["\"Any\" is a job for some.", "<code>console.log(readings.some(r => r > 100));</code>"],
+      cases: [[[40, 120], "true"], [[99, 100], "false"]].map(([a, e]) => outCase(show(a), "const readings = " + JSON.stringify(a) + ";", [e])), solution: "console.log(readings.some(r => r > 100));" },
+    { tier: "Medium", title: "Product", task: "Write <code>product(nums)</code> that multiplies all the numbers together using reduce. An empty array gives 1.",
+      starter: "function product(nums) {\n\n}\n", hints: ["For multiplying, start at 1, not 0.", "<code>return nums.reduce((p, n) => p * n, 1);</code>"],
+      cases: [[[2, 3, 4], 24], [[], 1], [[5], 5]].map(([a, e]) => fnCase("product", [a], e, v => v === 0 ? "Starting at 0 makes everything 0. Start multiplying from 1." : "")), solution: "function product(nums) {\n  return nums.reduce((p, n) => p * n, 1);\n}" },
+    { tier: "Hard", title: "Count them up", task: "Write <code>countBy(items)</code> that returns an object counting each item: <code>[\"a\", \"b\", \"a\"]</code> → <code>{ a: 2, b: 1 }</code>. Use reduce, starting from an empty object.",
+      starter: "function countBy(items) {\n\n}\n", hints: ["The accumulator is an object. Read and write it with square brackets: <code>counts[item]</code>.", "<code>items.reduce((counts, x) => { if (counts[x] === undefined) { counts[x] = 0; } counts[x] = counts[x] + 1; return counts; }, {})</code>"],
+      cases: [[["a", "b", "a"], { a: 2, b: 1 }], [[], {}], [["x", "x", "x"], { x: 3 }]].map(([a, e]) => fnCase("countBy", [a], e)),
+      solution: "function countBy(items) {\n  return items.reduce((counts, x) => {\n    if (counts[x] === undefined) {\n      counts[x] = 0;\n    }\n    counts[x] = counts[x] + 1;\n    return counts;\n  }, {});\n}" }
+  ]
+});
 const missionKey = (L, k) => L.id + ":" + k;
 const missionDone = (L, k, s) => !!((s || store).missions || {})[missionKey(L, k)];
 const missionsOf = L => MISSIONS[L.id] || [];
@@ -3177,7 +3413,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "2.2.0";
+const APP_VERSION = "2.3.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
