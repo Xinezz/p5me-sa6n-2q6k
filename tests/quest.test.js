@@ -24,7 +24,7 @@ global.URL = { createObjectURL: b => b.src };
 // Browser Worker API on top of Node worker_threads
 global.Worker = class {
   constructor(src) {
-    const shim = "const { parentPort } = require('worker_threads'); const self = { postMessage: d => parentPort.postMessage(d) }; parentPort.on('message', d => self.onmessage({ data: d }));\n";
+    const shim = "const { parentPort } = require('worker_threads'); const self = { postMessage: d => parentPort.postMessage(d) }; parentPort.on('message', d => self.onmessage({ data: d })); process.on('unhandledRejection', r => { if (self.__onUnhandled) self.__onUnhandled(r); });\n";
     this.w = new NodeWorker(shim + src, { eval: true });
     this.w.on("message", d => this.onmessage && this.onmessage({ data: d }));
     this.w.on("error", e => this.onerror && this.onerror({ message: e.message, preventDefault() {} }));
@@ -64,11 +64,11 @@ const tests = async () => {
     }
   }
   // 1a. Reactive scenes: every test-rig challenge draws each case, before and after running real code
-  for (const L of LESSONS.filter(l => l.challenge.scene === "rig")) {
-    const C = L.challenge, vis = SCENES[L.id];
+  for (const L of LESSONS.filter(l => l.challenge.scene === "rig" || l.challenge.scene === "screens")) {
+    const C = L.challenge, vis = SCENES[L.id] || (C.scene === "screens" ? SCREEN_SCENE : null);
     ok(!!vis, L.id + ": has a reactive rig scene");
     if (!vis) continue;
-    ok(C.cases.every(c => c.in), L.id + ": every case carries its input data for the scene");
+    if (C.scene === "rig") ok(C.cases.every(c => c.in), L.id + ": every case carries its input data for the scene");
     const ev = await evaluate(C.solution, C), bad = await evaluate(C.starter, C);
     let drew = true, detail = "";
     C.cases.forEach((c, i) => {
@@ -79,11 +79,15 @@ const tests = async () => {
     });
     ok(drew, L.id + ": scene draws every case (no crashes, no NaN sizes)", detail);
   }
-  // 1b. Finales: one per sector 1–5, placed last in their sector, only combining taught lessons
+  // 1b. Finales: every sector with two or more lessons ends with one, and they only combine taught lessons
   const fins = LESSONS.filter(isFinale);
-  ok(fins.length === 6 && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "each of sectors 1–6 ends with a finale");
+  const bigSectors = WORLDS.filter((_, w) => LESSONS.filter(l => l.world === w && !isFinale(l)).length >= 2).length;
+  ok(fins.length === bigSectors && fins.every(F => { const idx = LESSONS.indexOf(F); return LESSONS.slice(0, idx).filter(l => l.world === F.world).length >= 2 && (!LESSONS[idx + 1] || LESSONS[idx + 1].world !== F.world); }), "every multi-lesson sector ends with a finale", fins.length + " of " + bigSectors);
+  ok(LESSONS.every((l, i) => !i || l.world >= LESSONS[i - 1].world), "lessons are in sector order");
+  ok(WORLD_ICONS.length === WORLDS.length && WORLDS.every((_, w) => LESSONS.some(l => l.world === w)), "every sector has an icon and at least one lesson");
   ok(fins.every(F => F.combines.every(id => { const P = LESSON_BY_ID.get(id); return P && LESSONS.indexOf(P) < LESSONS.indexOf(F); })), "finales only combine lessons that come before them");
-  ok(LESSONS[LESSONS.length - 1].id === "boss" && lessonNo(LESSONS.length - 1) === 16 && LESSONS[LESSONS.length - 1].world === WORLDS.length - 1, "the Glitch King is lesson 16, in the last sector, and comes last");
+  const bossI = LESSONS.indexOf(LESSON_BY_ID.get("boss"));
+  ok(lessonNo(bossI) === 16 && LESSONS[bossI].world === ACT2_FROM - 1 && LESSONS[bossI + 1].world === ACT2_FROM, "the Glitch King is lesson 16 and closes Act I; Act II starts right after");
   // 1c. Review exercises: one per lesson, solutions pass, starters don't
   for (const L of LESSONS.filter(l => !isFinale(l))) {
     const R = REVIEWS[L.id];
@@ -198,6 +202,34 @@ const tests = async () => {
   hang.stop();
   const t9 = await runOnce({ code: 'const s = document.getElementById("screen");\ns.textContent = "NEW";', page: P1, trace: true }), f9 = traceFrames(t9);
   ok(f9.length === 2 && f9[1].dom && f9[1].dom.find(e => e.id === "screen").text === "NEW", "tracing records the practice page after each line", JSON.stringify(f9.map(f => f.dom && f.dom[0].text)));
+
+  // 3d. Act II sandbox: simulated timers, promises, the comms radio, classes and errors
+  const a1 = await runOnce({ code: 'setTimeout(() => console.log("B"), 5000);\nconsole.log("A");\nsetTimeout(() => console.log("C"), 10);' });
+  ok(a1.logs.join() === "A,C,B" && !a1.error, "timers run on a simulated clock, in time order, after the main code", a1.logs.join());
+  const a2 = await runOnce({ code: 'async function main() {\n  const s = await comms.request("status");\n  console.log(s);\n  const f = await comms.request("fuel");\n  console.log(f + 1);\n}\nmain();\nconsole.log("waiting");' });
+  ok(a2.logs.join() === "waiting,ALL GREEN,73", "async/await waits for comms replies; code after the call runs first", a2.logs.join());
+  const a3 = await runOnce({ code: 'async function main() {\n  await comms.request("nope");\n}\nmain();' });
+  ok(a3.error && /nothing caught/.test(a3.error.message) && /No signal/.test(a3.error.message), "an uncaught promise error is reported in plain words", JSON.stringify(a3.error));
+  const a4 = await runOnce({ code: 'async function main() {\n  try {\n    await comms.request("nope");\n  } catch (e) {\n    console.log("caught: " + e.message);\n  }\n}\nmain();' });
+  ok(!a4.error && /^caught: No signal/.test(a4.logs[0]), "try/catch around await catches a failed request", JSON.stringify(a4));
+  const a5 = await runOnce({ code: 'function tick() {\n  setTimeout(tick, 1000);\n}\ntick();' });
+  ok(a5.error && /5000 timers/.test(a5.error.message), "a timer that restarts itself forever is stopped", JSON.stringify(a5.error));
+  const a6 = await runOnce({ code: 'class Bot {\n  constructor(name) {\n    this.name = name;\n  }\n}\nconsole.log(new Bot("Zed"));\nconsole.log(new Error("bad fuel"));\nconsole.log(Promise.resolve(1));' });
+  ok(a6.logs.join("|") === 'Bot { name: "Zed" }|Error: bad fuel|Promise { … }', "class instances, errors and promises print readably", a6.logs.join("|"));
+  const a7 = await runOnce({ code: 'async function slow(n) {\n  await comms.ping();\n  return n * 2;\n}', post: "__report.out = __acall(slow, 21);" });
+  ok(a7.report.out && a7.report.out.v === 42 && !a7.report.out.pending, "tests can check what an async function resolves to", JSON.stringify(a7.report));
+  const tl = 'const a = 1;\nconst t = `x\n${a}\ny`;\nconsole.log(t);';
+  const t10a = await runOnce({ code: tl }), t10b = await runOnce({ code: tl, trace: true });
+  ok(t10a.logs.join() === "x\n1\ny" && t10b.logs.join() === t10a.logs.join() && t10b.steps.length >= 3, "tracing never puts markers inside a multi-line template literal", JSON.stringify([t10a.logs, t10b.logs]));
+  const t11 = await runOnce({ code: 'const nums = [1, 2, 3];\nconst doubled = nums.map(n => {\n  return n * 2;\n});\nconsole.log(doubled);', trace: true }), f11 = traceFrames(t11);
+  ok(f11.some(f => f.vars.n === "3") && t11.logs[0] === "[2, 4, 6]", "tracing shows arrow-function parameters inside callbacks", JSON.stringify(f11.map(f => f.vars)));
+  // Highlighting must never change a character (the editor lays it exactly over the textarea)
+  const plain = s => s.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  const allCode = [];
+  LESSONS.forEach(L => { allCode.push(L.challenge.solution, L.challenge.starter); if (L.example) allCode.push(L.example.code); (L.drills || []).forEach(D => allCode.push(D.solution, D.starter)); missionsOf(L).forEach(M => allCode.push(M.solution, M.starter)); });
+  allCode.push("const t = `a ${b + `c ${d}`} e`;", "const s = `unclosed ${x", "`");
+  const badHl = allCode.filter(c => plain(hl(c)) !== c);
+  ok(!badHl.length, "syntax highlighting reproduces every program exactly (" + allCode.length + " programs)", badHl.slice(0, 2).join(" ||| "));
 
   // 4. Sandbox safety and error reporting
   const inf = await runOnce({ code: "while (true) {}" });

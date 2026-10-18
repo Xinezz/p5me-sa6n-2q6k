@@ -582,24 +582,33 @@ const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const KW = new Set("let const var if else for while do function return true false null undefined new of in break continue typeof".split(" "));
+const KW = new Set("let const var if else for while do function return true false null undefined new of in break continue typeof instanceof class extends this async await try catch finally throw".split(" "));
+// Syntax highlighting. It only wraps text in spans and never changes a character,
+// because the editor lays this exactly underneath the real textarea.
 function hl(src) {
-  const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+  const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|(`(?:[^`\\]|\\[\s\S])*`?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
   let out = "", m;
   const span = (c, t) => '<span class="' + c + '">' + esc(t) + "</span>";
+  // Template literals: the text is a string, each ${ … } is highlighted as code
+  const tmpl = t => t.split(/(\$\{[^}]*\}?)/).map((part, i) => {
+    if (!(i % 2)) return part ? span("s", part) : "";
+    const closed = part.endsWith("}");
+    return span("p", "${") + hl(part.slice(2, closed ? -1 : undefined)) + (closed ? span("p", "}") : "");
+  }).join("");
   while ((m = re.exec(src))) {
     if (m[1]) out += span("c", m[1]);
     else if (m[2]) out += span("s", m[2]);
-    else if (m[3]) out += span("n", m[3]);
-    else if (m[4]) {
-      const w = m[4];
+    else if (m[3]) out += tmpl(m[3]);
+    else if (m[4]) out += span("n", m[4]);
+    else if (m[5]) {
+      const w = m[5];
       if (KW.has(w)) out += span("k", w);
-      else if (w === "console" || w === "robot") out += span("o", w);
+      else if (w === "console" || w === "robot" || w === "comms") out += span("o", w);
       else if (/^\s*\(/.test(src.slice(re.lastIndex))) out += span("f", w);
       else out += esc(w);
     }
-    else if (m[5]) out += m[5];
-    else { const ch = m[6]; out += /[{}()[\];,.]/.test(ch) ? span("p", ch) : /[=+\-*/%<>!&|]/.test(ch) ? span("op", ch) : esc(ch); }
+    else if (m[6]) out += m[6];
+    else { const ch = m[7]; out += /[{}()[\];,.]/.test(ch) ? span("p", ch) : /[=+\-*/%<>!&|?:]/.test(ch) ? span("op", ch) : esc(ch); }
   }
   return out;
 }
@@ -683,6 +692,7 @@ const SPRITES = {
   skull: { rows: ["..y..yy..y..", "..kkkkkkkk..", ".kwwwwwwwwk.", "kwwwwwwwwwwk", "kwkkwwwwkkwk", "kwkrkwwkrkwk", "kwwkkwwkkwwk", "kwwwwkkwwwwk", ".kwwwwwwwwk.", "..kwkwkwkk..", "..kkkkkkkk.."] },
   star: { rows: ["...y...", "..yyy..", "yyyyyyy", ".yyyyy.", "..yyy..", ".yy.yy.", ".y...y."] },
   starOff: { rows: ["...s...", "..sss..", "sssssss", ".sssss.", "..sss..", ".ss.ss.", ".s...s."] },
+  dish: { rows: ["..........y.", ".kkkk....y..", "kwwwwk..y...", "kwwwwwkk....", "kwwwwwwk....", ".kwwwwk.....", "..kkkkk.....", "....kSk.....", "....kSk.....", "..kkSSSkk...", "..kSSSSSk...", "..kkkkkkk..."] },
   panel: { rows: ["kkkkkkkkkkkk", "kbbbbbbbbbbk", "kbnnnnnnnnbk", "kbnwnnnnnnbk", "kbnnnnnnnnbk", "kbbbbbbbbbbk", "kSSSSSSSSSSk", "kSrSgSySoSSk", "kSSSSSSSSSSk", "kkkkkkkkkkkk"] },
   trophy: { rows: ["..kkkkkkkk..", "kkkyyyyyykkk", "kykywyyyykyk", "kykyyyyyykyk", ".kkyyyyyykk.", "...kyyyyk...", "....kyyk....", ".....kk.....", "....kyyk....", "...kOOOOk...", "...kkkkkk..."] },
   lock: { rows: ["..kkkk..", ".kk..kk.", ".k....k.", "kkkkkkkk", "kssssssk", "ksskkssk", "kssksssk", "kkkkkkkk"], raw: true },
@@ -690,7 +700,9 @@ const SPRITES = {
   floor: { raw: true, rows: ["eeeeeeee", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff", "efffffff"] },
   exit: { raw: true, rows: ["gggggggg", "gGGGGGGg", "gGggggGg", "gGgGGgGg", "gGgGGgGg", "gGggggGg", "gGGGGGGg", "gggggggg"] }
 };
-const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull"];
+const WORLD_ICONS = ["terminal", "bolt", "gear", "anvil", "crystal", "panel", "skull", "dish"];
+// Act II (advanced topics) starts at this sector index
+const ACT2_FROM = 7;
 const pxStars = (n, big) => '<span class="pxstars' + (big ? " big" : "") + '" role="img" aria-label="' + n + ' of 3 stars">' + [0, 1, 2].map(i => pxImg(i < n ? "star" : "starOff")).join("") + "</span>";
 // Hand pixel tiles to CSS for the robot grid
 (function () { try { const r = document.documentElement.style; ["wall", "floor", "exit"].forEach(t => { const u = spriteURL(t); if (u) r.setProperty("--tile-" + t, "url(" + u + ")"); }); } catch (_) {} })();
@@ -885,6 +897,12 @@ function workerMain() {
     if (typeof v === "function") return "[Function: " + (v.name || "anonymous") + "]";
     if (typeof v === "object" && v.__el) return "<" + v.__el + ' id="' + v.id + '">';
     if (typeof v === "object" && v.__doc) return "[document]";
+    if (v instanceof Error) return v.name + ": " + v.message;
+    if (v instanceof Promise) return "Promise { … }";
+    if (typeof v === "object" && !Array.isArray(v) && v.constructor && v.constructor !== Object && typeof v.constructor === "function" && v.constructor.name) {
+      // Instances of the learner's classes print with their class name, like the browser console
+      const ks = Object.keys(v); return v.constructor.name + " " + (ks.length ? (d > 3 ? "{…}" : "{ " + ks.map(k => k + ": " + fmt(v[k], true, d + 1)).join(", ") + " }") : "{}");
+    }
     if (Array.isArray(v)) return d > 3 ? "[…]" : "[" + v.map(x => fmt(x, true, d + 1)).join(", ") + "]";
     if (typeof v === "object") { const ks = Object.keys(v); if (!ks.length) return "{}"; return d > 3 ? "{…}" : "{ " + ks.map(k => k + ": " + fmt(v[k], true, d + 1)).join(", ") + " }"; }
     return String(v);
@@ -964,16 +982,37 @@ function workerMain() {
   function traceNames(pre, code) {
     const found = new Map(); // name → first position, so variables are listed in the order they appear
     const add = (n, at) => { if (/^[A-Za-z_$][\w$]*$/.test(n) && !/^__/.test(n) && !RESERVED.has(n) && (!found.has(n) || found.get(n) > at)) found.set(n, at); };
-    const src = (pre + "\n" + code).replace(/\/\/[^\n]*/g, "").replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, '""');
+    const src = (pre + "\n" + code).replace(/\/\/[^\n]*/g, "").replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\[\s\S])*`/g, '""');
     let m;
+    // A parameter or destructured name may carry a default (= …), a rename (a: b) or a rest marker (...)
+    const pname = p => p.split("=")[0].split(":").pop().replace(/\.\.\./, "").replace(/[{}[\]()]/g, "").trim();
     const decl = /\b(?:let|const|var)\s+([A-Za-z_$][\w$]*)/g; while ((m = decl.exec(src))) add(m[1], m.index);
-    const params = /function\s*[A-Za-z_$]*\s*\(([^)]*)\)/g; while ((m = params.exec(src))) m[1].split(",").forEach(p => add(p.trim(), m.index));
+    const destr = /\b(?:let|const|var)\s*[{[]([^=]*?)[}\]]\s*=/g; while ((m = destr.exec(src))) m[1].split(",").forEach(p => add(pname(p), m.index));
+    const params = /function\s*[A-Za-z_$]*\s*\(([^)]*)\)/g; while ((m = params.exec(src))) m[1].split(",").forEach(p => add(pname(p), m.index));
+    const arrowsP = /\(([^()]*)\)\s*=>/g; while ((m = arrowsP.exec(src))) m[1].split(",").forEach(p => add(pname(p), m.index));
+    const arrow1 = /([A-Za-z_$][\w$]*)\s*=>/g; while ((m = arrow1.exec(src))) add(m[1], m.index);
+    const methods = /(?:^|\n)\s*(?:async\s+)?(?:static\s+)?([A-Za-z_$][\w$]*)\s*\(([^)]*)\)\s*\{/g; while ((m = methods.exec(src))) m[2].split(",").forEach(p => add(pname(p), m.index));
+    const caught = /catch\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/g; while ((m = caught.exec(src))) add(m[1], m.index);
     // Anything assigned to (over-collecting is harmless: names that aren't in scope are skipped when read)
     const assign = /(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*(?:=(?!=)|\+=|-=|\*=|\/=|\+\+|--)/g; while ((m = assign.exec(src))) add(m[1], m.index);
     return [...found.entries()].sort((a, b) => a[1] - b[1]).map(e => e[0]);
   }
+  // Which lines start inside a multi-line `template literal`? A marker there would become part of the text.
+  function templateLines(code) {
+    const res = [false]; let inT = false, q = null, line = 0;
+    for (let i = 0; i < code.length; i++) {
+      const ch = code[i];
+      if (ch === "\n") { line++; res[line] = inT; q = null; continue; }
+      if (q) { if (ch === "\\") i++; else if (ch === q) q = null; continue; }
+      if (inT) { if (ch === "\\") i++; else if (ch === "`") inT = false; continue; }
+      if (ch === "/" && code[i + 1] === "/") { while (i + 1 < code.length && code[i + 1] !== "\n") i++; continue; }
+      if (ch === '"' || ch === "'") q = ch;
+      else if (ch === "`") inT = true;
+    }
+    return res;
+  }
   function instrument(pre, code, names) {
-    const lines = code.split("\n");
+    const lines = code.split("\n"), inTpl = templateLines(code);
     const getters = "[" + names.map(n => "() => " + n).join(", ") + "]";
     const marked = lines.slice();
     let prevCode = "";
@@ -981,6 +1020,7 @@ function workerMain() {
       const t = lines[i].trim();
       const bare = t.replace(/\/\/[^"'`]*$/, "").trim();
       if (!bare) continue;
+      if (inTpl[i]) { prevCode = bare; continue; }
       const startsOk = !/^[}\])\.?:,+\-*\/&|=<>]/.test(bare) && !/^(else|catch|finally)\b/.test(bare);
       const afterOk = !prevCode || /[;{}]\s*$/.test(prevCode);
       if (startsOk && afterOk) {
@@ -1006,20 +1046,83 @@ function workerMain() {
     return lines.length;
   }
   // A live session keeps one program (and its click handlers) alive between preview clicks
+  // ---- Simulated time: setTimeout runs on a fake clock, so a 5-second timer finishes instantly
+  //      but still in the right order. Promises settle between timers, just like in a browser. ----
+  // One real task boundary lets every pending promise callback run. MessageChannel is used because
+  // browsers slow down chains of setTimeout(0), which would make many simulated timers slow.
+  const realSetTimeout = typeof setTimeout === "function" ? setTimeout : self.setTimeout;
+  const channel = typeof MessageChannel === "function" ? new MessageChannel() : null;
+  const tick = channel ? () => new Promise(r => { channel.port1.onmessage = () => r(); channel.port2.postMessage(0); }) : () => new Promise(r => realSetTimeout(r, 0));
+  let rejections = [];
+  const onRejected = reason => { rejections.push(reason); };
+  if (typeof self.addEventListener === "function") self.addEventListener("unhandledrejection", ev => { onRejected(ev.reason); if (ev.preventDefault) ev.preventDefault(); });
+  self.__onUnhandled = onRejected;
+  function rejectionInfo(reason, nLines) {
+    const info = reason instanceof Error ? errInfo(reason, nLines) : { name: "Error", message: String(reason), line: null };
+    info.message += " (a promise failed and nothing caught the error)";
+    return info;
+  }
+  function makeClock(nLines) {
+    const list = []; let now = 0, seq = 0;
+    return {
+      setTimeout(fn, ms, ...args) {
+        if (typeof fn !== "function") throw new TypeError("setTimeout needs a function as its first argument. If you wrote myFunction() with brackets, pass the function itself instead: myFunction");
+        const id = ++seq; list.push({ id, at: now + Math.max(0, Number(ms) || 0), fn, args }); return id;
+      },
+      clearTimeout(id) { const i = list.findIndex(t => t.id === id); if (i >= 0) list.splice(i, 1); },
+      // Run promise callbacks, then the earliest timer, again and again until nothing is left
+      async drain() {
+        for (let n = 0; ; n++) {
+          await tick();
+          if (rejections.length) return rejectionInfo(rejections[0], nLines);
+          if (!list.length) { await tick(); return rejections.length ? rejectionInfo(rejections[0], nLines) : null; }
+          if (n > 5000) return { name: "Error", message: "More than 5000 timers ran. A timer probably keeps starting itself forever.", line: null };
+          list.sort((a, b) => a.at - b.at || a.id - b.id);
+          const t = list.shift(); now = t.at;
+          try { t.fn(...t.args); } catch (err) { return errInfo(err, nLines); }
+        }
+      }
+    };
+  }
+  // A pretend radio for the async lessons: answers arrive after a delay on the simulated clock
+  const COMMS_DEFAULT = { status: "ALL GREEN", fuel: 72, crew: ["Ada", "Bo", "Cy"], weather: "Solar storm" };
+  function makeComms(clock, data) {
+    const table = Object.assign({}, COMMS_DEFAULT, data || {});
+    const reply = (ok, value, ms) => new Promise((res, rej) => clock.setTimeout(() => (ok ? res(value) : rej(value)), ms));
+    return Object.freeze({
+      request(topic) {
+        topic = String(topic);
+        return Object.prototype.hasOwnProperty.call(table, topic) ? reply(true, JSON.parse(JSON.stringify(table[topic])), 300) : reply(false, new Error("No signal: nobody answers on the topic \"" + topic + "\"."), 300);
+      },
+      ping() { return reply(true, "pong", 100); }
+    });
+  }
   let session = null;
-  function onEvent(d) {
+  async function onEvent(d) {
     if (!session) { self.postMessage({ logs: [], error: { name: "Error", message: "Press Run first." }, dom: null }); return; }
     const start = session.logs.length; session.setStart(start);
+    rejections = [];
     let error = null;
     try { session.dom.setValues(d.values); session.dom.fire(d.id, d.ev || "click"); }
     catch (err) { error = errInfo(err, session.nLines); }
+    if (!error) error = await session.clock.drain();
     self.postMessage({ logs: session.logs.slice(start), error, dom: session.dom.state() });
   }
-  self.onmessage = function (e) {
+  self.onmessage = async function (e) {
     if (e.data && e.data.type === "event") return onEvent(e.data);
-    const { code, pre = "", post = "", map, dir, trace, page, live } = e.data;
+    const { code, pre = "", post = "", map, dir, trace, page, live, comms: commsData } = e.data;
     const logs = [], report = {};
     let error = null, robot = null, fn = null, logStart = 0;
+    rejections = [];
+    const clock = makeClock(code.split("\n").length), comms = makeComms(clock, commsData);
+    // Test helper: call a function that may return a promise; the box fills in once it settles
+    const acall = (f, ...args) => {
+      const box = { pending: true };
+      const settle = (k, v) => { box[k] = v; delete box.pending; };
+      try { Promise.resolve(f(...args)).then(v => settle("v", v), err => settle("err", String(err && err.message !== undefined ? err.message : err))); }
+      catch (err) { settle("err", String(err && err.message !== undefined ? err.message : err)); }
+      return box;
+    };
     const log = (...a) => { if (logs.length - logStart >= 300) throw new Error("More than 300 lines were printed. A loop is probably running too many times."); logs.push(a.map(x => fmt(x, false, 0)).join(" ")); };
     const dom = page ? makeDom(page) : null;
     const con = Object.freeze({ log, info: log, warn: log, error: log });
@@ -1049,13 +1152,15 @@ function workerMain() {
     // Test helpers for page challenges: click an element, type into an input, count printed lines
     const fire = dom ? (id, type) => dom.fire(id, type || "click") : undefined;
     const typeInto = dom ? (id, v) => dom.setValues({ [id]: v }) : undefined;
-    try { fn = new Function("console", "robot", "__report", "__call", "__step", "document", "__fire", "__type", "__nlogs", '"use strict"; ' + pre + "\n" + body + "\n;" + post + tail); }
+    try { fn = new Function("console", "robot", "__report", "__call", "__step", "document", "__fire", "__type", "__nlogs", "setTimeout", "clearTimeout", "comms", "__acall", '"use strict"; ' + pre + "\n" + body + "\n;" + post + tail); }
     catch (err) { const pe = parseError(pre, code); error = { name: err.name, message: pe ? pe.message : err.message, line: findSyntaxLine(pre, code), syntax: true }; }
     if (fn) {
-      try { fn(con, robot ? robot.api : undefined, report, call, step, dom ? dom.document : undefined, fire, typeInto, () => logs.length); }
+      try { fn(con, robot ? robot.api : undefined, report, call, step, dom ? dom.document : undefined, fire, typeInto, () => logs.length, clock.setTimeout, clock.clearTimeout, comms, acall); }
       catch (err) { error = errInfo(err, code.split("\n").length); }
+      // Let timers and promises finish (on the simulated clock) before reporting
+      if (!error) error = await clock.drain();
     }
-    if (live && dom && !(error && error.syntax)) session = { dom, logs, nLines: code.split("\n").length, setStart: n => { logStart = n; } };
+    if (live && dom && !(error && error.syntax)) session = { dom, logs, clock, nLines: code.split("\n").length, setStart: n => { logStart = n; } };
     let rep = {};
     try { rep = JSON.parse(JSON.stringify(report, (k, v) => v === undefined ? "__undefined__" : typeof v === "function" ? "__function__" : (typeof v === "number" && !isFinite(v)) ? "__" + String(v) + "__" : v)); } catch (_) { rep = {}; }
     self.postMessage({ logs, error, report: rep, robot: robot ? robot.state() : null, steps, dom: dom ? dom.state() : null });
@@ -1152,14 +1257,14 @@ function livePreview(pvHost, outHost, ed) {
   };
 }
 
-function runOnce({ code, pre = "", post = "", map = null, dir, trace = false, page = null }) {
+function runOnce({ code, pre = "", post = "", map = null, dir, trace = false, page = null, comms = null }) {
   return new Promise(res => {
     let w;
     try { w = new Worker(WORKER_URL); } catch (e) { res({ logs: [], report: {}, error: { name: "Error", message: "The code runner could not start in this browser: " + e.message } }); return; }
     const t = setTimeout(() => { w.terminate(); res({ logs: [], report: {}, robot: null, error: { name: "Timeout", message: "Your code ran for more than 2 seconds and was stopped." } }); }, 2000);
     w.onmessage = e => { clearTimeout(t); w.terminate(); const d = e.data; d.report = restore(d.report); res(d); };
     w.onerror = e => { e.preventDefault(); clearTimeout(t); w.terminate(); res({ logs: [], report: {}, error: { name: "Error", message: e.message || "Unknown error" } }); };
-    w.postMessage({ code, pre, post, map, dir, trace, page });
+    w.postMessage({ code, pre, post, map, dir, trace, page, comms });
   });
 }
 
@@ -1325,6 +1430,11 @@ function robotCheck(r, extra) {
   return fail("B0-T stopped after " + r.robot.moves + " move" + (r.robot.moves === 1 ? "" : "s") + " without reaching the exit." + (tip ? " " + tip : ""), r.robot.moves + " moves, not on exit");
 }
 function corridor(n) { return ["#".repeat(n + 3), "#R" + ".".repeat(n - 1) + "G#", "#".repeat(n + 3)]; }
+// A test case that checks printed output ([] means nothing should print)
+const outCase = (label, pre, lines, extra) => Object.assign({ label, pre, expect: lines.length ? lines.join("\n") : "(nothing printed)",
+  check: r => lines.length ? expectLogs(r.logs, lines) : (r.logs.length ? fail("Nothing should print here, but your code printed " + q(r.logs.join(", ")) + ".", r.logs.join(", ")) : pass("(nothing printed)")) }, extra || {});
+// A test case that calls one of the learner's functions and compares what it returns
+const fnCase = (fn, args, exp, tips) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return { label: txt, expect: show(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, tips) }; };
 
 /* ================= Curriculum ================= */
 const WORLDS = [
@@ -1334,7 +1444,8 @@ const WORLDS = [
   { name: "Function Forge", blurb: "Package instructions into reusable machines." },
   { name: "Data Archive", blurb: "Store many values with arrays and objects." },
   { name: "Control Room", blurb: "Make a web page react: change text and styles, read inputs, handle clicks." },
-  { name: "Glitch Core", blurb: "Final boss. Find and fix the bugs." }
+  { name: "Glitch Core", blurb: "Final boss of Act I. Find and fix the bugs." },
+  { name: "Signal Lab", blurb: "Work with text: string methods, slicing, splitting and template literals." }
 ];
 
 const LESSONS = [
@@ -2070,6 +2181,119 @@ const LESSONS = [
     why: ["Define the function.", "Start highest at the first level.", "Counter for alerts.", "Accumulator for the sum.", "Bugs 1 and 2: start at 0 so the first level is counted, and use < so the loop stops at the last index.", "Add the current level.", "Is this the biggest so far?", "Remember it.", "", "Above 70 counts as an alert.", "Add one.", "", "End of the loop.", "Bug 3: the key must be alerts, exactly as specified.", "End of the function.", "", "Bug 4: the call was missing a closing bracket, which caused the SyntaxError."]
   },
   recap: ["Read the error type, message and line number.", "Fix the first error first, and change one thing at a time.", "No error doesn't mean correct: check the output against what you expected."]
+},
+/* ================= ACT II · Signal Lab ================= */
+{
+  id: "text", world: 7, title: "Text Tools", concept: "String length, indexes and methods",
+  story: "Welcome to Act II. Beyond the Glitch Core lies the Outer Ring, and its first stop is the Signal Lab, where messages arrive as messy text. Time to clean them up.",
+  learn: [
+    ["Strings are like lists of characters", "A string has a <code>length</code>, just like an array: <code>\"Nova\".length</code> is 4. Each character has an index starting at 0, so <code>\"Nova\"[0]</code> is <code>\"N\"</code>. You can even loop over the characters with <code>for (const ch of text)</code>."],
+    ["Methods: tools built into values", "A <b>method</b> is a function that belongs to a value. Call it with a dot and brackets: <code>\"nova\".toUpperCase()</code> gives <code>\"NOVA\"</code>. You've used methods before: <code>push</code> and <code>addEventListener</code>."],
+    ["Handy string methods", "<code>toUpperCase()</code> and <code>toLowerCase()</code> change the capitals. <code>trim()</code> removes spaces from both ends. <code>includes(\"x\")</code> answers true or false: does the text contain x?"],
+    ["Strings never change", "String methods don't change the original. They give back a <b>new</b> string. To keep the result, store it: <code>name = name.toUpperCase();</code>"]
+  ],
+  terms: [["method", "a function that belongs to a value, called with a dot"], ["length", "how many characters a string has"], ["index", "a character's position, starting at 0"]],
+  example: { code: 'const callsign = "nova-7";\nconsole.log(callsign.length);\nconsole.log(callsign[0]);\nconsole.log(callsign.toUpperCase());\nconsole.log(callsign.includes("7"));\nconsole.log(callsign);', lines: ["A string to work with.", "It has 6 characters: n, o, v, a, - and 7.", "Index 0 is the first character: n.", "A new, upper-case copy: NOVA-7.", "Does it contain \"7\"? true.", "The original hasn't changed: nova-7."] },
+  symbols: [[".length", "how many characters"], ["[0]", "the character at index 0"], [".toUpperCase()", "an upper-case copy"], [".trim()", "a copy without spaces at the ends"], ['.includes("x")', "true if the text contains x"]],
+  good: { code: 'let name = "  ada ";\nname = name.trim().toUpperCase();', why: "Methods can be chained one after another, and the result is stored back in the variable." },
+  bad: { code: 'let name = "ada";\nname.toUpperCase();\nconsole.log(name); // still "ada"', why: "The upper-case copy was made and then thrown away. Store it: <code>name = name.toUpperCase();</code>" },
+  mistakes: ["Forgetting the brackets: <code>name.toUpperCase</code> is the method itself; <code>name.toUpperCase()</code> runs it.", "Expecting a method to change the original string. Store the result.", "<code>includes</code> is case-sensitive: \"SOS\" doesn't include \"sos\".", "The last character is <code>text[text.length - 1]</code>, not <code>text[text.length]</code>."],
+  trace: { code: 'const callsign = "nova-7";\nconsole.log(callsign.length);\nconsole.log(callsign[0]);\nconsole.log(callsign.toUpperCase());\nconsole.log(callsign.includes("7"));\nconsole.log(callsign);', steps: [
+    { l: 0, v: { callsign: '"nova-7"' } },
+    { l: 1, o: "6", n: "Six characters, counting the dash." },
+    { l: 2, o: "n", n: "Index 0 is the first character." },
+    { l: 3, o: "NOVA-7", n: "toUpperCase() makes a new upper-case copy." },
+    { l: 4, o: "true", n: "includes() answers a yes/no question." },
+    { l: 5, o: "nova-7", n: "The original is unchanged: string methods never change it." }] },
+  practise: { starter: 'const message = "  Hello, Station Nine!  ";\nconsole.log(message.length);\nconsole.log(message.trim());\nconsole.log(message.trim().length);\nconsole.log(message.toLowerCase());\n',
+    ideas: ["Print the first character after trimming: <code>message.trim()[0]</code>.", "Check whether the message includes \"Nine\", then \"nine\".", "Print the last character using <code>length - 1</code>.", "Loop over a word with <code>for (const ch of \"Nova\")</code> and print each character."] },
+  predict: { code: 'const s = "Comet";\nconsole.log(s.length);\nconsole.log(s[s.length - 1]);\nconsole.log(s.toUpperCase().includes("MET"));', answer: "5\nt\ntrue", explain: "Comet has 5 characters. The last index is 4, which is t. COMET contains MET." },
+  challenge: {
+    scene: "screens", title: "Clean the signals",
+    brief: "Write <code>clean(signal)</code> that returns the signal with the spaces trimmed from both ends and in upper case: <code>\"  nova-7 \"</code> → <code>\"NOVA-7\"</code>. Then write <code>isDistress(signal)</code> that returns true if the cleaned signal contains <code>SOS</code>.",
+    starter: "function clean(signal) {\n\n}\n\nfunction isDistress(signal) {\n\n}\n",
+    hints: ["Methods can be chained: <code>signal.trim().toUpperCase()</code>.", "isDistress can reuse clean: <code>return clean(signal).includes(\"SOS\");</code>"],
+    cases: [["clean", ["  nova-7 "], "NOVA-7"], ["clean", ["Comet"], "COMET"], ["isDistress", ["help sos now"], true], ["isDistress", ["all clear"], false], ["isDistress", [" S O S "], false]].map(([fn, args, exp]) =>
+      fnCase(fn, args, exp, v => fn === "clean" && typeof v === "string" && v.trim() !== v ? "The spaces are still there: use <code>trim()</code>." : fn === "isDistress" && args[0] === "help sos now" && v === false ? "\"help sos now\" only has a lower-case sos. Clean it (upper case) before checking." : "")),
+    solution: 'function clean(signal) {\n  return signal.trim().toUpperCase();\n}\n\nfunction isDistress(signal) {\n  return clean(signal).includes("SOS");\n}',
+    why: ["Define clean.", "trim() removes the outer spaces, then toUpperCase() makes capitals. Each step returns a new string.", "", "", "Define isDistress.", "Reuse clean, so lower-case distress calls are caught too, then ask includes().", ""]
+  },
+  recap: ["Strings have a length and indexes, like arrays.", "Methods like <code>trim()</code>, <code>toUpperCase()</code> and <code>includes()</code> are called with a dot and brackets.", "String methods return a new string: store it to keep it."]
+},
+{
+  id: "split", world: 7, title: "Slice & Split", concept: "slice, indexOf, split and join",
+  story: "Sensor readings arrive glued together as text like TEMP:42. Take them apart so the station can use them.",
+  learn: [
+    ["Cutting out a piece", "<code>text.slice(start, end)</code> gives the characters from <code>start</code> up to, but not including, <code>end</code>: <code>\"station\".slice(0, 4)</code> is <code>\"stat\"</code>. Leave out the end to go all the way: <code>\"station\".slice(4)</code> is <code>\"ion\"</code>."],
+    ["Finding a position", "<code>text.indexOf(\":\")</code> gives the index of the first match, or <code>-1</code> if there isn't one. Together with slice, it can cut text at any marker."],
+    ["Splitting into an array", "<code>\"a,b,c\".split(\",\")</code> breaks the text at every comma and returns an array: <code>[\"a\", \"b\", \"c\"]</code>. The pieces are always strings."],
+    ["Joining back together", "Arrays have the opposite tool: <code>[\"a\", \"b\"].join(\" - \")</code> gives <code>\"a - b\"</code>. Whatever you pass goes between each pair of elements."]
+  ],
+  terms: [["slice", "copy part of a string (or an array)"], ["indexOf", "where something first appears, or -1"], ["split", "break a string into an array"], ["join", "glue an array into one string"]],
+  example: { code: 'const reading = "TEMP:42";\nconst colon = reading.indexOf(":");\nconsole.log(reading.slice(0, colon));\nconsole.log(reading.slice(colon + 1));\nconst parts = reading.split(":");\nconsole.log(parts);\nconsole.log(parts.join(" = "));', lines: ["A reading: name, colon, value.", "The colon is at index 4.", "From 0 up to (not including) 4: TEMP.", "From index 5 to the end: 42.", "split cuts at every colon and gives an array.", "Prints [\"TEMP\", \"42\"]. Both pieces are strings.", "join glues them back with \" = \" in between: TEMP = 42."] },
+  symbols: [[".slice(a, b)", "characters from a up to, not including, b"], ['.indexOf("x")', "position of x, or -1"], ['.split(",")', "string → array"], ['.join(", ")', "array → string"]],
+  good: { code: 'const value = Number("TEMP:42".split(":")[1]);', why: "split gives strings, so Number() turns \"42\" into 42 before any maths." },
+  bad: { code: 'const value = "TEMP:42".split(":")[1] + 8;', why: "The piece is the string \"42\", so + joins and gives \"428\". Convert it with Number() first." },
+  mistakes: ["Forgetting that slice's end isn't included.", "Not checking for -1 when indexOf finds nothing.", "Doing maths on split pieces without Number(): they're strings.", "Splitting on the wrong separator, which gives back a one-element array."],
+  trace: { code: 'const reading = "TEMP:42";\nconst colon = reading.indexOf(":");\nconsole.log(reading.slice(0, colon));\nconsole.log(reading.slice(colon + 1));\nconst parts = reading.split(":");\nconsole.log(parts);\nconsole.log(parts.join(" = "));', steps: [
+    { l: 0, v: { reading: '"TEMP:42"' } },
+    { l: 1, v: { colon: "4" }, n: "T, E, M and P are indexes 0 to 3, so the colon is at index 4." },
+    { l: 2, o: "TEMP", n: "slice(0, 4): indexes 0, 1, 2 and 3." },
+    { l: 3, o: "42", n: "slice(5): from index 5 to the end." },
+    { l: 4, v: { parts: '["TEMP", "42"]' }, n: "split makes an array of strings." },
+    { l: 5, o: '["TEMP", "42"]' },
+    { l: 6, o: "TEMP = 42", n: "join puts \" = \" between the pieces." }] },
+  practise: { starter: 'const log = "ada,bo,cy,dee";\nconst names = log.split(",");\nconsole.log(names);\nconsole.log(names.length);\nconsole.log(names.join(" and "));\n',
+    ideas: ["Print just the second name.", "Use <code>log.indexOf(\"cy\")</code> and slice to cut out everything from cy onwards.", "Split <code>\"red alert\"</code> on a space.", "Try <code>\"station\".slice(-3)</code>. Negative numbers count from the end."] },
+  predict: { code: 'const s = "deck-7-alpha";\nconsole.log(s.indexOf("-"));\nconsole.log(s.slice(5, 6));\nconsole.log(s.split("-").length);', answer: "4\n7\n3", explain: "The first dash is at index 4. Index 5 holds 7. Splitting at both dashes gives 3 pieces." },
+  challenge: {
+    scene: "screens", title: "Parse the sensor feed",
+    brief: "Write <code>parseReading(text)</code>: it receives text like <code>\"TEMP:42\"</code> and returns an object <code>{ name: \"TEMP\", value: 42 }</code>, with the value as a <b>number</b>. Then write <code>joinCrew(names)</code> that returns the names joined with <code>\" | \"</code> between them.",
+    starter: "function parseReading(text) {\n\n}\n\nfunction joinCrew(names) {\n\n}\n",
+    hints: ["<code>const parts = text.split(\":\");</code> then return an object built from <code>parts[0]</code> and <code>Number(parts[1])</code>.", "<code>return names.join(\" | \");</code>"],
+    cases: [["parseReading", ["TEMP:42"], { name: "TEMP", value: 42 }], ["parseReading", ["FUEL:7.5"], { name: "FUEL", value: 7.5 }], ["joinCrew", [["Ada", "Bo"]], "Ada | Bo"], ["joinCrew", [["Solo"]], "Solo"], ["joinCrew", [[]], ""]].map(([fn, args, exp]) =>
+      fnCase(fn, args, exp, v => fn === "parseReading" && v && typeof v.value === "string" ? "The value is still text. Wrap it in <code>Number()</code>." : "")),
+    solution: 'function parseReading(text) {\n  const parts = text.split(":");\n  return { name: parts[0], value: Number(parts[1]) };\n}\n\nfunction joinCrew(names) {\n  return names.join(" | ");\n}',
+    why: ["Define parseReading.", "split cuts the text at the colon: [\"TEMP\", \"42\"].", "Build the object. Number() turns the text \"42\" into the number 42.", "", "", "Define joinCrew.", "join puts \" | \" between each pair. One name, or none, gives no separator at all.", ""]
+  },
+  recap: ["<code>slice(start, end)</code> copies part of a string; the end isn't included.", "<code>split</code> turns text into an array, and <code>join</code> turns an array into text.", "Pieces from split are strings: use <code>Number()</code> before doing maths."]
+},
+{
+  id: "templates", world: 7, title: "Template Signals", concept: "Template literals",
+  story: "The comms officer is drowning in messages built from + signs with missing spaces. There's a neater way to build text.",
+  learn: [
+    ["Building text with + gets messy", "<code>\"Ship \" + name + \" has \" + fuel + \"% fuel\"</code> works, but it's easy to lose a space or a quote along the way."],
+    ["Template literals", "Write the text between <b>backticks</b> (<code>`</code>, usually under the Esc key) and put values inside <code>${ }</code>: <code>`Ship ${name} has ${fuel}% fuel`</code>. JavaScript fills in each value."],
+    ["Any expression inside ${ }", "Inside <code>${ }</code> you can put any expression: maths like <code>${fuel / 2}</code>, method calls like <code>${name.toUpperCase()}</code>, or properties like <code>${ship.name}</code>."],
+    ["Text over several lines", "A template literal can span several lines, and the line breaks become part of the text. Normal quotes can't do that."]
+  ],
+  terms: [["template literal", "text in backticks that can contain ${ } values"], ["interpolation", "filling values into text with ${ }"]],
+  example: { code: 'const ship = "Comet";\nconst fuel = 42;\nconsole.log(`Ship ${ship} has ${fuel}% fuel`);\nconsole.log(`Half tank: ${fuel / 2}%`);\nconsole.log(`Callsign: ${ship.toUpperCase()}-${fuel}`);', lines: ["A ship name.", "Its fuel level.", "Backticks with two ${ } slots: Ship Comet has 42% fuel.", "Maths happens inside the braces: Half tank: 21%.", "Method calls work too: Callsign: COMET-42."] },
+  symbols: [["`…`", "backticks start and end a template literal"], ["${ }", "puts a value or expression into the text"]],
+  good: { code: "const msg = `Crew: ${crew.length}`;", why: "Backticks and ${ } together, so the length is filled in." },
+  bad: { code: 'const msg = "Crew: ${crew.length}";', why: "Normal quotes don't fill anything in. This prints the characters ${crew.length} as they are." },
+  mistakes: ["Using normal quotes instead of backticks.", "Forgetting the $ in front of the brace.", "Leaving a ${ without its closing }.", "Mixing up the backtick ` with the single quote '."],
+  trace: { code: 'const ship = "Comet";\nconst fuel = 42;\nconsole.log(`Ship ${ship} has ${fuel}% fuel`);\nconsole.log(`Half tank: ${fuel / 2}%`);\nconsole.log(`Callsign: ${ship.toUpperCase()}-${fuel}`);', steps: [
+    { l: 0, v: { ship: '"Comet"' } },
+    { l: 1, v: { fuel: "42" } },
+    { l: 2, o: "Ship Comet has 42% fuel", n: "Each ${ } slot is replaced by its value." },
+    { l: 3, o: "Half tank: 21%", n: "fuel / 2 is worked out first, then filled in." },
+    { l: 4, o: "Callsign: COMET-42", n: "A method call inside a slot, then a normal dash, then another slot." }] },
+  practise: { starter: 'const name = "Ada";\nconst crew = 4;\nconsole.log(`Pilot ${name} leads ${crew} crew`);\nconsole.log(`Next year: ${crew + 1} crew`);\n',
+    ideas: ["Add an hour variable and print <code>`It is ${hour}:00`</code>.", "Put a method call inside a slot: <code>${name.toUpperCase()}</code>.", "Try normal quotes around <code>${name}</code> and see what prints.", "Write a template literal that spans two lines."] },
+  predict: { code: 'const a = 3;\nconst b = 4;\nconsole.log(`${a} + ${b} = ${a + b}`);\nconsole.log("${a}");', answer: "3 + 4 = 7\n${a}", explain: "In backticks each ${ } is filled in, and the last one is worked out first. In normal quotes, ${a} is just text." },
+  challenge: {
+    scene: "screens", title: "Write the mission reports",
+    brief: "Write <code>report(mission)</code>, where <code>mission</code> is an object like <code>{ name: \"Kite\", crew: 3, days: 12 }</code>. It returns <code>Mission Kite: 3 crew for 12 days</code>. Then write <code>eta(distance, speed)</code>, which returns <code>ETA: 5 hours</code> for <code>eta(500, 100)</code>. Use template literals for both.",
+    starter: "function report(mission) {\n\n}\n\nfunction eta(distance, speed) {\n\n}\n",
+    hints: ["<code>return `Mission ${mission.name}: ${mission.crew} crew for ${mission.days} days`;</code>", "Maths can go inside the braces: <code>`ETA: ${distance / speed} hours`</code>."],
+    src: [{ test: s => /`[^`]*\$\{/.test(s), msg: "Build the text with template literals: backticks with ${ } slots." }],
+    cases: [["report", [{ name: "Kite", crew: 3, days: 12 }], "Mission Kite: 3 crew for 12 days"], ["report", [{ name: "Orion", crew: 1, days: 200 }], "Mission Orion: 1 crew for 200 days"], ["eta", [500, 100], "ETA: 5 hours"], ["eta", [90, 60], "ETA: 1.5 hours"]].map(([fn, args, exp]) =>
+      fnCase(fn, args, exp, v => typeof v === "string" && v.indexOf("${") >= 0 ? "The ${ } slots weren't filled in. Use backticks, not quotes." : "")),
+    solution: "function report(mission) {\n  return `Mission ${mission.name}: ${mission.crew} crew for ${mission.days} days`;\n}\n\nfunction eta(distance, speed) {\n  return `ETA: ${distance / speed} hours`;\n}",
+    why: ["Define report.", "Three slots, each reading a property of the mission object.", "", "", "Define eta.", "The division happens inside the slot, and the result is filled into the text.", ""]
+  },
+  recap: ["Template literals use backticks and <code>${ }</code> slots.", "Any expression can go in a slot: maths, properties, method calls.", "They can span several lines."]
 }
 ];
 
@@ -2290,6 +2514,46 @@ const DRILLS = {
       solution: 'const shield = 80;\nconsole.log("Shields at " + shield);' }
   ]
 };
+// ---- Act II drills ----
+Object.assign(DRILLS, {
+  text: [
+    { title: "Shout it", task: "<code>word</code> already exists. Fill in the method so the word prints in capitals.",
+      starter: "// word already exists\nconsole.log(word.___());\n",
+      hints: ["The method that makes capitals has \"Upper\" in its name.", "<code>word.toUpperCase()</code>"],
+      cases: ["launch", "dock"].map(w => outCase("word = " + show(w), "const word = " + JSON.stringify(w) + ";", [w.toUpperCase()])),
+      solution: "console.log(word.toUpperCase());" },
+    { title: "Last letter", task: "<code>name</code> already exists and changes between tests. Fill in the index of its <b>last</b> character.",
+      starter: "// name already exists\nconsole.log(name[___]);\n",
+      hints: ["The last index is one less than the length.", "<code>name[name.length - 1]</code>"],
+      cases: ["Comet", "Bo"].map(w => outCase("name = " + show(w), "const name = " + JSON.stringify(w) + ";", [w[w.length - 1]])),
+      solution: "console.log(name[name.length - 1]);" }
+  ],
+  split: [
+    { title: "First word", task: "<code>line</code> already exists. Fill in the separator so the line splits into words and the first word prints.",
+      starter: "// line already exists\nconst words = line.split(___);\nconsole.log(words[0]);\n",
+      hints: ["Words are separated by spaces.", "<code>line.split(\" \")</code>"],
+      cases: ["red alert now", "dock at bay 4"].map(l => outCase(show(l), "const line = " + JSON.stringify(l) + ";", [l.split(" ")[0]])),
+      solution: 'const words = line.split(" ");\nconsole.log(words[0]);' },
+    { title: "Join the crew", task: "<code>crew</code> already exists. Fill in the method that glues the names into one string with <code>, </code> between them.",
+      starter: '// crew already exists\nconsole.log(crew.___(", "));\n',
+      hints: ["It does the opposite of split.", "<code>crew.join(\", \")</code>"],
+      cases: [["Ada", "Bo", "Cy"], ["Zed"]].map(c => outCase(show(c), "const crew = " + JSON.stringify(c) + ";", [c.join(", ")])),
+      solution: 'console.log(crew.join(", "));' }
+  ],
+  templates: [
+    { title: "Fill the slot", task: "<code>pilot</code> already exists. Fill in the slot so this prints <code>Welcome aboard, </code> followed by the pilot's name.",
+      starter: "// pilot already exists\nconsole.log(`Welcome aboard, ${___}!`);\n",
+      hints: ["The slot needs the variable's name.", "<code>${pilot}</code>"],
+      cases: ["Ada", "Zed"].map(p => outCase("pilot = " + show(p), "const pilot = " + JSON.stringify(p) + ";", ["Welcome aboard, " + p + "!"])),
+      solution: "console.log(`Welcome aboard, ${pilot}!`);" },
+    { title: "No more plus signs", task: "Rewrite the last line as one template literal (backticks with ${ } slots, and no <code>+</code>) that prints exactly the same text.",
+      starter: 'const ship = "Kite";\nconst fuel = 80;\nconsole.log("Ship " + ship + " has " + fuel + "% fuel");\n',
+      hints: ["Swap the quotes for backticks and put each variable in a ${ } slot.", "<code>console.log(`Ship ${ship} has ${fuel}% fuel`);</code>"],
+      src: [{ test: s => /`[^`]*\$\{/.test(s) && !/\+/.test(s), msg: "Use one template literal with ${ } slots, and no + signs." }],
+      cases: [outCase("Output", "", ["Ship Kite has 80% fuel"])],
+      solution: 'const ship = "Kite";\nconst fuel = 80;\nconsole.log(`Ship ${ship} has ${fuel}% fuel`);' }
+  ]
+});
 LESSONS.forEach(L => { L.drills = DRILLS[L.id] || []; });
 
 /* ================= Sector finales =================
@@ -2428,6 +2692,24 @@ FINALES.push({ id: "fin6", world: 5, kind: "finale", title: "Launch Console", co
     solution: 'const crew = document.getElementById("crew");\nconst check = document.getElementById("check");\nconst verdict = document.getElementById("verdict");\nconst meter = document.getElementById("meter");\ncheck.addEventListener("click", function () {\n  const n = Number(crew.value);\n  meter.style.width = n * 10 + "%";\n  if (n >= 3 && n <= 6) {\n    verdict.textContent = "GO";\n    verdict.style.color = "green";\n  } else {\n    verdict.textContent = "NO GO";\n    verdict.style.color = "red";\n  }\n});',
     why: ["Find the input box.", "Find the button.", "Find the verdict display.", "Find the meter bar.", "Everything below runs on each click, not straight away.", "Read the newest number every time the button is clicked.", "Multiplication happens first, then \"%\" is joined on.", "A range check: both ends included.", "Ready for launch…", "…in green.", "", "Anything else is unsafe…", "…in red.", "", "End of the handler."]
   } });
+FINALES.push({ id: "fin7", world: 7, kind: "finale", title: "Decoder Ring", concept: "Sector finale: taking text apart and rebuilding it", combines: ["text", "split", "templates"],
+  story: "Garbled transmissions are piling up in the Signal Lab. Each one hides a type, a name and a deck number. Decode them all.",
+  mistakes: ["Forgetting to trim the raw text first, so the type keeps its leading spaces.", "Capitalising the whole name instead of just its first letter."],
+  recap: ["trim, split, toUpperCase and slice combine into a text-cleaning pipeline.", "Each method returns a new string, so steps can be chained or stored in variables.", "A template literal assembles the final message cleanly."],
+  challenge: {
+    scene: "screens", title: "Decode the transmissions",
+    brief: "Transmissions look like <code>\" help:ada:3 \"</code>: a type, a name and a deck number, separated by colons, sometimes with spaces around the outside. Write <code>decode(raw)</code> that returns <code>HELP from Ada on deck 3</code>. The type is in capitals, and the name has a capital first letter with the rest in lower case.",
+    starter: "function decode(raw) {\n\n}\n",
+    hints: ["Start with <code>const parts = raw.trim().split(\":\");</code>. For the name: <code>parts[1][0].toUpperCase() + parts[1].slice(1).toLowerCase()</code>. Then build the answer with a template literal."],
+    cases: [[" help:ada:3 ", "HELP from Ada on deck 3"], ["status:BO:7", "STATUS from Bo on deck 7"], ["ping:zed:12", "PING from Zed on deck 12"]].map(([raw, exp]) => fnCase("decode", [raw], exp, v => {
+      if (typeof v !== "string") return "";
+      if (v.indexOf("  ") >= 0 || v[0] === " ") return "There are extra spaces: trim the raw text before splitting it.";
+      if (/from [A-Z]{2,}/.test(v)) return "Only the first letter of the name should be a capital: use slice(1).toLowerCase() for the rest.";
+      return "";
+    })),
+    solution: "function decode(raw) {\n  const parts = raw.trim().split(\":\");\n  const type = parts[0].toUpperCase();\n  const name = parts[1][0].toUpperCase() + parts[1].slice(1).toLowerCase();\n  return `${type} from ${name} on deck ${parts[2]}`;\n}",
+    why: ["Define decode.", "Trim the outer spaces, then split into [type, name, deck].", "The type in capitals.", "Capital first letter, then the rest in lower case.", "A template literal assembles the message.", ""]
+  } });
 // Place each finale right after the last lesson of its sector
 FINALES.forEach(F => { F.drills = []; const at = LESSONS.map(l => l.world).lastIndexOf(F.world); LESSONS.splice(at + 1, 0, F); });
 const isFinale = L => L.kind === "finale";
@@ -2548,11 +2830,6 @@ const REVIEWS = {
    Three per topic (Easy, Medium, Hard). They unlock once the topic's lesson is repaired,
    use only ideas taught up to that lesson, and give bonus XP. Finishing all three masters the topic. */
 const MISSION_XP = { Easy: 15, Medium: 25, Hard: 40 };
-// A test case that checks printed output ([] means nothing should print)
-const outCase = (label, pre, lines, extra) => Object.assign({ label, pre, expect: lines.length ? lines.join("\n") : "(nothing printed)",
-  check: r => lines.length ? expectLogs(r.logs, lines) : (r.logs.length ? fail("Nothing should print here, but your code printed " + q(r.logs.join(", ")) + ".", r.logs.join(", ")) : pass("(nothing printed)")) }, extra || {});
-// A test case that calls one of the learner's functions and compares what it returns
-const fnCase = (fn, args, exp, tips) => { const txt = fn + "(" + args.map(a => show(a)).join(", ") + ")"; return { label: txt, expect: show(exp), post: callPost(fn, args), check: r => callCheck(r.report, fn, txt, exp, tips) }; };
 const STAIRS = ["#######", "#R.####", "##..###", "###..##", "####.G#", "#######"];
 const LEFT_A = ["#######", "####G##", "####.##", "#R...##", "#######"];
 const LEFT_B = ["#########", "#######G#", "#######.#", "#######.#", "#R......#", "#########"];
@@ -2808,6 +3085,70 @@ const MISSIONS = {
       solution: "function average(nums) {\n  let total = 0;\n  for (let i = 0; i < nums.length; i++) {\n    total = total + nums[i];\n  }\n  return total / nums.length;\n}" }
   ]
 };
+// ---- Act II reviews and missions ----
+Object.assign(REVIEWS, {
+  text: { title: "Initials", task: "Write <code>initials(first, last)</code> that returns the first letter of each name, in capitals: <code>initials(\"ada\", \"lovelace\")</code> → <code>\"AL\"</code>.",
+    starter: "function initials(first, last) {\n\n}\n",
+    hints: ["Index 0 is the first character of each name.", "<code>return (first[0] + last[0]).toUpperCase();</code>"],
+    cases: [[["ada", "lovelace"], "AL"], [["Grace", "hopper"], "GH"]].map(([a, e]) => fnCase("initials", a, e)),
+    solution: "function initials(first, last) {\n  return (first[0] + last[0]).toUpperCase();\n}" },
+  split: { title: "File type", task: "Write <code>extension(filename)</code> that returns the part after the <b>last</b> dot: <code>\"archive.tar.gz\"</code> → <code>\"gz\"</code>.",
+    starter: "function extension(filename) {\n\n}\n",
+    hints: ["Split on the dot, then take the last piece.", "<code>const parts = filename.split(\".\"); return parts[parts.length - 1];</code>"],
+    cases: [["report.txt", "txt"], ["archive.tar.gz", "gz"], ["map.v2.json", "json"]].map(([f, e]) => fnCase("extension", [f], e)),
+    solution: 'function extension(filename) {\n  const parts = filename.split(".");\n  return parts[parts.length - 1];\n}' },
+  templates: { title: "Name badge", task: "Write <code>badge(name, rank)</code> that returns the rank in capitals inside square brackets, then the name: <code>badge(\"Ada\", \"captain\")</code> → <code>\"[CAPTAIN] Ada\"</code>. Use a template literal.",
+    starter: "function badge(name, rank) {\n\n}\n",
+    hints: ["Slots can hold method calls.", "<code>return `[${rank.toUpperCase()}] ${name}`;</code>"],
+    src: [{ test: s => /`[^`]*\$\{/.test(s), msg: "Use a template literal." }],
+    cases: [[["Ada", "captain"], "[CAPTAIN] Ada"], [["Bo", "pilot"], "[PILOT] Bo"]].map(([a, e]) => fnCase("badge", a, e)),
+    solution: "function badge(name, rank) {\n  return `[${rank.toUpperCase()}] ${name}`;\n}" }
+});
+Object.assign(MISSIONS, {
+  text: [
+    { tier: "Easy", title: "Word length", task: "<code>word</code> already exists. Print a line like <code>comet has 5 letters</code>.",
+      starter: "// word already exists\n", hints: ["The number of characters is <code>word.length</code>.", "<code>console.log(word + \" has \" + word.length + \" letters\");</code>"],
+      cases: ["comet", "ox"].map(w => outCase("word = " + show(w), "const word = " + JSON.stringify(w) + ";", [w + " has " + w.length + " letters"])),
+      solution: 'console.log(word + " has " + word.length + " letters");' },
+    { tier: "Medium", title: "Password check", task: "Write <code>strongEnough(pw)</code> that returns true when the password is at least 8 characters long <b>and</b> doesn't contain the word \"password\" in any capitals.",
+      starter: "function strongEnough(pw) {\n\n}\n", hints: ["Lower-case the password before checking for \"password\", so PassWord is caught too.", "<code>return pw.length >= 8 && !pw.toLowerCase().includes(\"password\");</code>"],
+      cases: [["starship9", true], ["short", false], ["MyPassword123", false], ["12345678", true]].map(([p, e]) => fnCase("strongEnough", [p], e)),
+      solution: 'function strongEnough(pw) {\n  return pw.length >= 8 && !pw.toLowerCase().includes("password");\n}' },
+    { tier: "Hard", title: "Count the vowels", task: "Write <code>countVowels(text)</code> that returns how many characters are a, e, i, o or u, in either case.",
+      starter: "function countVowels(text) {\n\n}\n", hints: ["Loop over the characters with <code>for (const ch of text)</code>.", "<code>if (\"aeiou\".includes(ch.toLowerCase())) { count = count + 1; }</code>"],
+      cases: [["Station", 3], ["SKY", 0], ["Aeon", 3], ["", 0]].map(([t, e]) => fnCase("countVowels", [t], e)),
+      solution: 'function countVowels(text) {\n  let count = 0;\n  for (const ch of text) {\n    if ("aeiou".includes(ch.toLowerCase())) {\n      count = count + 1;\n    }\n  }\n  return count;\n}' }
+  ],
+  split: [
+    { tier: "Easy", title: "After the dash", task: "<code>code</code> already exists, like <code>\"NOVA-7781\"</code>. Print the part after the dash.",
+      starter: "// code already exists\n", hints: ["Find the dash with indexOf, then slice from just after it.", "<code>console.log(code.slice(code.indexOf(\"-\") + 1));</code>"],
+      cases: ["NOVA-7781", "KITE-12"].map(c => outCase(show(c), "const code = " + JSON.stringify(c) + ";", [c.slice(c.indexOf("-") + 1)])),
+      solution: 'console.log(code.slice(code.indexOf("-") + 1));' },
+    { tier: "Medium", title: "Backwards words", task: "Write <code>reverseWords(sentence)</code> that returns the words in reverse order: <code>\"red alert now\"</code> → <code>\"now alert red\"</code>.",
+      starter: "function reverseWords(sentence) {\n\n}\n", hints: ["Split into words, then loop from the last index down to 0, pushing each word into a new array.", "<code>for (let i = words.length - 1; i >= 0; i--) { out.push(words[i]); }</code> then <code>return out.join(\" \");</code>"],
+      cases: [["red alert now", "now alert red"], ["solo", "solo"], ["a b", "b a"]].map(([s, e]) => fnCase("reverseWords", [s], e)),
+      solution: 'function reverseWords(sentence) {\n  const words = sentence.split(" ");\n  const out = [];\n  for (let i = words.length - 1; i >= 0; i--) {\n    out.push(words[i]);\n  }\n  return out.join(" ");\n}' },
+    { tier: "Hard", title: "Title case", task: "Write <code>titleCase(text)</code> that capitalises the first letter of every word and makes the rest lower case: <code>\"red ALERT now\"</code> → <code>\"Red Alert Now\"</code>.",
+      starter: "function titleCase(text) {\n\n}\n", hints: ["Split into words, fix each word, push it into a new array, then join with spaces.", "For one word: <code>w[0].toUpperCase() + w.slice(1).toLowerCase()</code>"],
+      cases: [["red ALERT now", "Red Alert Now"], ["dock", "Dock"], ["SHIELDS up", "Shields Up"]].map(([s, e]) => fnCase("titleCase", [s], e)),
+      solution: 'function titleCase(text) {\n  const out = [];\n  for (const w of text.split(" ")) {\n    out.push(w[0].toUpperCase() + w.slice(1).toLowerCase());\n  }\n  return out.join(" ");\n}' }
+  ],
+  templates: [
+    { tier: "Easy", title: "Weather report", task: "<code>place</code> and <code>temp</code> already exist. Print a line like <code>Weather in Mars Base: -60°C</code> with a template literal.",
+      starter: "// place and temp already exist\n", hints: ["Two slots: one for the place, one for the temperature.", "<code>console.log(`Weather in ${place}: ${temp}°C`);</code>"],
+      src: [{ test: s => /`[^`]*\$\{/.test(s), msg: "Use a template literal." }],
+      cases: [["Mars Base", -60], ["Dock 4", 21]].map(([p, t]) => outCase(p + ", " + t, "const place = " + JSON.stringify(p) + ", temp = " + t + ";", ["Weather in " + p + ": " + t + "°C"])),
+      solution: "console.log(`Weather in ${place}: ${temp}°C`);" },
+    { tier: "Medium", title: "Receipt line", task: "Write <code>line(item, qty, price)</code> that returns a receipt line like <code>bolt x 3 = 6</code>, with the total worked out inside the template.",
+      starter: "function line(item, qty, price) {\n\n}\n", hints: ["Three slots, and the last one does maths.", "<code>return `${item} x ${qty} = ${qty * price}`;</code>"],
+      cases: [[["bolt", 3, 2], "bolt x 3 = 6"], [["lens", 1, 15], "lens x 1 = 15"]].map(([a, e]) => fnCase("line", a, e)),
+      solution: "function line(item, qty, price) {\n  return `${item} x ${qty} = ${qty * price}`;\n}" },
+    { tier: "Hard", title: "Two-line ticket", task: "Write <code>ticket(name, seat)</code> that returns <b>two lines</b> of text: <code>Passenger: Ada</code>, then on the next line <code>Seat: 12A</code>. A template literal can span lines.",
+      starter: "function ticket(name, seat) {\n\n}\n", hints: ["Press Enter inside the backticks: the line break becomes part of the text.", "<code>return `Passenger: ${name}</code> ⏎ <code>Seat: ${seat}`;</code>"],
+      cases: [[["Ada", "12A"], "Passenger: Ada\nSeat: 12A"], [["Bo", "3C"], "Passenger: Bo\nSeat: 3C"]].map(([a, e]) => fnCase("ticket", a, e, v => typeof v === "string" && v.indexOf("\n") < 0 ? "It's all on one line. Put the second part on a new line inside the backticks." : "")),
+      solution: "function ticket(name, seat) {\n  return `Passenger: ${name}\nSeat: ${seat}`;\n}" }
+  ]
+});
 const missionKey = (L, k) => L.id + ":" + k;
 const missionDone = (L, k, s) => !!((s || store).missions || {})[missionKey(L, k)];
 const missionsOf = L => MISSIONS[L.id] || [];
@@ -2836,7 +3177,7 @@ const ACHIEVEMENTS = [
 ];
 
 /* ================= Progress store ================= */
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.2.0";
 const STORE_KEY = "js-quest-v1";
 // done: repaired lessons · drills: passed drills · drafts: unsent code · sess: in-progress challenge stats
 // ach: unlocked achievements · stats: lifetime counters · seenIntro: first-run tour shown
@@ -2971,7 +3312,7 @@ function renderMap() {
   const ni = nextIdx < 0 ? null : LESSONS[nextIdx];
   let h = '<canvas class="px hero-banner" id="hero-px" width="320" height="64" role="img" aria-label="Pixel scene: the pilot and robot B0-T on Station Nine\'s deck, with the Glitch King watching from space"></canvas>' +
     '<section class="hero"><div><p class="eyebrow">Station Nine · Maintenance log</p><h1>JavaScript Quest</h1>' +
-    '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing across seven sectors, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
+    '<p class="lede">You\'re the station\'s new rookie programmer. Machines are failing all over the station, and the only way to repair them is to write JavaScript. Each repair teaches one idea: you learn it, watch it run, experiment, then fix the machine yourself.</p>' +
     (ni ? '<button class="btn primary" id="continue">' + (Object.keys(store.done).length ? "Continue: " : "Start: ") + esc(ni.title) + " →</button>" : '<p class="okbox"><b>Every machine on the station is repaired.</b> Replay any lesson to improve your stars.</p>') +
     '</div><div class="hero-card" aria-label="Your progress"><div class="row"><span>pilot.rank</span><span>"' + r.name + '"</span></div><div class="row"><span>pilot.xp</span><span>' + r.x + '</span></div><div class="row"><span>repairs.done</span><span>' + Object.keys(store.done).length + " / " + LESSONS.length + '</span></div><div class="row"><span>next.rank</span><span>' + (r.next ? '"' + r.next[1] + '" @ ' + r.next[0] : "null") + '</span></div>' +
     '<div class="row"><span>concepts.mastered</span><span>' + LESSONS.filter(l => !isFinale(l) && masteryOf(l) === 4).length + " / " + LESSONS.filter(l => !isFinale(l)).length + '</span></div><div class="row"><span>badges</span><span>' + ACHIEVEMENTS.filter(a => store.ach[a.id]).length + " / " + ACHIEVEMENTS.length + "</span></div>" +
@@ -2987,6 +3328,7 @@ function renderMap() {
     h += '<section class="panel welcome arena-card" aria-labelledby="ar-h">' + pxImg("gear", "welcome-icon") + '<div><p class="eyebrow">Training Deck</p><h3 id="ar-h">Extra missions: ' + mp + " of " + mt + ' passed</h3><p class="muted small">Three more missions (Easy, Medium and Hard) for every topic you\'ve repaired, with bonus XP. Practise until it feels easy.</p></div><div class="toolbar"><button class="btn primary" id="arena-open">Open the Training Deck</button></div></section>';
   }
   WORLDS.forEach((w, wi) => {
+    if (wi === ACT2_FROM) h += '<div class="act-banner">' + pxImg("dish", "act-icon") + '<div><p class="eyebrow">Act II · The Outer Ring</p><h2>Advanced topics</h2><p>Beyond the Glitch Core: text tools, array methods, classes, error handling and asynchronous code. Same rhythm as Act I: learn, visualise, practise, repair.</p></div></div>';
     h += '<section class="sector"><div class="sector-info">' + pxImg(WORLD_ICONS[wi], "sec-icon") + '<div><p class="eyebrow">Sector ' + (wi + 1) + "</p><h3>" + w.name + "</h3><p>" + w.blurb + '</p></div></div><div class="nodes">';
     LESSONS.forEach((l, i) => {
       if (l.world !== wi) return;
@@ -3444,7 +3786,7 @@ function renderResult(host, r, ed) {
 async function evaluate(code, spec) {
   const src = stripComments(code);
   const runs = [];
-  for (const c of spec.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir, page: c.page || spec.page || null }));
+  for (const c of spec.cases) runs.push(await runOnce({ code, pre: c.pre || "", post: c.post || "", map: c.map || null, dir: c.dir, page: c.page || spec.page || null, comms: c.comms || spec.comms || null }));
   const results = runs.map((r, i) => r.error ? { ok: false, msg: null, got: r.error.name, err: r.error } : spec.cases[i].check(r, spec.cases[i], src));
   const firstErr = runs.findIndex(r => r.error);
   const showIdx = firstErr >= 0 ? firstErr : Math.max(0, results.findIndex(x => !x.ok));
@@ -3592,6 +3934,8 @@ const said = r => r ? (r.logs.length ? r.logs.join(" ") : "(nothing printed)") :
 const CRYSTAL_COLS = ["#F07B6F", "#5BC98B", "#5CC2CB", "#F5CB74", "#E39BC4", "#9FE3F0", "#F09F4E"];
 const crystalCol = name => CRYSTAL_COLS[[...String(name)].reduce((a, ch) => a + ch.charCodeAt(0), 0) % CRYSTAL_COLS.length];
 // (case, run without error or null, raw run) → HTML. The case's `in` holds its inputs.
+// Generic reactive screen: shows exactly what your code returned or printed in each test
+const SCREEN_SCENE = (c, r) => '<div class="screen big">' + (r ? esc(r.report && r.report.out ? (r.report.out.pending ? "(still waiting…)" : r.report.out.err !== undefined ? "error: " + r.report.out.err : show(r.report.out.v)) : said(r)) : '<span class="rig-empty">waiting for your code…</span>') + "</div>";
 const SCENES = {
   math: (c, r) => { const [a, b, d] = c.in.cells, per = rv(r, "perRobot"), tot = rv(r, "total");
     return '<div class="rig-row">' + vbars([[a, "A"], [b, "B"], [d, "C"]], 30) + '<span class="rig-arrow">→</span>' + vbars([[per, "bot 1", "alt"], [per, "bot 2", "alt"]], 25) + "</div>" + rigOut(r ? "total " + show(tot) + " · each " + show(per) : "cells waiting"); },
@@ -3664,7 +4008,7 @@ function stageChallenge(host, L, idx) {
       renderPage($(".pv-wrap", sceneHost), C.cases[0].page || C.page, false);
       return;
     }
-    const vis = SCENES[L.id];
+    const vis = SCENES[L.id] || (C.scene === "screens" ? SCREEN_SCENE : null);
     if (!vis) { sceneHost.innerHTML = status; return; }
     // One mini scene per test case, drawn from that case's input and what your code produced
     sceneHost.innerHTML = status + '<div class="rig-grid">' + C.cases.map((c, i) => {
